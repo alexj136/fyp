@@ -4,31 +4,31 @@ module Syntax where
 data Program = Declaration String Expression
              | EndProgram
 
-type Name = String
-
 -- Lambda Expressions need a mechanism to handle naming clashes when replacing
 -- variables (bound variables with mathcing names should be renamed
 data Expression = Lambda Name Expression
-                | Name
+                | Name String
                 | Application Expression Expression
 -- Non-Lambda Expressions:
                 | Literal Int
                 | Arithmetic Expression Op Expression
                 | IfThenElse Expression Expression Expression
+    deriving Show
 
 data Op = Add | Sub | Mul | Div | Mod
+    deriving Show
 
 replace :: Name -> Expression -> Expression -> Expression
-replace n (Lambda n' x) y         = if n /= n' then replace n x y 
-                                    else error "Name clashes not yet handled"
-replace n (Application x x') y    = Application (replace n x y) (replace n x' y)
-replace n Name y                  = y
-replace n (Arithmetic x _ x') y   = Arithmetic (replace n x y) (replace n x' y)
-replace n (IfThenElse x x' x'') y = IfThenElse (replace n x y) (replace n x' y) (replace n x'' y)
-replace _ (Literal x) _           = Literal x
+replace (Name n) (Lambda n' x) y         = if n /= n' then replace n x y 
+                                           else error "Name clashes not yet handled"
+replace (Name n) (Application x x') y    = Application (replace n x y) (replace n x' y)
+replace (Name n) (Name n') y             = y
+replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace n x y) op (replace n x' y)
+replace (Name n) (IfThenElse x x' x'') y = IfThenElse (replace n x y) (replace n x' y) (replace n x'' y)
+replace _ (Literal x) _                  = Literal x
 
 eval :: Expression -> Int
-eval (Application (Lambda n x) y = eval (replace n x y)
+eval (Application (Lambda n x) y) = eval (replace n x y)
 -- More lambda cases to handle
 eval (Arithmetic x Add y) = (eval x) + (eval y)
 eval (Arithmetic x Sub y) = (eval x) - (eval y)
