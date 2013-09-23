@@ -18,8 +18,18 @@ data Expression = Lambda Name Expression
 
 data Op = Add | Sub | Mul | Div | Mod
 
+replace :: Name -> Expression -> Expression -> Expression
+replace n (Lambda n' x) y         = if n /= n' then replace n x y 
+                                    else error "Name clashes not yet handled"
+replace n (Application x x') y    = Application (replace n x y) (replace n x' y)
+replace n Name y                  = y
+replace n (Arithmetic x _ x') y   = Arithmetic (replace n x y) (replace n x' y)
+replace n (IfThenElse x x' x'') y = IfThenElse (replace n x y) (replace n x' y) (replace n x'' y)
+replace _ (Literal x) _           = Literal x
+
 eval :: Expression -> Int
-eval (Application (Lambda n x) y
+eval (Application (Lambda n x) y = eval (replace n x y)
+-- More lambda cases to handle
 eval (Arithmetic x Add y) = (eval x) + (eval y)
 eval (Arithmetic x Sub y) = (eval x) - (eval y)
 eval (Arithmetic x Mul y) = (eval x) * (eval y)
