@@ -19,6 +19,7 @@ data Expression = Lambda Name Expression
 data Op = Add | Sub | Mul | Div | Mod
 
 eval :: Expression -> Int
+eval (Application (Lambda n x) y
 eval (Arithmetic x Add y) = (eval x) + (eval y)
 eval (Arithmetic x Sub y) = (eval x) - (eval y)
 eval (Arithmetic x Mul y) = (eval x) * (eval y)
