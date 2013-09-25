@@ -6,7 +6,7 @@ data Program = Declaration String Expression
 
 -- Lambda Expressions need a mechanism to handle naming clashes when replacing
 -- variables (bound variables with mathcing names should be renamed
-data Expression = Lambda Name Expression
+data Expression = Lambda String Expression
                 | Name String
                 | Application Expression Expression
 -- Non-Lambda Expressions:
@@ -18,17 +18,36 @@ data Expression = Lambda Name Expression
 data Op = Add | Sub | Mul | Div | Mod
     deriving Show
 
-replace :: Name -> Expression -> Expression -> Expression
-replace (Name n) (Lambda n' x) y         = if n /= n' then replace n x y 
-                                           else error "Name clashes not yet handled"
-replace (Name n) (Application x x') y    = Application (replace n x y) (replace n x' y)
+-- Function to replace one Expression with another - implements function
+-- application with Expressions
+replace :: Expression -> Expression -> Expression -> Expression
+replace (Name n) (Lambda n' x) y         = if n /= n' then replace (Name n) x y 
+                                           else replace (Name n) (rename (Name n) Lambda n x) y
+replace (Name n) (Application x x') y    = Application (replace (Name n) x y) (replace (Name n) x' y)
 replace (Name n) (Name n') y             = y
-replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace n x y) op (replace n x' y)
-replace (Name n) (IfThenElse x x' x'') y = IfThenElse (replace n x y) (replace n x' y) (replace n x'' y)
+replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace (Name n) x y) op (replace (Name n) x' y)
+replace (Name n) (IfThenElse x x' x'') y = IfThenElse (replace (Name n) x y) (replace (Name n) x' y) (replace (Name n) x'' y)
 replace _ (Literal x) _                  = Literal x
 
+-- Function that identifies the presence of a certain variable name within an
+-- Expression
+nameBoundIn :: Expression -> Expression -> Bool
+nameBoundIn (Name n) (Name n')             = n == n'
+nameBoundIn (Name n) (Lambda n' x)         = (n == n') || nameBoundIn (Name n) x
+nameBoundIn (Name n) (Application x x')    = nameBoundIn (Name n) x || nameBoundIn (Name n) x'
+nameBoundIn (Name n) (Arithmetic x _  x')  = nameBoundIn (Name n) x || nameBoundIn (Name n) x'
+nameBoundIn (Name n) (IfThenElse x x' x'') = nameBoundIn (Name n) x || nameBoundIn (Name n) x' || nameBoundIn (Name n) x''
+nameBoundIn _ (Literal _)                  = False
+
+-- Renames all BOUND instances of STR in an Expression to STR'
+rename :: Expression -> Expression -> Expression
+rename (Name n) (Lambda n' x) = 
+rename (Name n) (Name n')     = if n == n' then (Name (n ++ "'"))
+                                else (Name n')
+
+-- Function to evaluate Expressions
 eval :: Expression -> Int
-eval (Application (Lambda n x) y) = eval (replace n x y)
+eval (Application (Lambda n x) y) = eval (replace (Name n) x y)
 -- More lambda cases to handle
 eval (Arithmetic x Add y) = (eval x) + (eval y)
 eval (Arithmetic x Sub y) = (eval x) - (eval y)
