@@ -39,11 +39,24 @@ nameBoundIn (Name n) (Arithmetic x _  x')  = nameBoundIn (Name n) x || nameBound
 nameBoundIn (Name n) (IfThenElse x x' x'') = nameBoundIn (Name n) x || nameBoundIn (Name n) x' || nameBoundIn (Name n) x''
 nameBoundIn _ (Literal _)                  = False
 
--- Renames all BOUND instances of STR in an Expression to STR'
+enumerateNames :: Expression -> [String] -> [String]
+enumerateNames (Name n) StrList               = if any (== n) StrList then StrList
+                                                else StrList ++ [n]
+enumerateNames (Lambda n x) StrList           = if any (== n) StrList then enumerateNames x StrList
+                                                else enumerateNames x (StrList ++ [n])
+enumerateNames (Application x x') StrList     = enumerateNames ...
+
+-- Renames all instances of STR with STR' in an Expression, with no regard for
+-- binding or name clashes
 rename :: Expression -> Expression -> Expression
-rename (Name n) (Lambda n' x) = 
-rename (Name n) (Name n')     = if n == n' then (Name (n ++ "'"))
-                                else (Name n')
+rename (Name n) (Name n')              = if n == n' then Name (n ++ "'")
+                                         else Name n'
+rename (Name n) (Lambda n' x)          = if n == n' then Lambda (Name n ++ "'") (rename (Name n) x)
+                                         else Lambda (Name n') (rename (Name n) x)
+rename (Name n) (Application x x')     = Application (rename (Name n) x) (rename (Name n) x)
+rename (Name n) (Arithmetic x op x')   = Arithmetic (rename (Name n) x) (rename (Name n) x')
+rename (Name n) (IfThenElse x x' x'')  = IfThenElse (rename (Name n) x) (rename (Name n) x') (rename (Name n) x'')
+rename _ (Literal x)                   = Literal x
 
 -- Function to evaluate Expressions
 eval :: Expression -> Int
