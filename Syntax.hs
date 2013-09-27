@@ -21,8 +21,8 @@ data Op = Add | Sub | Mul | Div | Mod
 -- Function to replace one Expression with another - implements function
 -- application with Expressions
 replace :: Expression -> Expression -> Expression -> Expression
-replace (Name n) (Lambda n' x) y         = if n /= n' then replace (Name n) x y 
-                                           else replace (Name n) (rename (Name n) Lambda n x) y
+replace (Name n) (Lambda n' x) y         | n /= n'   = replace (Name n) x y 
+                                         | otherwise = replace (Name n) (rename (Name n) (Lambda n x)) y
 replace (Name n) (Application x x') y    = Application (replace (Name n) x y) (replace (Name n) x' y)
 replace (Name n) (Name n') y             = y
 replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace (Name n) x y) op (replace (Name n) x' y)
@@ -40,23 +40,38 @@ nameBoundIn (Name n) (IfThenElse x x' x'') = nameBoundIn (Name n) x || nameBound
 nameBoundIn _ (Literal _)                  = False
 
 enumerateNames :: Expression -> [String] -> [String]
-enumerateNames (Name n) StrList               = if any (== n) StrList then StrList
-                                                else StrList ++ [n]
-enumerateNames (Lambda n x) StrList           = if any (== n) StrList then enumerateNames x StrList
-                                                else enumerateNames x (StrList ++ [n])
-enumerateNames (Application x x') StrList     = enumerateNames ...
+enumerateNames (Name n) strList               | any (== n) strList = strList
+                                              | otherwise          = strList ++ [n]
+enumerateNames (Lambda n x) strList           | any (== n) strList = enumerateNames x strList
+                                              | otherwise          = enumerateNames x (strList ++ [n])
+enumerateNames (Application x x') strList     = mergeAsSets (enumerateNames x strList) (enumerateNames x' strList)
+enumerateNames (Arithmetic x _ x') strList    = mergeAsSets (enumerateNames x strList) (enumerateNames x' strList)
+enumerateNames (IfThenElse x x' x'') strList  = mergeAsSets (enumerateNames x strList) (mergeAsSets (enumerateNames x' strList) (enumerateNames x'' strList))
+enumerateNames _ strList                      = strList
+
+-- Add an element to a list if it does not already exist in that list
+addIfNot :: Eq a => a -> [a] -> [a]
+addIfNot x xs
+    | any (== x) xs = xs
+    | otherwise     = [x] ++ xs
+
+-- Scales addIfNot to handle merging two lists
+mergeAsSets :: Eq a => [a] -> [a] -> [a]
+mergeAsSets [] xs  = xs
+mergeAsSets xs []  = xs
+mergeAsSets xs xs' = mergeAsSets (tail xs) (addIfNot (head xs) xs')
 
 -- Renames all instances of STR with STR' in an Expression, with no regard for
 -- binding or name clashes
 rename :: Expression -> Expression -> Expression
-rename (Name n) (Name n')              = if n == n' then Name (n ++ "'")
-                                         else Name n'
-rename (Name n) (Lambda n' x)          = if n == n' then Lambda (Name n ++ "'") (rename (Name n) x)
-                                         else Lambda (Name n') (rename (Name n) x)
-rename (Name n) (Application x x')     = Application (rename (Name n) x) (rename (Name n) x)
-rename (Name n) (Arithmetic x op x')   = Arithmetic (rename (Name n) x) (rename (Name n) x')
-rename (Name n) (IfThenElse x x' x'')  = IfThenElse (rename (Name n) x) (rename (Name n) x') (rename (Name n) x'')
-rename _ (Literal x)                   = Literal x
+rename (Name n) (Name n')             | n == n'   = Name (n ++ "'")
+                                      | otherwise = Name n'
+rename (Name n) (Lambda n' x)         | n == n'   = Lambda (n ++ "'") (rename (Name n) x)
+                                      | otherwise = Lambda n' (rename (Name n) x)
+rename (Name n) (Application x x')    = Application (rename (Name n) x) (rename (Name n) x)
+rename (Name n) (Arithmetic x op x')  = Arithmetic (rename (Name n) x) op (rename (Name n) x')
+rename (Name n) (IfThenElse x x' x'') = IfThenElse (rename (Name n) x) (rename (Name n) x') (rename (Name n) x'')
+rename _ (Literal x)                  = Literal x
 
 -- Function to evaluate Expressions
 eval :: Expression -> Int
