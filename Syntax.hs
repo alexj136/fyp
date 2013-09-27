@@ -9,7 +9,7 @@ data Program = Declaration String Expression
 data Expression = Lambda String Expression
                 | Name String
                 | Application Expression Expression
--- Non-Lambda Expressions:
+-- Churchy Expressions:
                 | Literal Int
                 | Arithmetic Expression Op Expression
                 | IfThenElse Expression Expression Expression
@@ -29,6 +29,18 @@ replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace (Name n) x y) op 
 replace (Name n) (IfThenElse x x' x'') y = IfThenElse (replace (Name n) x y) (replace (Name n) x' y) (replace (Name n) x'' y)
 replace _ (Literal x) _                  = Literal x
 
+-- Renames all instances of STR with STR' in an Expression, with no regard for
+-- binding or name clashes
+rename :: Expression -> Expression -> Expression
+rename (Name n) (Name n')             | n == n'   = Name (n ++ "'")
+                                      | otherwise = Name n'
+rename (Name n) (Lambda n' x)         | n == n'   = Lambda (n ++ "'") (rename (Name n) x)
+                                      | otherwise = Lambda n' (rename (Name n) x)
+rename (Name n) (Application x x')    = Application (rename (Name n) x) (rename (Name n) x)
+rename (Name n) (Arithmetic x op x')  = Arithmetic (rename (Name n) x) op (rename (Name n) x')
+rename (Name n) (IfThenElse x x' x'') = IfThenElse (rename (Name n) x) (rename (Name n) x') (rename (Name n) x'')
+rename _ (Literal x)                  = Literal x
+
 -- Function that identifies the presence of a certain variable name within an
 -- Expression
 nameBoundIn :: Expression -> Expression -> Bool
@@ -39,15 +51,15 @@ nameBoundIn (Name n) (Arithmetic x _  x')  = nameBoundIn (Name n) x || nameBound
 nameBoundIn (Name n) (IfThenElse x x' x'') = nameBoundIn (Name n) x || nameBoundIn (Name n) x' || nameBoundIn (Name n) x''
 nameBoundIn _ (Literal _)                  = False
 
-enumerateNames :: Expression -> [String] -> [String]
-enumerateNames (Name n) strList               | any (== n) strList = strList
-                                              | otherwise          = strList ++ [n]
-enumerateNames (Lambda n x) strList           | any (== n) strList = enumerateNames x strList
-                                              | otherwise          = enumerateNames x (strList ++ [n])
-enumerateNames (Application x x') strList     = mergeAsSets (enumerateNames x strList) (enumerateNames x' strList)
-enumerateNames (Arithmetic x _ x') strList    = mergeAsSets (enumerateNames x strList) (enumerateNames x' strList)
-enumerateNames (IfThenElse x x' x'') strList  = mergeAsSets (enumerateNames x strList) (mergeAsSets (enumerateNames x' strList) (enumerateNames x'' strList))
-enumerateNames _ strList                      = strList
+-- Creates a list of all unbound names in an Expression
+getNames :: [String] -> [String] -> Expression -> [String]
+getNames free bound (Name n)              | any (== n) bound = free
+                                          | otherwise        = free ++ [n]
+getNames free bound (Lambda n x)          = getNames free (bound ++ [n]) x
+getNames free bound (Application x x')    = mergeAsSets (getNames free bound x) (getNames free bound x')
+getNames free bound (Arithmetic x _ x')   = mergeAsSets (getNames free bound x) (getNames free bound x')
+getNames free bound (IfThenElse x x' x'') = mergeAsSets (getNames free bound x) (mergeAsSets (getNames free bound x') (getNames free bound x''))
+getNames free bound _                     = free
 
 -- Add an element to a list if it does not already exist in that list
 addIfNot :: Eq a => a -> [a] -> [a]
@@ -60,18 +72,6 @@ mergeAsSets :: Eq a => [a] -> [a] -> [a]
 mergeAsSets [] xs  = xs
 mergeAsSets xs []  = xs
 mergeAsSets xs xs' = mergeAsSets (tail xs) (addIfNot (head xs) xs')
-
--- Renames all instances of STR with STR' in an Expression, with no regard for
--- binding or name clashes
-rename :: Expression -> Expression -> Expression
-rename (Name n) (Name n')             | n == n'   = Name (n ++ "'")
-                                      | otherwise = Name n'
-rename (Name n) (Lambda n' x)         | n == n'   = Lambda (n ++ "'") (rename (Name n) x)
-                                      | otherwise = Lambda n' (rename (Name n) x)
-rename (Name n) (Application x x')    = Application (rename (Name n) x) (rename (Name n) x)
-rename (Name n) (Arithmetic x op x')  = Arithmetic (rename (Name n) x) op (rename (Name n) x')
-rename (Name n) (IfThenElse x x' x'') = IfThenElse (rename (Name n) x) (rename (Name n) x') (rename (Name n) x'')
-rename _ (Literal x)                  = Literal x
 
 -- Function to evaluate Expressions
 eval :: Expression -> Int
