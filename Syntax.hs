@@ -29,28 +29,6 @@ replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace (Name n) x y) op 
 replace (Name n) (IfThenElse x x' x'') y = IfThenElse (replace (Name n) x y) (replace (Name n) x' y) (replace (Name n) x'' y)
 replace _ (Literal x) _                  = Literal x
 
--- Renames all instances of STR with STR' in an Expression, with no regard for
--- binding or name clashes
-rename :: Expression -> Expression -> Expression
-rename (Name n) (Name n')             | n == n'   = Name (n ++ "'")
-                                      | otherwise = Name n'
-rename (Name n) (Lambda n' x)         | n == n'   = Lambda (n ++ "'") (rename (Name n) x)
-                                      | otherwise = Lambda n' (rename (Name n) x)
-rename (Name n) (Application x x')    = Application (rename (Name n) x) (rename (Name n) x)
-rename (Name n) (Arithmetic x op x')  = Arithmetic (rename (Name n) x) op (rename (Name n) x')
-rename (Name n) (IfThenElse x x' x'') = IfThenElse (rename (Name n) x) (rename (Name n) x') (rename (Name n) x'')
-rename _ (Literal x)                  = Literal x
-
--- Function that identifies the presence of a certain variable name within an
--- Expression
-nameBoundIn :: Expression -> Expression -> Bool
-nameBoundIn (Name n) (Name n')             = n == n'
-nameBoundIn (Name n) (Lambda n' x)         = (n == n') || nameBoundIn (Name n) x
-nameBoundIn (Name n) (Application x x')    = nameBoundIn (Name n) x || nameBoundIn (Name n) x'
-nameBoundIn (Name n) (Arithmetic x _  x')  = nameBoundIn (Name n) x || nameBoundIn (Name n) x'
-nameBoundIn (Name n) (IfThenElse x x' x'') = nameBoundIn (Name n) x || nameBoundIn (Name n) x' || nameBoundIn (Name n) x''
-nameBoundIn _ (Literal _)                  = False
-
 -- Creates a list of all unbound names in an Expression
 getNames :: [String] -> [String] -> Expression -> [String]
 getNames free bound (Name n)              | any (== n) bound = free
@@ -84,3 +62,27 @@ eval (Arithmetic x Div y) = div (eval x) (eval y)
 eval (Arithmetic x Mod y) = mod (eval x) (eval y)
 eval (IfThenElse i t e)   = if (eval i) /= 0 then (eval t) else (eval e)
 eval (Literal x)          = x
+
+-- FUNCTIONS BELOW ARE POTENTIALLY DELETABLE
+
+-- Function that identifies the presence of a certain variable name within an
+-- Expression
+nameBoundIn :: Expression -> Expression -> Bool
+nameBoundIn (Name n) (Name n')             = n == n'
+nameBoundIn (Name n) (Lambda n' x)         = (n == n') || nameBoundIn (Name n) x
+nameBoundIn (Name n) (Application x x')    = nameBoundIn (Name n) x || nameBoundIn (Name n) x'
+nameBoundIn (Name n) (Arithmetic x _  x')  = nameBoundIn (Name n) x || nameBoundIn (Name n) x'
+nameBoundIn (Name n) (IfThenElse x x' x'') = nameBoundIn (Name n) x || nameBoundIn (Name n) x' || nameBoundIn (Name n) x''
+nameBoundIn _ (Literal _)                  = False
+
+-- Renames all instances of STR with STR' in an Expression, with no regard for
+-- binding or name clashes
+rename :: Expression -> Expression -> Expression
+rename (Name n) (Name n')             | n == n'   = Name (n ++ "'")
+                                      | otherwise = Name n'
+rename (Name n) (Lambda n' x)         | n == n'   = Lambda (n ++ "'") (rename (Name n) x)
+                                      | otherwise = Lambda n' (rename (Name n) x)
+rename (Name n) (Application x x')    = Application (rename (Name n) x) (rename (Name n) x)
+rename (Name n) (Arithmetic x op x')  = Arithmetic (rename (Name n) x) op (rename (Name n) x')
+rename (Name n) (IfThenElse x x' x'') = IfThenElse (rename (Name n) x) (rename (Name n) x') (rename (Name n) x'')
+rename _ (Literal x)                  = Literal x
