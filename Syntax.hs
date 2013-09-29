@@ -33,11 +33,21 @@ replace _ (Literal x) _                  = Literal x
 
 -- Renames all bound occurences in the given Expression of any of the specified
 -- names
--- rename :: [String] -> Expression -> Expression
--- rename [] x = x
--- rename ns (Lambda n x) | any (== n) ns = 
--- rename ns (Name n)     | any (== n) ns = Name (n ++ "'")
---                        |
+rename :: [String] -> Expression -> Expression
+rename [] x = x
+rename ns (Lambda n x) | any (== n) ns =
+rename ns (Name n)     | any (== n) ns = Name (n ++ "'")
+                       |
+-- Puts a prime (') on the end of every occurence of the supplied Name in the
+-- supplied expression
+blindRename :: String -> Expression -> Expression
+blindRename n (Lambda n' x)         | n == n'   = Lambda (n ++ "'") (blindRename n x)
+                                    | otherwise = Lambda n' (blindRename n x)
+blindRename n (Application x x')    = Application (blindRename n x) (blindRename n x')
+blindRename n (Name n')             = if n == n' then (Name n ++ "'") else (Name n')
+blindRename n (Arithmetic x op x')  = Arithmetic (blindRename n x) op (blindRename n x')
+blindRename n (IfThenElse x x' x'') = IfThenElse (blindRename n x) (blindRename n x') (blindRename n x'')
+blindRename _ (Literal x)           = Literal x
 
 -- Returns true unless there are free occurences of the given name in the given
 -- Expression
