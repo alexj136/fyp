@@ -39,6 +39,13 @@ rename ns (Lambda n x) | any (== n) ns =
 rename ns (Name n)     | any (== n) ns = Name (n ++ "'")
                        |
 
+-- Rename ONLY BOUND instances of the given name in the given expression
+-- recurse down the tree until we find the given binding, at which point
+-- we can do a careless rename of every instance of that name that we
+-- find
+renameBound ::
+
+
 -- Returns a string which does not exist as a name within a given Expression
 newName :: Expression -> String
 newname _ = error "Not yet implemented"
