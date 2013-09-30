@@ -38,16 +38,21 @@ rename [] x = x
 rename ns (Lambda n x) | any (== n) ns =
 rename ns (Name n)     | any (== n) ns = Name (n ++ "'")
                        |
--- Puts a prime (') on the end of every occurence of the supplied Name in the
--- supplied expression
-blindRename :: String -> Expression -> Expression
-blindRename n (Lambda n' x)         | n == n'   = Lambda (n ++ "'") (blindRename n x)
-                                    | otherwise = Lambda n' (blindRename n x)
-blindRename n (Application x x')    = Application (blindRename n x) (blindRename n x')
-blindRename n (Name n')             = if n == n' then (Name n ++ "'") else (Name n')
-blindRename n (Arithmetic x op x')  = Arithmetic (blindRename n x) op (blindRename n x')
-blindRename n (IfThenElse x x' x'') = IfThenElse (blindRename n x) (blindRename n x') (blindRename n x'')
-blindRename _ (Literal x)           = Literal x
+
+-- Returns a string which does not exist as a name within a given Expression
+newName :: Expression -> String
+newname _ = error "Not yet implemented"
+
+-- Renames every name with value 'from' to value 'to', with no regard for
+-- clashes etc
+blindRename :: String -> String -> Expression -> Expression
+blindRename from to (Lambda n x)          | n == from = Lambda to (blindRename n x)
+                                          | otherwise = Lambda n (blindRename n x)
+blindRename from to (Application x x')    = Application (blindRename from to x) (blindRename from to x')
+blindRename from to (Name n)              = if n == from then (Name to) else (Name n)
+blindRename from to (Arithmetic x op x')  = Arithmetic (blindRename from to x) op (blindRename from to x')
+blindRename from to (IfThenElse x x' x'') = IfThenElse (blindRename from to x) (blindRename from to x') (blindRename from to x'')
+blindRename _    _  (Literal x)           = Literal x
 
 -- Returns true unless there are free occurences of the given name in the given
 -- Expression
@@ -55,8 +60,7 @@ boundIn :: Expression -> Expression -> Bool
 boundIn (Name n) (Lambda n' x)         | n == n'   = True
                                        | otherwise = boundIn (Name n) x
 boundIn (Name n) (Application x x')    = all (boundIn (Name n)) [x, x']
-boundIn (Name n) (Name n')             | n == n'   = False
-                                       | otherwise = True
+boundIn (Name n) (Name n')             = n /= n'
 boundIn (Name n) (Arithmetic x _ x')   = all (boundIn (Name n)) [x, x']
 boundIn (Name n) (IfThenElse x x' x'') = all (boundIn (Name n)) [x, x', x'']
 boundIn (Name n) (Literal _)           = True
