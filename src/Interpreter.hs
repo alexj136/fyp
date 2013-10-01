@@ -1,35 +1,18 @@
--- This module defines the abstract syntax of the language
-module Syntax where
+module Interpreter where
 
 import qualified Data.Set as Set
-
-data Program = Declaration String Expression
-             | EndProgram
-
--- Lambda Expressions need a mechanism to handle naming clashes when replacing
--- variables (bound variables with mathcing names should be renamed
-data Expression = Lambda String Expression
-                | Name String
-                | Application Expression Expression
--- Churchy Expressions:
-                | Literal Int
-                | Arithmetic Expression Op Expression
-                | IfThenElse Expression Expression Expression
-    deriving Show
-
-data Op = Add | Sub | Mul | Div | Mod
-    deriving Show
+import AbstractSyntax
 
 -- Function to replace one Expression with another - implements function
 -- application with Expressions. Assumes that there are no name clashes.
-replace :: Expression -> Expression -> Expression -> Expression
-replace (Name n) (Lambda n' x) y         = Lambda n' (replace (Name n) x y)
-replace (Name n) (Application x x') y    = Application (replace (Name n) x y) (replace (Name n) x' y)
-replace (Name n) (Name n') y             | n == n'   = y
-                                         | otherwise = (Name n')
-replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace (Name n) x y) op (replace (Name n) x' y)
-replace (Name n) (IfThenElse x x' x'') y = IfThenElse (replace (Name n) x y) (replace (Name n) x' y) (replace (Name n) x'' y)
-replace _ (Literal x) _                  = Literal x
+replace :: String -> Expression -> Expression -> Expression
+replace n (Lambda n' x) y         = Lambda n' (replace n x y)
+replace n (Application x x') y    = Application (replace n x y) (replace n x' y)
+replace n (Name n') y             | n == n'   = y
+                                  | otherwise = (Name n')
+replace n (Arithmetic x op x') y  = Arithmetic (replace n x y) op (replace n x' y)
+replace n (IfThenElse x x' x'') y = IfThenElse (replace n x y) (replace n x' y) (replace n x'' y)
+replace _ (Literal x) _           = Literal x
 
 -- FINAL REPLACEMENT ALGORITHM
 -- Create a list of unbound names in the argument expression
@@ -53,22 +36,26 @@ renameBound :: String -> String -> Expression -> Expression
 renameBound from to (Lambda n x)          | n == from = Lambda to (blindRename from to x)
                                           | otherwise = Lambda n (renameBound from to x)
 renameBound from to (Application x x')    = Application (renameBound from to x) (renameBound from to x')
-renameBound from to (Arithemtic x op x')  = Arithmetic (renameBound from to x) op (renameBound from to x')
+renameBound from to (Arithmetic x op x')  = Arithmetic (renameBound from to x) op (renameBound from to x')
 renameBound from to (IfThenElse x x' x'') = IfThenElse (rB x) (rB x') (rB x'') where rB = renameBound from to
 renameBound _    _  x                     = x
 
--- Returns a string which does not exist as a name within a given Expression
+-- Returns a string which does not exist as a name within a given Expression.
+-- Begins by choosing the name "x", and if that already exists in the given
+-- expression, add a prime (') character to it. Keep adding prime characters
+-- until we have a name for which the nameIn function will return false.
 newName :: Expression -> String
-newName x | nameIn "x" x = newName2 "x" x
-          | otherwise    = "x"
-    where newName2 lastTry x | nameIn (lastTry ++ "'") x = newName2 (lastTry ++ "'") x
-                             | otherwise                 = lastTry ++ "'"
+newName x = if nameIn "x" x then newName' "x" x else "x"
+    where newName' lastTry x = if nameIn (lastTry ++ "'") x then
+                                   newName' (lastTry ++ "'") x
+                               else
+                                   lastTry ++ "'"
 
 -- Renames every name with value 'from' to value 'to', with no regard for
 -- clashes etc
 blindRename :: String -> String -> Expression -> Expression
-blindRename from to (Lambda n x)          | n == from = Lambda to (blindRename n x)
-                                          | otherwise = Lambda n (blindRename n x)
+blindRename from to (Lambda n x)          | n == from = Lambda to (blindRename from to x)
+                                          | otherwise = Lambda n (blindRename from to x)
 blindRename from to (Application x x')    = Application (blindRename from to x) (blindRename from to x')
 blindRename from to (Name n)              = if n == from then (Name to) else (Name n)
 blindRename from to (Arithmetic x op x')  = Arithmetic (blindRename from to x) op (blindRename from to x')
@@ -85,17 +72,6 @@ nameIn n (Arithmetic x _ x')   = any (nameIn n) [x, x']
 nameIn n (IfThenElse x x' x'') = any (nameIn n) [x, x', x'']
 nameIn _ (Literal _)           = False
 
--- Returns true unless there are free occurences of the given name in the given
--- Expression
-boundIn :: String -> Expression -> Bool
-boundIn n (Lambda n' x)         | n == n'   = True
-                                | otherwise = boundIn (Name n) x
-boundIn n (Application x x')    = all (boundIn (Name n)) [x, x']
-boundIn n (Name n')             = n /= n'
-boundIn n (Arithmetic x _ x')   = all (boundIn (Name n)) [x, x']
-boundIn n (IfThenElse x x' x'') = all (boundIn (Name n)) [x, x', x'']
-boundIn n (Literal _)           = True
-
 -- Creates a set of all unbound names in an Expression
 getNames :: Set.Set String -> Set.Set String -> Expression -> Set.Set String
 getNames free bound (Name n)              | Set.member n bound = free
@@ -108,7 +84,7 @@ getNames free bound _                     = free
 
 -- Function to evaluate Expressions
 eval :: Expression -> Int
-eval (Application (Lambda n x) y) = eval (replace (Name n) (renameAll (getNames y) x) y)
+eval (Application (Lambda n x) y) = eval (replace n (renameAll (Set.toList (getNames Set.empty Set.empty y)) x) y)
 -- More lambda cases to handle
 eval (Arithmetic x Add y) = (eval x) + (eval y)
 eval (Arithmetic x Sub y) = (eval x) - (eval y)
