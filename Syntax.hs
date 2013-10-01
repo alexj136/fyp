@@ -23,7 +23,7 @@ data Op = Add | Sub | Mul | Div | Mod
 -- Function to replace one Expression with another - implements function
 -- application with Expressions. Assumes that there are no name clashes.
 replace :: Expression -> Expression -> Expression -> Expression
-replace (Name n) (Lambda n' x) y         = Lambda n' (replace (Name n) x y) 
+replace (Name n) (Lambda n' x) y         = Lambda n' (replace (Name n) x y)
 replace (Name n) (Application x x') y    = Application (replace (Name n) x y) (replace (Name n) x' y)
 replace (Name n) (Name n') y             | n == n'   = y
                                          | otherwise = (Name n')
@@ -31,20 +31,18 @@ replace (Name n) (Arithmetic x op x') y  = Arithmetic (replace (Name n) x y) op 
 replace (Name n) (IfThenElse x x' x'') y = IfThenElse (replace (Name n) x y) (replace (Name n) x' y) (replace (Name n) x'' y)
 replace _ (Literal x) _                  = Literal x
 
--- Renames all bound occurences in the given Expression of any of the specified
--- names
-rename :: [String] -> Expression -> Expression
-rename [] x = x
-rename ns (Lambda n x) | any (== n) ns =
-rename ns (Name n)     | any (== n) ns = Name (n ++ "'")
-                       |
-
 -- FINAL REPLACEMENT ALGORITHM
 -- Create a list of unbound names in the argument expression
 -- For each name in that list
 --     call newName to get a name that doesn't exist in function body
 --     call renameBound newName functionBody to do the replacement
 -- Finally carry out the substitution
+
+renameAll :: [String] -> Expression -> Expression
+renameAll [] x = x
+renameAll ns x =
+    let nextX = renameBound (head ns) (newName x) x in
+        renameAll (tail ns) nextX
 
 -- Rename ONLY BOUND instances of the given name in the given expression
 -- recurse down the tree until we find the given binding, at which point we can
@@ -61,7 +59,10 @@ renameBound _    _  x                     = x
 
 -- Returns a string which does not exist as a name within a given Expression
 newName :: Expression -> String
-newName _ = error "newName not yet implemented"
+newName x | nameIn "x" x = newName2 "x" x
+          | otherwise    = "x"
+    where newName2 lastTry x | nameIn (lastTry ++ "'") x = newName2 (lastTry ++ "'") x
+                             | otherwise                 = lastTry ++ "'"
 
 -- Renames every name with value 'from' to value 'to', with no regard for
 -- clashes etc
@@ -107,7 +108,7 @@ getNames free bound _                     = free
 
 -- Function to evaluate Expressions
 eval :: Expression -> Int
-eval (Application (Lambda n x) y) = eval (replace (Name n) x y)
+eval (Application (Lambda n x) y) = eval (replace (Name n) (renameAll (getNames y) x) y)
 -- More lambda cases to handle
 eval (Arithmetic x Add y) = (eval x) + (eval y)
 eval (Arithmetic x Sub y) = (eval x) - (eval y)
