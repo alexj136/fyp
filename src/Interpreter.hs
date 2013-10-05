@@ -58,7 +58,8 @@ renameBound from to (Lambda n x)          | n == from = Lambda to (blindRename f
                                           | otherwise = Lambda n (renameBound from to x)
 renameBound from to (Application x x')    = Application (renameBound from to x) (renameBound from to x')
 renameBound from to (Arithmetic x op x')  = Arithmetic (renameBound from to x) op (renameBound from to x')
-renameBound from to (IfThenElse x x' x'') = IfThenElse (rB x) (rB x') (rB x'') where rB = renameBound from to
+renameBound from to (IfThenElse x x' x'') = IfThenElse (rB x) (rB x') (rB x'')
+    where rB = renameBound from to
 renameBound _    _  x                     = x
 
 -- Renames every name with value 'from' to value 'to' in an Expression, with no
