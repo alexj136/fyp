@@ -1,6 +1,6 @@
 COMPILE = ghc
 SOURCES = AbstractSyntax.hs Interpreter.hs
-TESTS = test/TestInterpreter.hs
+# TESTS = test/TestInterpreter.hs
 OBJECTS = $(SOURCES:.hs=.o)
 OUTPUTS = $(SOURCES:.hs=.hi) $(OBJECTS)
 
@@ -19,5 +19,5 @@ Interpreter.o: Interpreter.hs
 AbstractSyntax.o: AbstractSyntax.hs
 	ghc -c AbstractSyntax.hs
 
-test/TestInterpreter: test/TestInterpreter.hs Interpreter.o
-	ghc -o test/TestInterpreter test/TestInterpreter.hs Interpreter.o
+# test/TestInterpreter: test/TestInterpreter.hs Interpreter.o
+#	ghc -o test/TestInterpreter test/TestInterpreter.hs Interpreter.o

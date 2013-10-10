@@ -1,12 +1,11 @@
 module Interpreter where
 
-import qualified Data.Set as Set
 import AbstractSyntax
 
 -- Reduces an Expression to its normal form
 reduce :: Expression -> Expression
 reduce (Application (Lambda n x) y) = replace n (preventClashes x y) y
-    where preventClashes x y = renameAll (Set.toList (getNames Set.empty Set.empty y)) x
+    where preventClashes x y = renameAll (Set.toList (freeNames Set.empty Set.empty y)) x
 
 reduce (Arithmetic (Literal x) op (Literal y)) = Literal valueXY
     where valueXY = eval (Arithmetic (Literal x) op (Literal y))
@@ -75,43 +74,3 @@ blindRename from to (Arithmetic x op x')  = Arithmetic (blindRename from to x) o
 blindRename from to (IfThenElse x x' x'') = IfThenElse (bR x) (bR x') (bR x'')
     where bR = blindRename from to
 blindRename _    _  (Literal x)           = Literal x
-
--- Creates a set of all unbound names in an Expression, which can be used when
--- reducing a function application, as it determines which names will need to be
--- changed in order to prevent name clashes.
---     The function walks the AST, keeping a set of free names, and a set of
--- bound names. When a name is encountered as a variable (i.e. not as a Lambda
--- abstraction) it is added to the free set, but only if it does not already
--- appear in the bound set, which would indicate that that name is already
--- bound. When a name is encountered in a Lambda abstraction, it is added to the
--- bound set, so that all further instances of that name are ignored, because
--- they are bound in this abstraction.
-getNames :: Set.Set String -> Set.Set String -> Expression -> Set.Set String
-getNames free bound (Name n)              | Set.member n bound = free
-                                          | otherwise          = Set.insert n free
-getNames free bound (Lambda n x)          = getNames free (Set.insert n bound) x
-getNames free bound (Application x x')    = Set.unions (map (getNames free bound) [x, x'])
-getNames free bound (Arithmetic x _ x')   = Set.unions (map (getNames free bound) [x, x'])
-getNames free bound (IfThenElse x x' x'') = Set.unions (map (getNames free bound) [x, x', x''])
-getNames free bound _                     = free
-
--- Returns a string which does not exist as a name within a given Expression.
--- Begins by choosing the name "x", and if that already exists in the given
--- expression, add a prime (') character to it. Keep adding prime characters
--- until we have a name for which the nameIn function will return false.
-newName :: Expression -> String
-newName x = if nameIn "x" x then newName' "x" x else "x"
-    where newName' lastTry x = if nameIn (lastTry ++ "'") x
-                               then newName' (lastTry ++ "'") x
-                               else lastTry ++ "'"
-
--- Returns true if there are any occurences (free or bound) of the given string
--- as a name in the given Expression. Used by newName to generate names that are
--- not found in a given expression.
-nameIn :: String -> Expression -> Bool
-nameIn n (Lambda n' x)         = (n == n') || nameIn n x
-nameIn n (Name n')             = n == n'
-nameIn n (Application x x')    = any (nameIn n) [x, x']
-nameIn n (Arithmetic x _ x')   = any (nameIn n) [x, x']
-nameIn n (IfThenElse x x' x'') = any (nameIn n) [x, x', x'']
-nameIn _ (Literal _)           = False
