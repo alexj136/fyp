@@ -38,15 +38,26 @@ subs _                  = []
 (===) (Literal x)         (Literal y)            = x == y
 (===) _                   _                      = False
 
+-- Algorithm for alpha-equivalence (exp1, exp2):
+--     let newNames = set of names not in exp1 or exp2
+--     let map1, map2 = empty hashmap
+--     for exp in [exp1, exp2]
+--         recurse down exp1, and when a new name x is encountered
+--             take next item n from newNames
+--             replace x with n
+--             add mapping x -> n to map
+--         when a name already seen is encountered
+--             look up that name in map
+--             replace it with corresponding entry
+--     return exp1 == exp2
+
 -- Creates a list of all name occurences in an Expression - If a name is used
 -- twice, it will appear twice in the returned list, etc.
 names :: Expression -> [String]
-names (Lambda n x)          = n : names x
-names (Name n)              = [n]
-names (Application x x')    = (names x) ++ (names x')
-names (Arithmetic x op x')  = (names x) ++ (names x')
-names (IfThenElse x x' x'') = (names x) ++ (names x') ++ (names x'')
-names (Literal _)           = []
+names (Lambda n x) = n : names x
+names (Name n)     = [n]
+names (Literal _)  = []
+names exp          = concat (map names (subs exp))
 
 -- Creates a Set of all names that occur in an Expression
 nameSet :: Expression -> Set.Set String
@@ -63,23 +74,39 @@ nameSet = Set.fromList . names
 -- bound set, so that all further instances of that name are ignored, because
 -- they are bound in this abstraction.
 freeNames :: Set.Set String -> Set.Set String -> Expression -> Set.Set String
-freeNames free bound (Name n)              | Set.member n bound = free
-                                           | otherwise          = Set.insert n free
-freeNames free bound (Lambda n x)          = freeNames free (Set.insert n bound) x
-freeNames free bound (Application x x')    = Set.unions (map (freeNames free bound) [x, x'])
-freeNames free bound (Arithmetic x _ x')   = Set.unions (map (freeNames free bound) [x, x'])
-freeNames free bound (IfThenElse x x' x'') = Set.unions (map (freeNames free bound) [x, x', x''])
-freeNames free bound _                     = free
+freeNames free bound (Name n)     | Set.member n bound = free
+                                  | otherwise          = Set.insert n free
+freeNames free bound (Lambda n x) = freeNames free (Set.insert n bound) x
+freeNames free bound (Literal _)  = free
+freeNames free bound exp          =
+    Set.unions (map (freeNames free bound) (subs exp))
 
 -- Returns a string which does not exist as a name within a given Expression.
 -- Begins by choosing the name "x", and if that already exists in the given
 -- expression, add a prime (') character to it. Keep adding prime characters
 -- until we have a name for which the nameIn function will return false.
 newName :: Expression -> String
-newName exp | nameIn "x" exp = newName' "x" exp
+newName exp | nameIn "x" exp = newName2 "x" exp
             | otherwise      = "x"
-    where newName' lastTry exp | nameIn (lastTry ++ "'") exp = newName' (lastTry ++ "'") exp
+    where newName2 lastTry exp | nameIn (lastTry ++ "'") exp = newName2 (lastTry ++ "'") exp
                                | otherwise = lastTry ++ "'"
+
+-- Generates a String that does not exist in the given set of strings. Works in
+-- the same way as newName.
+newNameSet :: Set.Set String -> String
+newNameSet set | Set.member "x" set = newNameSet2 "x" set
+               | otherwise          = "x"
+    where newNameSet2 lastTry set | Set.member (lastTry ++ "'") set = newNameSet2 (lastTry ++ "'") set
+                                  | otherwise                       = lastTry ++ "'"
+
+-- Generates a list of Strings, none of which appear in the given set of Strings
+newNameSets :: Set.Set String -> [String]
+newNameSets set = newNameSets2 set [] (Set.size set)
+    where
+    newNameSets2 set lst count
+        | count == 0 = lst
+        | otherwise  = newNameSets2 (insert n set) (n : lst) (count - 1)
+            where n = newNameSet set
 
 -- Returns true if there are any occurences (free or bound) of the given string
 -- as a name in the given Expression. Used by newName to generate names that are
