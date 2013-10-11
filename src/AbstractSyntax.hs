@@ -17,7 +17,7 @@ data Expression = Lambda String Expression
 data Op = Add | Sub | Mul | Div | Mod
     deriving (Show, Eq)
 
--- Returns a list of all subexpressions contained in an Expression
+-- Returns a list of the subexpressions of the given tree node
 subs :: Expression -> [Expression]
 subs (Lambda _ x)       = [x]
 subs (Application x y)  = [x, y]
@@ -31,12 +31,15 @@ subs _                  = []
 -- \xy.yx === \sz.zs -> True
 -- \ab.ac === \xy.yz -> False
 (===) :: Expression -> Expression -> Bool
-
-(===) (Arithmetic x op y) (Arithmetic x' op' y') = all [x === x', y === y', op == op']
+(===) (Lambda n x)        (Lambda n' x')         = error "Case Lambda not yet implemented"
+(===) (Name n)            (Name n')              = error "Case Name not yet implemented"
+(===) (Arithmetic x op y) (Arithmetic x' op' y') = and [x === x', y === y', op == op']
+(===) (IfThenElse x y z)  (IfThenElse x' y' z')  = and [x === x', y === y', z === z']
 (===) (Literal x)         (Literal y)            = x == y
 (===) _                   _                      = False
 
--- Enumerates all names used in an Expression regardless of how they are used
+-- Creates a list of all name occurences in an Expression - If a name is used
+-- twice, it will appear twice in the returned list, etc.
 names :: Expression -> [String]
 names (Lambda n x)          = n : names x
 names (Name n)              = [n]
@@ -44,6 +47,10 @@ names (Application x x')    = (names x) ++ (names x')
 names (Arithmetic x op x')  = (names x) ++ (names x')
 names (IfThenElse x x' x'') = (names x) ++ (names x') ++ (names x'')
 names (Literal _)           = []
+
+-- Creates a Set of all names that occur in an Expression
+nameSet :: Expression -> Set.Set String
+nameSet = Set.fromList . names
 
 -- Creates a set of all unbound names in an Expression, which can be used when
 -- reducing a function application, as it determines which names will need to be
@@ -69,10 +76,10 @@ freeNames free bound _                     = free
 -- expression, add a prime (') character to it. Keep adding prime characters
 -- until we have a name for which the nameIn function will return false.
 newName :: Expression -> String
-newName x = if nameIn "x" x then newName' "x" x else "x"
-    where newName' lastTry x = if nameIn (lastTry ++ "'") x
-                               then newName' (lastTry ++ "'") x
-                               else lastTry ++ "'"
+newName exp | nameIn "x" exp = newName' "x" exp
+            | otherwise      = "x"
+    where newName' lastTry exp | nameIn (lastTry ++ "'") exp = newName' (lastTry ++ "'") exp
+                               | otherwise = lastTry ++ "'"
 
 -- Returns true if there are any occurences (free or bound) of the given string
 -- as a name in the given Expression. Used by newName to generate names that are

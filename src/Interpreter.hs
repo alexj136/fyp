@@ -1,5 +1,6 @@
 module Interpreter where
 
+import qualified Data.Set as Set
 import AbstractSyntax
 
 -- Reduces an Expression to its normal form
