@@ -2,6 +2,7 @@
 module AbstractSyntax where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- Lambda Expressions need a mechanism to handle naming clashes when replacing
 -- variables (bound variables with mathcing names should be renamed
@@ -32,6 +33,7 @@ subs _                  = []
 -- \ab.ac === \xy.yz -> False
 (===) :: Expression -> Expression -> Bool
 (===) (Lambda n x)        (Lambda n' x')         = error "Case Lambda not yet implemented"
+--    newNameSets (Set.union 
 (===) (Name n)            (Name n')              = error "Case Name not yet implemented"
 (===) (Arithmetic x op y) (Arithmetic x' op' y') = and [x === x', y === y', op == op']
 (===) (IfThenElse x y z)  (IfThenElse x' y' z')  = and [x === x', y === y', z === z']
@@ -73,13 +75,19 @@ nameSet = Set.fromList . names
 -- bound. When a name is encountered in a Lambda abstraction, it is added to the
 -- bound set, so that all further instances of that name are ignored, because
 -- they are bound in this abstraction.
-freeNames :: Set.Set String -> Set.Set String -> Expression -> Set.Set String
-freeNames free bound (Name n)     | Set.member n bound = free
-                                  | otherwise          = Set.insert n free
-freeNames free bound (Lambda n x) = freeNames free (Set.insert n bound) x
-freeNames free bound (Literal _)  = free
-freeNames free bound exp          =
-    Set.unions (map (freeNames free bound) (subs exp))
+freeNamesSet :: Set.Set String -> Set.Set String -> Expression -> Set.Set String
+freeNamesSet free _     (Literal _)  = free
+freeNamesSet free bound (Name n)     | Set.member n bound = free
+                                     | otherwise          = Set.insert n free
+freeNamesSet free bound (Lambda n x) = freeNamesSet free (Set.insert n bound) x
+freeNamesSet free bound exp          =
+    Set.unions (map (freeNamesSet free bound) (subs exp))
+
+-- Calls freeNamesSet with empty sets and a given expression, and converts the
+-- resulting set to a list. Makes calls from other files simpler, removing the
+-- need for them to import Data.Set.
+freeNames :: Expression -> [String]
+freeNames exp = Set.toList (freeNamesSet Set.empty Set.empty exp)
 
 -- Returns a string which does not exist as a name within a given Expression.
 -- Begins by choosing the name "x", and if that already exists in the given
@@ -88,33 +96,34 @@ freeNames free bound exp          =
 newName :: Expression -> String
 newName exp | nameIn "x" exp = newName2 "x" exp
             | otherwise      = "x"
-    where newName2 lastTry exp | nameIn (lastTry ++ "'") exp = newName2 (lastTry ++ "'") exp
-                               | otherwise = lastTry ++ "'"
+    where newName2 lastTry exp
+              | nameIn lastTry' exp = newName2 lastTry' exp
+              | otherwise = lastTry'
+                  where lastTry' = lastTry ++ "'"
 
 -- Generates a String that does not exist in the given set of strings. Works in
 -- the same way as newName.
 newNameSet :: Set.Set String -> String
 newNameSet set | Set.member "x" set = newNameSet2 "x" set
                | otherwise          = "x"
-    where newNameSet2 lastTry set | Set.member (lastTry ++ "'") set = newNameSet2 (lastTry ++ "'") set
-                                  | otherwise                       = lastTry ++ "'"
+    where newNameSet2 lastTry set
+              | Set.member lastTry' set = newNameSet2 lastTry' set
+              | otherwise               = lastTry'
+                  where lastTry' = lastTry ++ "'"
 
 -- Generates a list of Strings, none of which appear in the given set of Strings
 newNameSets :: Set.Set String -> [String]
 newNameSets set = newNameSets2 set [] (Set.size set)
-    where
-    newNameSets2 set lst count
-        | count == 0 = lst
-        | otherwise  = newNameSets2 (insert n set) (n : lst) (count - 1)
-            where n = newNameSet set
+    where newNameSets2 set lst count
+              | count == 0 = lst
+              | otherwise  = newNameSets2 (Set.insert n set) (n : lst) (count - 1)
+                  where n = newNameSet set
 
 -- Returns true if there are any occurences (free or bound) of the given string
 -- as a name in the given Expression. Used by newName to generate names that are
 -- not found in a given expression.
 nameIn :: String -> Expression -> Bool
-nameIn n (Lambda n' x)         = (n == n') || nameIn n x
-nameIn n (Name n')             = n == n'
-nameIn n (Application x x')    = any (nameIn n) [x, x']
-nameIn n (Arithmetic x _ x')   = any (nameIn n) [x, x']
-nameIn n (IfThenElse x x' x'') = any (nameIn n) [x, x', x'']
-nameIn _ (Literal _)           = False
+nameIn n (Lambda n' x) = (n == n') || nameIn n x
+nameIn n (Name n')     = n == n'
+nameIn _ (Literal _)   = False
+nameIn n exp           = any (nameIn n) (subs exp)
