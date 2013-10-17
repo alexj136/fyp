@@ -2,6 +2,13 @@ module Interpreter where
 
 import AbstractSyntax
 
+--     REPLACEMENT ALGORITHM
+--     Create a list of unbound names in the argument expression
+--     For each name in that list
+--         call newName to get a name that doesn't exist in function body
+--         call renameBound newName functionBody to do the replacement
+--     Finally carry out the substitution
+
 -- Reduces an Expression to its normal form
 reduce :: Expression -> Expression
 reduce (Application (Lambda n x) y) = replace n (preventClashes x y) y
@@ -13,22 +20,18 @@ reduce (Arithmetic (Literal x) op (Literal y)) = Literal valueXY
 -- Evaluates an Expression, and returns its value. Expressions with remaining
 -- abstractions, appplications and names, are not handled.
 eval :: Expression -> Int
-eval (Arithmetic x Add y) = (eval x) + (eval y)
-eval (Arithmetic x Sub y) = (eval x) - (eval y)
-eval (Arithmetic x Mul y) = (eval x) * (eval y)
-eval (Arithmetic x Div y) = div (eval x) (eval y)
-eval (Arithmetic x Mod y) = mod (eval x) (eval y)
+eval (Arithmetic x op y) = case op of
+    Add -> (eval x)   +   (eval y)
+    Sub -> (eval x)   -   (eval y)
+    Mul -> (eval x)   *   (eval y)
+    Div -> (eval x) `div` (eval y)
+    Mod -> (eval x) `mod` (eval y)
 eval (IfThenElse i t e)   = if (eval i) /= 0 then (eval t) else (eval e)
 eval (Literal x)          = x
+eval _                    = error "Cannot calculate value of a lambda term"
 
 -- Function to replace one Expression with another - implements function
 -- application with Expressions. Assumes that there are no name clashes.
---     REPLACEMENT ALGORITHM
---     Create a list of unbound names in the argument expression
---     For each name in that list
---         call newName to get a name that doesn't exist in function body
---         call renameBound newName functionBody to do the replacement
---     Finally carry out the substitution
 replace :: String -> Expression -> Expression -> Expression
 replace n bodyExp argExp = case bodyExp of
     Lambda n' x         -> Lambda n' (replaced x)
@@ -50,7 +53,9 @@ renameAll (h:t) x = renameAll t (renameBound h (newName x) x)
 -- Rename only the bound instances of the given name in the given expression.
 -- Recurse down the tree until we find the given binding, at which point we can
 -- do a 'blind' rename of every instance of that name that we find, as they are
--- guaranteed to be bound by the binding we just found. If we find the name
+-- guaranteed to be bound, either by the binding we just found, or by a another
+-- binding of the same name. In both cases, we want to rename, because either
+-- could potentially clash with a substituted expression. If we find the name
 -- before we find the binding, we don't need to do anything - the name is not
 -- bound at that point and therefore doesn't need renaming.
 renameBound :: String -> String -> Expression -> Expression

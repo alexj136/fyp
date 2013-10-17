@@ -3,6 +3,7 @@ module AbstractSyntax where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Interpreter
 
 -- Lambda Expressions need a mechanism to handle naming clashes when replacing
 -- variables (bound variables with mathcing names should be renamed
@@ -32,26 +33,13 @@ subs _                  = []
 -- \xy.yx === \sz.zs -> True
 -- \ab.ac === \xy.yz -> False
 (===) :: Expression -> Expression -> Bool
-(===) (Lambda n x)        (Lambda n' x')         = error "Case Lambda not yet implemented"
---    newNameSets (Set.union 
-(===) (Name n)            (Name n')              = error "Case Name not yet implemented"
-(===) (Arithmetic x op y) (Arithmetic x' op' y') = and [x === x', y === y', op == op']
-(===) (IfThenElse x y z)  (IfThenElse x' y' z')  = and [x === x', y === y', z === z']
-(===) (Literal x)         (Literal y)            = x == y
-(===) _                   _                      = False
-
--- Algorithm for alpha-equivalence (exp1, exp2):
---     let newNames = set of names not in exp1 or exp2
---     let map1, map2 = empty hashmap
---     for exp in [exp1, exp2]
---         recurse down exp1, and when a new name x is encountered
---             take next item n from newNames
---             replace x with n
---             add mapping x -> n to map
---         when a name already seen is encountered
---             look up that name in map
---             replace it with corresponding entry
---     return exp1 == exp2
+(===) (Literal x)         (Literal y)          = x == y
+(===) (Name n)            (Name n')            = n == n'
+(===) (Lambda n x)        (Lambda n' y)        = x === (renamed n' n y)
+    where renamed = error "Not yet implemented. We must rename all occurences of n' in y THAT ARE BOUND BY THE n' WE JUST SAW. OTHER n' BINDED VARIABLES SHOULD NOT BE RENAMED (here). They should be replaced with n."
+(===) (Application x y)   (Application a b)    = x === a && y === b
+(===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
+(===) (IfThenElse x y z)  (IfThenElse a b c)   = x === a && y === b   && z === c
 
 -- Creates a list of all name occurences in an Expression - If a name is used
 -- twice, it will appear twice in the returned list, etc.
