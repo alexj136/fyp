@@ -2,8 +2,6 @@
 module AbstractSyntax where
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
-import Interpreter
 
 -- Lambda Expressions need a mechanism to handle naming clashes when replacing
 -- variables (bound variables with mathcing names should be renamed
@@ -18,6 +16,14 @@ data Expression = Lambda String Expression
 
 data Op = Add | Sub | Mul | Div | Mod
     deriving (Show, Eq)
+
+-- Retrieve the function that corresponds to the given Op
+doOp :: (Integral a, Num a) => Op -> (a -> a -> a)
+doOp Add = (+)
+doOp Sub = (-)
+doOp Mul = (*)
+doOp Div = div
+doOp Mod = mod
 
 -- Returns a list of the subexpressions of the given tree node
 subs :: Expression -> [Expression]
@@ -35,8 +41,8 @@ subs _                  = []
 (===) :: Expression -> Expression -> Bool
 (===) (Literal x)         (Literal y)          = x == y
 (===) (Name n)            (Name n')            = n == n'
-(===) (Lambda n x)        (Lambda n' y)        = x === (renamed n' n y)
-    where renamed = error "Not yet implemented. We must rename all occurences of n' in y THAT ARE BOUND BY THE n' WE JUST SAW. OTHER n' BINDED VARIABLES SHOULD NOT BE RENAMED (here). They should be replaced with n."
+(===) (Lambda n x)        (Lambda n' y)        = x === renamedY
+    where renamedY = head (subs (renameBound n' n (Lambda n' y)))
 (===) (Application x y)   (Application a b)    = x === a && y === b
 (===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
 (===) (IfThenElse x y z)  (IfThenElse a b c)   = x === a && y === b   && z === c
@@ -115,3 +121,45 @@ nameIn n (Lambda n' x) = (n == n') || nameIn n x
 nameIn n (Name n')     = n == n'
 nameIn _ (Literal _)   = False
 nameIn n exp           = any (nameIn n) (subs exp)
+
+-- Rename every occurence in the given Expression, of every name in the given
+-- list, such that no name clashes can occur if Expressions containing names in
+-- the given list are substituted into the given Expression.
+renameAll :: [String] -> Expression -> Expression
+renameAll []    x = x
+renameAll (h:t) x = renameAll t (renameBound h (newName x) x)
+
+-- Rename only the bound instances of the given name in the given expression.
+-- Recurse down the tree until we find the given binding, at which point we can
+-- do a 'blind' rename of every instance of that name that we find, as they are
+-- guaranteed to be bound, either by the binding we just found, or by a another
+-- binding of the same name. In both cases, we want to rename, because either
+-- could potentially clash with a substituted expression. If we find the name
+-- before we find the binding, we don't need to do anything - the name is not
+-- bound at that point and therefore doesn't need renaming.
+renameBound :: String -> String -> Expression -> Expression
+renameBound _    _  (Literal x) = Literal x
+renameBound _    _  (Name n)    = Name n
+renameBound from to exp         = case exp of
+    Lambda n x | n == from -> Lambda to (blindRename from to x)
+               | otherwise -> Lambda n (renamed x)
+    Application x x'       -> Application (renamed x) (renamed x')
+    Arithmetic x op x'     -> Arithmetic (renamed x) op (renamed x')
+    IfThenElse x x' x''    -> IfThenElse (renamed x) (renamed x') (renamed x'')
+    where renamed = renameBound from to
+
+-- Renames every name with value 'from' to value 'to' in an Expression, with no
+-- regard for clashes. It is assumed that this function will only be called on
+-- Expressions where the potential for incorrectly renaming unbound names has
+-- been eliminated.
+blindRename :: String -> String -> Expression -> Expression
+blindRename from to exp = case exp of
+    Lambda n x | n == from -> Lambda to (renamed x)
+               | otherwise -> Lambda n (renamed x)
+    Name n     | n == from -> Name to
+               | otherwise -> Name n
+    Application x x'       -> Application (renamed x) (renamed x')
+    Arithmetic x op x'     -> Arithmetic (renamed x) op (renamed x')
+    IfThenElse x x' x''    -> IfThenElse (renamed x) (renamed x') (renamed x'')
+    Literal x              -> Literal x
+    where renamed = blindRename from to
