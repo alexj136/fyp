@@ -1,23 +1,19 @@
-COMPILE = ghc
-SOURCES = AbstractSyntax.hs Interpreter.hs
-# TESTS = test/TestInterpreter.hs
-OBJECTS = $(SOURCES:.hs=.o)
-OUTPUTS = $(SOURCES:.hs=.hi) $(OBJECTS)
+MODULES  = AbstractSyntax Interpreter Main
+TESTS    = test/TestInterpreter
 
-all: $(OBJECTS)
+OBJECTS  = $(MODULES:=.o)  $(TESTS:=.o)
+HIFILES  = $(MODULES:=.hi) $(TESTS:=.hi)
+BINARIES = $(MODULES)      $(TESTS)
+
+all: Main $(TESTS)
 	@echo BUILD SUCCESSFUL
 
 clean:
-	rm -f $(OUTPUTS)
+	rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
 
-Main: $(OBJECTS) Main.hs
-	ghc -o Main Interpreter.o AbstractSyntax.o
+Main: Main.hs
+	ghc --make -o Main Main.hs
 
-Interpreter.o: Interpreter.hs
-	ghc -c Interpreter.hs
-
-AbstractSyntax.o: AbstractSyntax.hs
-	ghc -c AbstractSyntax.hs
-
-# test/TestInterpreter: test/TestInterpreter.hs Interpreter.o
-#	ghc -o test/TestInterpreter test/TestInterpreter.hs Interpreter.o
+test/TestInterpreter: test/TestInterpreter.hs
+	ghc --make -o test/TestInterpreter test/TestInterpreter.hs
+	@test/TestInterpreter
