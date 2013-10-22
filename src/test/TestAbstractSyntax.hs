@@ -6,15 +6,22 @@ main :: IO Counts
 main = do
        putStrLn "Running tests for AbstractSyntax:"
        runTestTT tests
+--       quickCheck ((\s -> autoRename s === s) :: Expression -> Bool)
 
 tests = TestList [
         TestLabel "Test of renaming" testRename
-        TestLabel "lol" testTrue
     ]
 
-testRename =
-    TestCase (assert "Assert that an expression is renamed properly"
-       renamedExp === exp && not nameIn "x" exp && not nameIn "y" exp
-           where exp = (Lambda "x" (Lambda "y" (Application (Name "x") (Name "y"))))
-                 renamedExp = renameAll ["x", "y"] exp
+-- Asserts that renaming the expression \x.\y.xy produces something
+-- alpha-equivalent but not containing the names x or y.
+testRename = TestCase (
+   let exp = (Lambda "x" (Lambda "y" (Application (Name "x") (Name "y"))))
+       renamedExp = renameAll ["x", "y"] exp in
+           assert (and [ renamedExp === exp          ,
+                         not (nameIn "x" renamedExp) ,
+                         not (nameIn "y" renamedExp) ])
     )
+
+-- Changes all the names in an expression
+autoRename :: Expression -> Expression
+autoRename exp = renameAll (names exp) exp
