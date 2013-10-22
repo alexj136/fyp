@@ -1,11 +1,23 @@
 import Test.HUnit
 import Test.QuickCheck
+import AbstractSyntax
 import Interpreter
 
-test1 = TestCase (assertEqual "I don't know who to trust." True True)
-
-tests = TestList [TestLabel "test1" test1]
-
-main :: IO ()
+main :: IO Counts
 main = do
-       putStrLn "Running tests"
+       putStrLn "Running tests for Interpreter:"
+       runTestTT tests
+
+tests = TestList [
+        TestLabel "Test of the identity function" testIdentityFunction,
+        TestLabel "lol" testTrue
+    ]
+
+testIdentityFunction =
+    TestCase (assertEqual "Tests that the identity function reduces properly"
+        (reduce (Application (Lambda "x" (Name "x")) (Literal 0)))
+        (Literal 0)
+    )
+
+testTrue =
+    TestCase (assert (True))

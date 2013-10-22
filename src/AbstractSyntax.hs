@@ -18,12 +18,12 @@ data Op = Add | Sub | Mul | Div | Mod
     deriving (Show, Eq)
 
 -- Retrieve the function that corresponds to the given Op
-doOp :: (Integral a, Num a) => Op -> (a -> a -> a)
-doOp Add = (+)
-doOp Sub = (-)
-doOp Mul = (*)
-doOp Div = div
-doOp Mod = mod
+getOp :: (Integral a, Num a) => Op -> (a -> a -> a)
+getOp Add = (+)
+getOp Sub = (-)
+getOp Mul = (*)
+getOp Div = div
+getOp Mod = mod
 
 -- Returns a list of the subexpressions of the given tree node
 subs :: Expression -> [Expression]
@@ -54,6 +54,15 @@ names (Lambda n x) = n : names x
 names (Name n)     = [n]
 names (Literal _)  = []
 names exp          = concat (map names (subs exp))
+
+-- Returns true if there are any occurences (free or bound) of the given string
+-- as a name in the given Expression. Used by newName to generate names that are
+-- not found in a given expression.
+nameIn :: String -> Expression -> Bool
+nameIn n (Lambda n' x) = (n == n') || nameIn n x
+nameIn n (Name n')     = n == n'
+nameIn _ (Literal _)   = False
+nameIn n exp           = any (nameIn n) (subs exp)
 
 -- Creates a Set of all names that occur in an Expression
 nameSet :: Expression -> Set.Set String
@@ -105,29 +114,16 @@ newNameSet set | Set.member "x" set = newNameSet2 "x" set
               | otherwise               = lastTry'
                   where lastTry' = lastTry ++ "'"
 
--- Generates a list of Strings, none of which appear in the given set of Strings
-newNameSets :: Set.Set String -> [String]
-newNameSets set = newNameSets2 set [] (Set.size set)
-    where newNameSets2 set lst count
-              | count == 0 = lst
-              | otherwise  = newNameSets2 (Set.insert n set) (n : lst) (count - 1)
-                  where n = newNameSet set
-
--- Returns true if there are any occurences (free or bound) of the given string
--- as a name in the given Expression. Used by newName to generate names that are
--- not found in a given expression.
-nameIn :: String -> Expression -> Bool
-nameIn n (Lambda n' x) = (n == n') || nameIn n x
-nameIn n (Name n')     = n == n'
-nameIn _ (Literal _)   = False
-nameIn n exp           = any (nameIn n) (subs exp)
-
 -- Rename every occurence in the given Expression, of every name in the given
 -- list, such that no name clashes can occur if Expressions containing names in
 -- the given list are substituted into the given Expression.
 renameAll :: [String] -> Expression -> Expression
-renameAll []    x = x
-renameAll (h:t) x = renameAll t (renameBound h (newName x) x)
+renameAll = renameAll2 []
+
+renameAll2 :: [String] -> [String] -> Expression -> Expression
+renameAll2 _    []   x = x
+renameAll2 done (h:t) x = renameAll2 (h:done) t (renameBound h freshName x)
+    where freshName = newNameSet (Set.fromList ((names x) ++ done ++ [h] ++ t))
 
 -- Rename only the bound instances of the given name in the given expression.
 -- Recurse down the tree until we find the given binding, at which point we can

@@ -11,16 +11,15 @@ import AbstractSyntax
 
 -- Reduces an Expression to its normal form
 reduce :: Expression -> Expression
-reduce (Application (Lambda n x) y) = replace n (preventClashes x y) y
-    where preventClashes x y = renameAll (freeNames y) x
-
-reduce (Arithmetic (Literal x) op (Literal y)) = Literal valueXY
-    where valueXY = eval (Arithmetic (Literal x) op (Literal y))
+reduce exp = case exp of
+    Application (Lambda n x) y            -> replace n (preventClashes x y) y
+        where preventClashes x y = renameAll (freeNames y) x
+    Arithmetic (Literal x) op (Literal y) -> Literal (eval exp)
 
 -- Evaluates an Expression, and returns its value. Expressions with remaining
 -- abstractions, appplications and names, are not handled.
 eval :: Expression -> Int
-eval (Arithmetic x op y) = doOp op (eval x) (eval y)
+eval (Arithmetic x op y) = getOp op (eval x) (eval y)
 eval (IfThenElse i t e)  = if (eval i) /= 0 then (eval t) else (eval e)
 eval (Literal x)         = x
 eval _                   = error "Cannot calculate value of a lambda term"
