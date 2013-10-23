@@ -19,5 +19,11 @@ testIdentityFunction =
         (Literal 0)
     )
 
-testTrue =
-    TestCase (assert (True))
+testAnd = let tRU = Lambda "x" (Lambda "y" (Name "x"))
+              fAL = Lambda "x" (Lambda "y" (Name "y"))
+              aND = Lambda "x" (Lambda "y" (Application (Name "x") (Application (Name "y") (fAL))))
+    TestCase (assert (
+        and [
+            reduce (Application () ())
+        ]
+    ))
