@@ -10,20 +10,20 @@ main = do
 
 tests = TestList [
         TestLabel "Test of the identity function" testIdentityFunction,
-        TestLabel "lol" testTrue
+        TestLabel "Tests that the lambda representations of logical and, true & false reduce correctly" testAnd
     ]
 
 testIdentityFunction =
-    TestCase (assertEqual "Tests that the identity function reduces properly"
-        (reduce (Application (Lambda "x" (Name "x")) (Literal 0)))
-        (Literal 0)
-    )
+    TestCase (assert (
+        (reduce (Application (Lambda "x" (Name "x")) (Literal 0))) == (Literal 0)
+    ))
 
 testAnd = let tRU = Lambda "x" (Lambda "y" (Name "x"))
               fAL = Lambda "x" (Lambda "y" (Name "y"))
-              aND = Lambda "x" (Lambda "y" (Application (Name "x") (Application (Name "y") (fAL))))
+              aND = Lambda "x" (Lambda "y" (Application (Application (Name "x") (Name "y")) (fAL))) in
     TestCase (assert (
-        and [
-            reduce (Application () ())
-        ]
+        and [ reduce (Application (Application aND tRU) tRU) === tRU ,
+              reduce (Application (Application aND tRU) fAL) === fAL ,
+              reduce (Application (Application aND fAL) tRU) === fAL ,
+              reduce (Application (Application aND fAL) fAL) === fAL ]
     ))

@@ -46,6 +46,7 @@ subs _                  = []
 (===) (Application x y)   (Application a b)    = x === a && y === b
 (===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
 (===) (IfThenElse x y z)  (IfThenElse a b c)   = x === a && y === b   && z === c
+(===) _                   _                    = False
 
 -- Creates a list of all name occurences in an Expression - If a name is used
 -- twice, it will appear twice in the returned list, etc.

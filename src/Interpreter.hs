@@ -9,15 +9,22 @@ import AbstractSyntax
 --     call renameBound newName functionBody to do the replacement
 -- Finally carry out the substitution
 
+-- Function for convenience in the REPL, shorthand for: reduce (Application x y)
+apply :: Expression -> Expression -> Expression
+apply x y = reduce (Application x y)
+
 -- Reduces an Expression to its normal form
 reduce :: Expression -> Expression
 reduce exp = case exp of
-    Application (Lambda n x) y            -> replace n (preventClashes x y) y
+    Application (Lambda n x) y -> reduce (replace n (preventClashes x y) y)
         where preventClashes x y = renameAll (freeNames y) x
-    Arithmetic (Literal x) op (Literal y) -> Literal (eval exp)
+    Application x            y -> reduce (Application (reduce x) y)
+    Lambda n x                 -> Lambda n (reduce x)
+    _                          -> exp
+
 
 -- Evaluates an Expression, and returns its value. Expressions with remaining
--- abstractions, appplications and names, are not handled.
+-- abstractions, applications and names, are not handled.
 eval :: Expression -> Int
 eval (Arithmetic x op y) = getOp op (eval x) (eval y)
 eval (IfThenElse i t e)  = if (eval i) /= 0 then (eval t) else (eval e)
