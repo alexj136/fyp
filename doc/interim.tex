@@ -2,6 +2,11 @@
 % Author: Alexander Jeffery
 
 \documentclass{article}
+
+% Package imports:
+\usepackage{amsmath}
+\usepackage{amssymb}
+
 \title{\textbf{Interim Report}: An Interpreter/Compiler for a Functional Programming Language}
 \author{Alexander Jeffery}
 
@@ -10,24 +15,50 @@
 
 \section{Introduction}
 
-Conventional programming languages are designed to solve problems by decomposing them into a list of instructions, which are executed by a computer in a specified sequence. They are said to be \emph{imperative}. This imperative principle of sequential execution is ultimately derived from the nature of computer architecture, which is imperative in nature. Such languages have become increasingly sophisticated over many years, abstracting the computer's hardware, so that programmers need not concern themselves with understanding the intricate details of the computer, which are often irrelevant to the problem they are solving. Imperative languages do not, however, abstract sequential execution (by definition). \\
-In contrast, Functional programming languages differ in that they are derived from the lambda calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
+Conventional programming languages are designed to solve problems by decomposing them into a list of instructions, which are executed by a computer in a specified sequence. They are said to be \emph{imperative}. This imperative principle of sequential execution is ultimately derived from the nature of computer architecture, which is imperative in nature. Such languages have become increasingly sophisticated over many years, abstracting the computer's hardware, so that programmers need not concern themselves with understanding the intricate details of the computer, which are often irrelevant to the problem they are solving. Imperative languages do not, however, abstract sequential execution (by definition).
+\\
+\indent In contrast, Functional programming languages differ in that they are derived from the $\lambda$ calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
 
 \section{Background}
-\subsection{The Lambda-Calculus}
-\subsection{The Stages in a Compiler}
-\subsection{Lexical Analysis}
-\subsection{Syntax Analysis}
-\subsection{Semantic Analysis}
-\subsection{Execution Systems}
-\textbf{Interpretation \\}
-\textbf{Compilation \\}
-\textbf{Just-In-Time Compilation \\}
-\textbf{Hybrid Systems \\}
+\subsection{The $\lambda$ Calculus}
+
+The $\lambda$ calculus ('$\lambda$' pronounced as 'lambda') is a mathematical calculus that is used to represent computations, and is Turing-complete. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages.
+\\
+\indent The $\lambda$ calculus employs a single rule in order to achieve computation, whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
+\\\\
+\indent \texttt{int square ( int x ) \{ return x * x ; \}}
+\\\\
+We might call this function using:
+\\\\
+\indent \texttt{square ( 10 ) ;}
+\\\\
+In the $\lambda$ calculus, we would say that the function \texttt{square} is applied to the argument, \texttt{10}. When a function such as this is applied to an argument in the $\lambda$ calculus, we think of the parameter \texttt{x} taken by \texttt{square} as being \emph{syntactically replaced} in the body of \texttt{square}, by the expression that is supplied as an argument. In this example, such a syntactic replacement would yield
+\\\\
+\indent \texttt{10 * 10}
+\\\\
+in the body of \texttt{square}. Such a syntactic replacement can be thought of as the mode of computation for the $\lambda$ calculus. That is, the $\lambda$ calculus achieves computation via this syntactic replacement.
+\\
+\indent Now let us consider the \texttt{square} function in $\lambda$ notation. We have:
+\[ \lambda x.x * x \]
+Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example.
+\\ % THIS IS WHERE I AM
+The syntax of the $\lambda$ calculus is given by the context-free grammar:
+\[ M ::= x | \lambda x.M | MN \]
+where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions.
+
+\subsection{Programming Language Implementation}
+\subsubsection{Lexical Analysis}
+\subsubsection{Syntax Analysis}
+\subsubsection{Semantic Analysis}
+\subsubsection{Optimisation}
+\subsubsection{Execution Systems}
+\paragraph{Interpretation \\}
+\paragraph{Compilation \\}
+\paragraph{Just-In-Time Compilation \\}
+\paragraph{Hybrid Systems \\}
 
 \section{Methodology}
 
-\section{Appendix}
-\subsection{Project Plan}
+\section{Project Plan}
 
 \end{document}
