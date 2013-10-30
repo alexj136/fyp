@@ -20,7 +20,7 @@ Conventional programming languages are designed to solve problems by decomposing
 \indent In contrast, Functional programming languages differ in that they are derived from the $\lambda$ calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
 
 \section{Background}
-\subsection{The $\lambda$ Calculus}
+\subsection{Functional \& Imperative}
 
 The $\lambda$ calculus ('$\lambda$' pronounced as 'lambda') is a mathematical calculus that is used to represent computations, and is Turing-complete. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages.
 \\
@@ -40,18 +40,29 @@ in the body of \texttt{square}. Such a syntactic replacement can be thought of a
 \\
 \indent Now let us consider the \texttt{square} function in $\lambda$ notation. We have:
 \[ \lambda x.x * x \]
-Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example. Here, the '$\lambda$' symbol indicates that the exression that follows is a function, and that the '$x$' that follows indicates that $x$ is a parameter to the function. The $\lambda x$ is said to \emph{bind} the variable $x$. The '$.$' is there to delimit this binding of $x$ from the function body, which is the '$x * x$' part. We can apply (invoke) this function to the argument \texttt{10} as we did with the imperative example. In the $\lambda$ calculus, we write:
+Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example. Here, the '$\lambda$' symbol indicates that the expression that follows is a function, and that the '$x$' that follows indicates that $x$ is a parameter to the function. The $\lambda x$ is said to \emph{bind} the variable $x$. The '$.$' is there to delimit this binding of $x$ from the function body, which is the '$x * x$' part. We can apply (invoke) this function to the argument \texttt{10} as we did with the imperative example. In the $\lambda$ calculus, we write:
 \[ (\lambda x.x * x)(10) \]
-Here, the $10$ parameterises $x$. When we evaluate the expression, we are left with the body of the function, where every occurence of $x$ is replaced with $10$:
+Here, the $10$ parameterises $x$. When we evaluate the expression, we are left with the body of the function, where every occurrence of $x$ is replaced with $10$:
 \[ 10 * 10 \]
 This syntactic replacement, also called $\beta$-reduction ($\beta$ pronounced as 'beta'), is the sole method of computation in the $\lambda$ calculus. The formal syntax of the $\lambda$ calculus is given by the context-free grammar:
-\[ M ::= x | \lambda x.M | MN \]
+\[ M \:\; ::= \;\; x \;\; | \;\; \lambda x.M \;\; | \;\;  MN \]
 where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions.
 \\
-\indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution.
-% THIS IS WHERE I AM
+\indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into $\lambda$ expressions that can be described by the given context-free grammar.
 
 \subsection{Programming Language Implementation}
+
+Even those unfamiliar with computers may have heard it said that 'computers only understand binary'. In a very specific sense, this is true - CPUs take their instructions in binary form, as voltages on a wire. Therefore we must be able to \emph{express} our computer programs in binary form. This does not mean, however, that we must manually create our programs in binary - modern computer programs are created with programming languages, which describe programs in a more abstract way. Typically, \emph{source code} is written in a particular programming language, and is then translated into an executable form via a process known as \emph{compilation}. A compiler is a computer program that takes source code as its input, and outputs an executable binary file.
+\\
+\indent A typical compiler decomposes the problem of compilation into several phases:
+\begin{enumerate}
+    \item Lexical Analysis
+    \item Syntax Analysis
+    \item Semantic Analysis
+    \item Optimisation
+    \item Code Generation
+\end{enumerate}
+
 \subsubsection{Lexical Analysis}
 \subsubsection{Syntax Analysis}
 \subsubsection{Semantic Analysis}
