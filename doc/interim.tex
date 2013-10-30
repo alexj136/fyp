@@ -40,13 +40,16 @@ in the body of \texttt{square}. Such a syntactic replacement can be thought of a
 \\
 \indent Now let us consider the \texttt{square} function in $\lambda$ notation. We have:
 \[ \lambda x.x * x \]
-Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example. We can apply (invoke) this function to the argument \texttt{10} as we did with the imperative example. In the $\lambda$ calculus, we write:
+Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example. Here, the '$\lambda$' symbol indicates that the exression that follows is a function, and that the '$x$' that follows indicates that $x$ is a parameter to the function. The $\lambda x$ is said to \emph{bind} the variable $x$. The '$.$' is there to delimit this binding of $x$ from the function body, which is the '$x * x$' part. We can apply (invoke) this function to the argument \texttt{10} as we did with the imperative example. In the $\lambda$ calculus, we write:
 \[ (\lambda x.x * x)(10) \]
-\\
-
-The formal syntax of the $\lambda$ calculus is given by the context-free grammar:
+Here, the $10$ parameterises $x$. When we evaluate the expression, we are left with the body of the function, where every occurence of $x$ is replaced with $10$:
+\[ 10 * 10 \]
+This syntactic replacement, also called $\beta$-reduction ($\beta$ pronounced as 'beta'), is the sole method of computation in the $\lambda$ calculus. The formal syntax of the $\lambda$ calculus is given by the context-free grammar:
 \[ M ::= x | \lambda x.M | MN \]
 where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions.
+\\
+\indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution.
+% THIS IS WHERE I AM
 
 \subsection{Programming Language Implementation}
 \subsubsection{Lexical Analysis}
