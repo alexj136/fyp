@@ -28,7 +28,7 @@ The $\lambda$ calculus ('$\lambda$' pronounced as 'lambda') is a mathematical ca
 \\\\
 \indent \texttt{int square ( int x ) \{ return x * x ; \}}
 \\\\
-We might call this function using:
+We might invoke this function using:
 \\\\
 \indent \texttt{square ( 10 ) ;}
 \\\\
@@ -40,9 +40,11 @@ in the body of \texttt{square}. Such a syntactic replacement can be thought of a
 \\
 \indent Now let us consider the \texttt{square} function in $\lambda$ notation. We have:
 \[ \lambda x.x * x \]
-Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example.
-\\ % THIS IS WHERE I AM
-The syntax of the $\lambda$ calculus is given by the context-free grammar:
+Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example. We can apply (invoke) this function to the argument \texttt{10} as we did with the imperative example. In the $\lambda$ calculus, we write:
+\[ (\lambda x.x * x)(10) \]
+\\
+
+The formal syntax of the $\lambda$ calculus is given by the context-free grammar:
 \[ M ::= x | \lambda x.M | MN \]
 where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions.
 
@@ -58,7 +60,26 @@ where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expression
 \paragraph{Hybrid Systems \\}
 
 \section{Methodology}
+\subsection{Project Aims}
+\subsubsection{Type-Inference}
+\subsubsection{Execution System} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
+\subsection{Toolchain}
+\subsubsection{Haskell} % Mention Cabal system
+\subsubsection{Lexer \& Parser Generators}
+\paragraph{Alex \\}
+\paragraph{Happy \\}
+\subsubsection{Testing}
+\paragraph{HUnit \\}
+\paragraph{QuickCheck \\}
+% Mention that traditional requirements analysis is inappropriate
+% BCS Code of conduct & ethical issues
 
 \section{Project Plan}
+\subsection{State of the Project} % Problems with α-conversion, etcetera.
+\subsection{Milestones}
+\subsection{Task Dependencies}
+\subsection{Project Schedule} % Include draft report
+
+\section{Appendix}
 
 \end{document}
