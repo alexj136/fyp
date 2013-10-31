@@ -90,6 +90,9 @@ where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expression
 \subsection{Project Aims}
 \subsubsection{Type-Inference}
 \subsubsection{Execution System} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
+\subsection{Scientific Investigation} % Mention that traditional requirements analysis is inappropriate
+\subsection{Ethical Issues} % BCS Code of conduct & ethical issues
+
 \subsection{Toolchain}
 \subsubsection{Arch GNU/Linux}
 Arch GNU/Linux is an appropriate development platform that I will be using for this project. It has a wide range of development tools that I will require, such as GNU make \& Vim, easily and freely available via a package manager.
@@ -101,10 +104,9 @@ Haskell is an expressive, functional, high level programming language that is id
 To simplify lexical \& syntactic analysis, I will be using lexer \& parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical \& syntactical specifications for the lexer \& parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
 
 \subsubsection{Testing}
-\paragraph{HUnit \\}
-\paragraph{QuickCheck \\}
-% Mention that traditional requirements analysis is inappropriate
-% BCS Code of conduct & ethical issues
+Testing is a critical part of any software project. It enables confident refactoring, since any changes to code that prohibit the software system from functioning correctly, are immediately identified. Randomised testing is also very powerful, and helps to discover bugs and 'corner cases' that would otherwise be incredibly difficult to find.
+\\
+\indent I will be using the HUnit library to unit-test my code, and also the QuickCheck library for randomised testing. Both are freely available as part of the Cabal system.
 
 \section{Project Plan}
 \subsection{State of the Project} % Problems with α-conversion, etcetera.
