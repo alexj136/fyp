@@ -20,8 +20,44 @@ Conventional programming languages are designed to solve problems by decomposing
 \indent In contrast, Functional programming languages differ in that they are derived from the $\lambda$ calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
 
 \section{Background}
-\subsection{Functional \& Imperative}
 
+\subsection{Programming Language Implementation}
+Even those unfamiliar with computers may have heard it said that 'computers only understand binary'. In a very specific sense, this is true - CPUs take their instructions in binary form, as voltages on a wire. Therefore we must be able to \emph{express} our computer programs in binary form (such a form is typically referred to as \emph{machine code}). This does not mean, however, that we must write our computer programs in machine code - modern computer programs are created with programming languages, which describe programs in a more abstract way. Typically, \emph{source code} is written in a particular programming language, and is then translated into an executable form via a process known as \emph{compilation}. A compiler is a computer program that takes source code as its input, and (typically) outputs an executable machine code file. Not all programming languages are compiled, however. Some programming languages are \emph{interpreted}, and some languages use a hybrid system of compilation and interpretation, usually to improve performance. The implementation of a typical programming language can be decomposed into several phases: 
+\begin{enumerate}
+    \item Lexical Analysis
+    \item Syntax Analysis
+    \item Semantic Analysis
+    \item Optimisation
+    \item Execution System
+\end{enumerate}
+
+\subsubsection{Lexical Analysis}
+Lexical analysis is concerned with the identification of words in source code. The input to a lexical analyser, or \emph{lexer}, is a string of characters that (ideally) represents a program. The lexical analyser has the job of \emph{tokenising}, that is, breaking up the words in the string into \emph{tokens}, which are the 'atoms' of the programming language, the simplest units of meaning within the language. The output of a lexical analyser is a list of tokens, assuming all the words in the source code file are valid words in the programming language. If not, this is usually indicated to the user and no further work is done by the compiler.
+
+\subsubsection{Syntax Analysis}
+Syntax analysis is concerned with deriving structure from from a sequence of tokens. A syntax analyser, or \emph{parser}, has the job of building an \emph{abstract syntax tree} (AST). An AST is an abstract data structure which represents the structure of a computer program. They are generated from a list of tokens that are the output of the lexer, based on a description of the \emph{grammar} of the language, which is usually represented formally using a \emph{context-free grammar}. An AST, representing the computer program, is the output of the parser, assuming that the tokens that are input can be structured correctly (the correctness of any given structure is specified by the language's context-free grammar). If not, this is usually indicated to the user and no further work is done by the compiler.
+
+\subsubsection{Semantic Analysis}
+Semantic Analysis is concerned with ensuring that the semantics of AST, which is output by the parser, are correct. This typically includes \emph{type checking}, which ensures that the programmer made no \emph{type errors} in their program, for example, adding a variable consisting of a number, to a variable consisting of a string of characters. Semantic analysis may also include type \emph{inference}, depending on the programming language. This involves not only type checking, but determining what types variables have without the programmer having to write them down. Semantic analysis will also typically check for errors such as the use of an undefined variable, or the use of a variable prior to its definition.
+
+\subsubsection{Optimisation}
+Optimisation is concerned with improving performance of the program. At this point the program has been lexically, syntactically and semantically analysed, we have assurance that the program is well-formed, so the focus is no longer on determining the validity of the program, but rather on its performance. Optimisation takes on many different forms, at many different domains. A typical optimisation might be to generate some \emph{intermediate code} that represents the program at a level that is \emph{closer to the machine}, that looks much more like actual machine code. This intermediate code is then optimised using techniques such as register allocation optimisation, AST transformation and algebraic simplification. Such techniques are beyond the scope of this project, however. The optimised intermediate code can then be transformed into machine code.
+\indent The optimisation phase is often skipped with interpreted programming languages, since the focus of interpreted languages tend not to be on performance - often the focus is on portability or some other aspect related to the convenience of the programmer or user.
+
+\subsubsection{Execution Systems}
+\paragraph{Interpretation \\}
+Interpretation is an execution system that performs \emph{immediate evaluation} of ASTs. Instead of generating machine code to be run at a later time, the program is immediately executed, having just been lexically, syntactically and semantically analysed.
+
+\paragraph{Code Generation \\}
+Code generation involves outputting machine code while traversing the AST. The generated machine code is then saved as a file, which can be directly executed by the computer at a later time. Thus, we have a distinction between \emph{compile-time} and \emph{runtime}, that does not exist with interpretation.
+
+\paragraph{Just-In-Time Systems \\}
+Just-in-time (JIT) compilation is similar to interpretation in that there is no compile-time/runtime distinction. However, machine code \emph{is} generated with JIT, but instead of it being written to a file, it is mapped directly into the computer's memory for immediate execution. A JIT system will have a program managing the generation and execution of machine code, so that it is as efficient as possible - for example, if some piece of source code is never executed, it would be wasteful to generate machine code for it. For this reason, source code (or an AST, depending on the strategy used by the JIT system) is only translated into machine code at the last possible moment prior to execution (hence the term just-in-time).
+
+\paragraph{Hybrid Systems \\}
+There are many hybrid systems in existence that combine interpretation, code generation and JIT systems into a programming language implementation. One such example is the Java programming language, which generates intermediate code at compile-time, and at runtime, the intermediate code is executed by a \emph{tracing} JIT system, where code is initially interpreted, and when a part of the program is determined to be 'hot code' - code that is executed frequently - it is translated to machine code and directly executed. There are a vast array of different hybrid systems in existence, and many possible combinations that have not been attempted. The goal is usually to maximise performance.
+
+\subsection{Functional \& Imperative}
 The $\lambda$ calculus ('$\lambda$' pronounced as 'lambda') is a mathematical calculus that is used to represent computations, and is Turing-complete. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages.
 \\
 \indent The $\lambda$ calculus employs a single rule in order to achieve computation, whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
@@ -50,38 +86,20 @@ where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expression
 \\
 \indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into $\lambda$ expressions that can be described by the given context-free grammar.
 
-\subsection{Programming Language Implementation}
-
-Even those unfamiliar with computers may have heard it said that 'computers only understand binary'. In a very specific sense, this is true - CPUs take their instructions in binary form, as voltages on a wire. Therefore we must be able to \emph{express} our computer programs in binary form. This does not mean, however, that we must manually create our programs in binary - modern computer programs are created with programming languages, which describe programs in a more abstract way. Typically, \emph{source code} is written in a particular programming language, and is then translated into an executable form via a process known as \emph{compilation}. A compiler is a computer program that takes source code as its input, and outputs an executable binary file.
-\\
-\indent A typical compiler decomposes the problem of compilation into several phases:
-\begin{enumerate}
-    \item Lexical Analysis
-    \item Syntax Analysis
-    \item Semantic Analysis
-    \item Optimisation
-    \item Code Generation
-\end{enumerate}
-
-\subsubsection{Lexical Analysis}
-\subsubsection{Syntax Analysis}
-\subsubsection{Semantic Analysis}
-\subsubsection{Optimisation}
-\subsubsection{Execution Systems}
-\paragraph{Interpretation \\}
-\paragraph{Compilation \\}
-\paragraph{Just-In-Time Compilation \\}
-\paragraph{Hybrid Systems \\}
-
 \section{Methodology}
 \subsection{Project Aims}
 \subsubsection{Type-Inference}
 \subsubsection{Execution System} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
 \subsection{Toolchain}
-\subsubsection{Haskell} % Mention Cabal system
+\subsubsection{Arch GNU/Linux}
+Arch GNU/Linux is an appropriate development platform that I will be using for this project. It has a wide range of development tools that I will require, such as GNU make \& Vim, easily and freely available via a package manager.
+
+\subsubsection{Haskell}
+Haskell is an expressive, functional, high level programming language that is ideally suited to programming language implementation. It also has an associated package manager, Cabal, which makes the installation of libraries that I will require for the project very quick and simple to install.
+
 \subsubsection{Lexer \& Parser Generators}
-\paragraph{Alex \\}
-\paragraph{Happy \\}
+To simplify lexical \& syntactic analysis, I will be using lexer \& parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical \& syntactical specifications for the lexer \& parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
+
 \subsubsection{Testing}
 \paragraph{HUnit \\}
 \paragraph{QuickCheck \\}
