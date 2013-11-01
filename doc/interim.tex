@@ -87,18 +87,38 @@ where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expression
 \indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into $\lambda$ expressions that can be described by the given context-free grammar.
 
 \section{Methodology}
-\subsection{Project Aims}
-\subsubsection{Type-Inference}
-\subsubsection{Execution System} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
-\subsection{Scientific Investigation} % Mention that traditional requirements analysis is inappropriate
-\subsection{Ethical Issues} % BCS Code of conduct & ethical issues
+
+\subsection{Project Aims} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
+As stated, the aim of this project is to implement a functional programming language, based on the $\lambda$ calculus. The main features I will implement are:
+\begin{itemize}
+    \item \textbf{Rich Syntax} - An expressive syntax that allows the user to write terse programs, with useful features such as lists, tuples, string literals etcetera.
+    \item \textbf{Strong Typing \& Type Checking} - A strong typing system with type checking to guarantee that all valid programs exhibit no runtime type errors.
+    \item \textbf{Type Inference} - A system for inferring the types of variables without the programmer writing them down.
+    \item \textbf{Polymorphic Types} - A typing system that includes polymorphic types, allowing the programmer to write highly generic, reusable code.
+    \item \textbf{Interpreter} - An interpreted implementation of the language, to run on any system for which their exists a Haskell implementation.
+    \item \textbf{Compiler} - A compiled implementation of the language, targeting GNU/Linux operating systems that run on the x86 CPU architecture.
+    \item \textbf{User Documentation} - Detailed, well-written user documentation
+\end{itemize}
+Should time permit, I would also like to implement the following additional features:
+\begin{itemize}
+    \item \textbf{Algebraic Data Types} - Abstract, high-level data types that allow the programmer to encode their problem space in a data structure that is easy to manipulate programmatically.
+    \item \textbf{Pattern Matching} - A feature that allows functions to be implemented in different ways for differently structured inputs.
+    \item \textbf{JIT Compiler} - A tracing just-in-time system that works begins with interpretation, collecting execution statistics, and when a given function is executed a certain number of times, it is then JIT-compiled.
+    \item \textbf{Module System} - A system that allows programmers to break code into separate files, give names to modules, etcetera.
+\end{itemize}
+
+\subsection{Scientific Investigation}
+Since this project is in a highly abstract, scientific topic, rather than being a traditional software engineering project, a typical requirements analysis is inappropriate. Due to the well established structure of compilers, typical design documentation is also not entirely appropriate - the produced software system will be modularised according to the phases of a compiler that have been explained in the background section of this document.
+
+\subsection{Ethical Issues} % BCS Code of conduct
+The British Computer Society (BCS) defines a code of conduct for IT professionals. However, due to the abstract nature of this project, the risk of breaching any of the guidelines in the BCS code of conduct is negligible. Therefore no measures need be taken to ensure that the completion of the project falls within those guidelines.
 
 \subsection{Toolchain}
 \subsubsection{Arch GNU/Linux}
-Arch GNU/Linux is an appropriate development platform that I will be using for this project. It has a wide range of development tools that I will require, such as GNU make \& Vim, easily and freely available via a package manager.
+Arch GNU/Linux is an appropriate development platform that I will be using for this project. It has a wide range of development tools that I will require, such as GNU make, a tool for build \& test automation, \& Vim, a text editor, easily and freely available via a package manager.
 
 \subsubsection{Haskell}
-Haskell is an expressive, functional, high level programming language that is ideally suited to programming language implementation. It also has an associated package manager, Cabal, which makes the installation of libraries that I will require for the project very quick and simple to install.
+Haskell is an expressive, functional, high level programming language that is ideally suited to programming language implementation. It also has an associated package manager, Cabal, which makes the installation of libraries that I will require for the project very quick and simple.
 
 \subsubsection{Lexer \& Parser Generators}
 To simplify lexical \& syntactic analysis, I will be using lexer \& parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical \& syntactical specifications for the lexer \& parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
@@ -110,10 +130,27 @@ Testing is a critical part of any software project. It enables confident refacto
 
 \section{Project Plan}
 \subsection{State of the Project} % Problems with α-conversion, etcetera.
+At the time of writing, an interpreter for $\lambda$ calculus expressions is almost complete, with some unit tests. This has been problematic, as there are many subtleties to $\lambda$ expression evaluation, such as the name clash problem. The name clash problem occurs during $\beta$-reduction - when evaluating an application, if the argument expression contains variable names that occur as bound variables in the body expression, and the substitution is done naively, there is a possibility that the resultant expression becomes incorrect as free names from the argument expression erroneously become bound by abstractions in the body expression. To avoid this problem, I have implemented an \emph{$\alpha$-conversion} function that renames bound variables in the body expression before substitution, so that there is no possibility for name clashes to occur.
+\\
+\indent There is currently no front-end, that is, the interpreter operates on ASTs, but there currently exists no lexer, parser or semantic analyser, so it is not yet possible to directly run source code. Abstract syntax expressions must be encoded in haskell in order to use the interpreter code.
+
 \subsection{Milestones}
 \subsection{Task Dependencies}
-\subsection{Project Schedule} % Include draft report
-
+\subsection{Project Schedule}
+Below are the target completion dates for the subtasks of the project:
+\\\\
+\begin{tabular}{l l}
+    \indent \textbf{Task}              & \textbf{Target Completion Date} \\
+    \indent Interpreter                & $14^{th}$ November 2013         \\
+    \indent Type-Checker \& Inferencer & $14^{th}$ December 2013         \\
+    \indent Lexer \& Parser            & $21^{st}$ January  2014         \\
+    \indent Compiler                   & $14^{th}$ March    2014         \\
+    \indent Draft report               & $17^{th}$ April    2014         \\
+    \indent User Documentation         & $30^{th}$ April    2014         \\
+    \indent Final report               & $12^{th}$ May      2014         \\
+\end{tabular}
+\\\\
+Should I complete tasks early, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
 \section{Appendix}
 
 \end{document}
