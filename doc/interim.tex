@@ -19,6 +19,7 @@ Conventional programming languages are designed to solve problems by decomposing
 \\
 \indent In contrast, Functional programming languages differ in that they are derived from the $\lambda$ calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
 
+\pagebreak
 \section{Background}
 
 \subsection{Programming Language Implementation}
@@ -86,6 +87,7 @@ where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expression
 \\
 \indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into $\lambda$ expressions that can be described by the given context-free grammar.
 
+\pagebreak
 \section{Methodology}
 
 \subsection{Project Aims} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
@@ -128,6 +130,7 @@ Testing is a critical part of any software project. It enables confident refacto
 \\
 \indent I will be using the HUnit library to unit-test my code, and also the QuickCheck library for randomised testing. Both are freely available as part of the Cabal system.
 
+\pagebreak
 \section{Project Plan}
 \subsection{State of the Project} % Problems with α-conversion, etcetera.
 At the time of writing, an interpreter for $\lambda$ calculus expressions is almost complete, with some unit tests. This has been problematic, as there are many subtleties to $\lambda$ expression evaluation, such as the name clash problem. The name clash problem occurs during $\beta$-reduction - when evaluating an application, if the argument expression contains variable names that occur as bound variables in the body expression, and the substitution is done naively, there is a possibility that the resultant expression becomes incorrect as free names from the argument expression erroneously become bound by abstractions in the body expression. To avoid this problem, I have implemented an \emph{$\alpha$-conversion} function that renames bound variables in the body expression before substitution, so that there is no possibility for name clashes to occur.
@@ -151,6 +154,7 @@ Below are the target completion dates for the subtasks of the project:
 \end{tabular}
 \\\\
 Should I complete tasks early, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
+\pagebreak
 \section{Appendix}
 
 \end{document}

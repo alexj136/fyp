@@ -1,0 +1,29 @@
+digraph task_dependencies {
+    rankdir=BT;
+
+    Compiler -> Interpreter;
+
+    Parser -> Lexer;
+
+    "Type\nSystem" -> Interpreter;
+
+    "Polymorphic\nTypes" -> "Type\nSystem";
+
+    "Draft\nReport" -> "User\nDocumentation";
+
+    "Final\nReport" -> "Draft\nReport";
+
+    "Algebraic\nData Types" -> "Type\nSystem";
+
+    "Pattern\nMatching" -> "Algebraic\nData Types";
+
+    "Module\nSystem" -> Interpreter;
+
+    "JIT\nCompiler" -> Compiler;
+
+    "User\nDocumentation" -> "JIT\nCompiler";
+    "User\nDocumentation" -> "Module\nSystem";
+    "User\nDocumentation" -> Parser;
+    "User\nDocumentation" -> "Polymorphic\nTypes";
+    "User\nDocumentation" -> "Pattern\nMatching";
+}
