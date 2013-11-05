@@ -15,7 +15,7 @@ tests = TestList [
 -- Asserts that renaming the expression \x.\y.xy produces something
 -- alpha-equivalent but not containing the names x or y.
 testRename = TestCase (
-   let exp = (Lambda "x" (Lambda "y" (Application (Name "x") (Name "y"))))
+   let exp = (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
        renamedExp = renameAll ["x", "y"] exp in
            assert (and [ renamedExp === exp          ,
                          not (nameIn "x" renamedExp) ,

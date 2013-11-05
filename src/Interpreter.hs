@@ -11,17 +11,21 @@ import AbstractSyntax
 
 -- Function for convenience in the REPL, shorthand for: reduce (Application x y)
 apply :: Expression -> Expression -> Expression
-apply x y = reduce (Application x y)
+apply x y = reduce (App x y)
 
 -- Reduces an Expression to its normal form
 reduce :: Expression -> Expression
 reduce exp = case exp of
-    Application (Lambda n x) y -> reduce (replace n (preventClashes x y) y)
-        where preventClashes x y = renameAll (freeNames y) x
-    Application x            y -> reduce (Application (reduce x) y)
-    Lambda n x                 -> Lambda n (reduce x)
-    _                          -> exp
+    App (Abs n x) y -> reduce (replace n (preventClashes x y) y)
+    App x         y -> reduce (App (reduce x) y)
+    Abs n x         -> Abs n (reduce x)
+    _               -> exp
 
+-- Given two expressions, M and N, derive the expression M' where M' and M are
+-- α-equivalent, but the bound variable names in M have been changes such that
+-- they cannot possibly clash with names in N should N be applied to M
+preventClashes :: Expression -> Expression -> Expression
+preventClashes x y = renameAll (freeNames y) x
 
 -- Evaluates an Expression, and returns its value. Expressions with remaining
 -- abstractions, applications and names, are not handled.
@@ -33,12 +37,13 @@ eval _                   = error "Cannot calculate value of a lambda term"
 
 -- Function to replace one Expression with another - implements function
 -- application with Expressions. Assumes that there are no name clashes.
-replace :: String -> Expression -> Expression -> Expression
+replace :: Name -> Expression -> Expression -> Expression
 replace n bodyExp argExp = case bodyExp of
-    Lambda n' x         -> Lambda n' (replaced x)
-    Application x x'    -> Application (replaced x) (replaced x')
-    Name n' | n == n'   -> argExp
-            | otherwise -> Name n'
+    Abs n' x | n /= n'  -> Abs n' (replaced x)
+             | n == n'  -> Abs n' x
+    App x x'            -> App (replaced x) (replaced x')
+    Var n'   | n == n'  -> argExp
+             | n /= n'  -> Var n'
     Arithmetic x op x'  -> Arithmetic (replaced x) op (replaced x')
     IfThenElse x x' x'' -> IfThenElse (replaced x) (replaced x') (replaced x'')
     Literal x           -> Literal x

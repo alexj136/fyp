@@ -15,15 +15,15 @@ tests = TestList [
 
 testIdentityFunction =
     TestCase (assert (
-        (reduce (Application (Lambda "x" (Name "x")) (Literal 0))) == (Literal 0)
+        (reduce (App (Abs "x" (Var "x")) (Literal 0))) == (Literal 0)
     ))
 
-testAnd = let tRU = Lambda "x" (Lambda "y" (Name "x"))
-              fAL = Lambda "x" (Lambda "y" (Name "y"))
-              aND = Lambda "x" (Lambda "y" (Application (Application (Name "x") (Name "y")) (fAL))) in
+testAnd = let tRU = Abs "x" (Abs "y" (Var "x"))
+              fAL = Abs "x" (Abs "y" (Var "y"))
+              aND = Abs "x" (Abs "y" (App (App (Var "x") (Var "y")) (fAL))) in
     TestCase (assert (
-        and [ reduce (Application (Application aND tRU) tRU) === tRU ,
-              reduce (Application (Application aND tRU) fAL) === fAL ,
-              reduce (Application (Application aND fAL) tRU) === fAL ,
-              reduce (Application (Application aND fAL) fAL) === fAL ]
+        and [ reduce (App (App aND tRU) tRU) === tRU ,
+              reduce (App (App aND tRU) fAL) === fAL ,
+              reduce (App (App aND fAL) tRU) === fAL ,
+              reduce (App (App aND fAL) fAL) === fAL ]
     ))
