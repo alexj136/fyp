@@ -6,6 +6,9 @@
 % Package imports:
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{graphicx}
+
+\DeclareGraphicsExtensions{.png}
 
 \title{\textbf{Interim Report}: An Interpreter/Compiler for a Functional Programming Language}
 \author{Alexander Jeffery}
@@ -83,8 +86,12 @@ Here, the $10$ parameterises $x$. When we evaluate the expression, we are left w
 \[ 10 * 10 \]
 This syntactic replacement, also called $\beta$-reduction ($\beta$ pronounced as 'beta'), is the sole method of computation in the $\lambda$ calculus. The formal syntax of the $\lambda$ calculus is given by the context-free grammar:
 \[ M \:\; ::= \;\; x \;\; | \;\; \lambda x.M \;\; | \;\;  MN \]
-where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions.
-\\
+where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions. Closure properties for the $\lambda$ calculus are formalised as:
+\[ M \rightarrow N \Rightarrow LM \rightarrow LN. \]
+\[ M \rightarrow N \Rightarrow ML \rightarrow NL. \]
+\[ M \rightarrow N \Rightarrow \lambda x.M \rightarrow \lambda x.N \]
+Informally, we can describe the closure properties: if $M$ reduces to $N$, then $LM$ and $ML$ reduce to $LN$ and $NL$ respectively, where L is an arbitrary expression. $\beta$-reduction is formalised as:
+\[ (\lambda x.M)N \rightarrow_\beta M[N/x] \]
 \indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into $\lambda$ expressions that can be described by the given context-free grammar.
 
 \pagebreak
@@ -137,8 +144,12 @@ At the time of writing, an interpreter for $\lambda$ calculus expressions is alm
 \\
 \indent There is currently no front-end, that is, the interpreter operates on ASTs, but there currently exists no lexer, parser or semantic analyser, so it is not yet possible to directly run source code. Abstract syntax expressions must be encoded in haskell in order to use the interpreter code.
 
-\subsection{Milestones}
 \subsection{Task Dependencies}
+The graph below specifies the interdependencies of the subtasks of the project:
+\\\\
+\centerline{\includegraphics[width=260px]{task_dependencies}}
+\centerline{\textbf{Figure: Subtask Dependencies}}
+
 \subsection{Project Schedule}
 Below are the target completion dates for the subtasks of the project:
 \\\\
@@ -156,5 +167,13 @@ Below are the target completion dates for the subtasks of the project:
 Should I complete tasks early, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
 \pagebreak
 \section{Appendix}
+\subsection{References}
+\begin{itemize}
+    \item Types \& Programming Languages - Benjamin C. Pierce
+    \item Functional Programming - Anthony J. Field \& Peter G. Harrison
+    \item A Tutorial Introduction to the Lambda Calculus - Ra\'{u}l Rojas \\
+        http://www.inf.fu-berlin.de/lehre/WS03/alpi/lambda.pdf
+\end{itemize}
 
+\subsection{Project Proposal}
 \end{document}

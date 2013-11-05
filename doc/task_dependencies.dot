@@ -1,5 +1,7 @@
 digraph task_dependencies {
     rankdir=BT;
+    graph [autosize=false, size="27,15!", resolution=100];
+    node [shape=box];
 
     Compiler -> Interpreter;
 
