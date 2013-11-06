@@ -43,8 +43,10 @@ subs _                  = []
 (===) :: Expression -> Expression -> Bool
 (===) (Literal x)         (Literal y)          = x == y
 (===) (Var n)             (Var n')             = n == n'
-(===) (Abs n x)           (Abs n' y)           = x === renamedY
-    where renamedY = head (subs (renameBound n' n (Abs n' y)))
+(===) (Abs n x)           (Abs n' y)           = renamedX === renamedY
+    where renamedY = renameAll allNames y
+          renamedX = renameAll allNames x
+          allNames = Set.toList $ Set.fromList $ names x ++ names y
 (===) (App x y)           (App a b)            = x === a && y === b
 (===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
 (===) (IfThenElse x y z)  (IfThenElse a b c)   = x === a && y === b   && z === c
@@ -54,7 +56,7 @@ subs _                  = []
 -- twice, it will appear twice in the returned list, etc.
 names :: Expression -> [Name]
 names (Abs n x)   = n : names x
-names (Var n)    = [n]
+names (Var n)     = [n]
 names (Literal _) = []
 names exp         = concat (map names (subs exp))
 
@@ -67,53 +69,30 @@ nameIn n (Var n')    = n == n'
 nameIn _ (Literal _) = False
 nameIn n exp         = any (nameIn n) (subs exp)
 
--- Creates a Set of all names that occur in an Expression
-nameSet :: Expression -> Set.Set Name
-nameSet = Set.fromList . names
-
--- Creates a set of all unbound names in an Expression, which can be used when
+-- Creates a set of all free variables in an Expression, which can be used when
 -- reducing a function application, as it determines which names will need to be
 -- changed in order to prevent name clashes.
---     The function walks the AST, keeping a set of free names, and a set of
--- bound names. When a name is encountered as a variable (i.e. not as a Lambda
--- abstraction) it is added to the free set, but only if it does not already
--- appear in the bound set, which would indicate that that name is already
--- bound. When a name is encountered in a Lambda abstraction, it is added to the
--- bound set, so that all further instances of that name are ignored, because
--- they are bound in this abstraction.
-freeNamesSet :: Set.Set Name -> Set.Set Name -> Expression -> Set.Set Name
-freeNamesSet free _     (Literal _)  = free
-freeNamesSet free bound (Var n)      | Set.member n bound = free
-                                     | otherwise          = Set.insert n free
-freeNamesSet free bound (Abs n x)    = freeNamesSet free (Set.insert n bound) x
-freeNamesSet free bound exp          =
-    Set.unions (map (freeNamesSet free bound) (subs exp))
+freeVars :: Expression -> Set.Set Name
+freeVars exp = case exp of
+    Var x     -> Set.singleton x
+    Abs x m   -> Set.delete x (freeVars m)
+    Literal _ -> Set.empty
+    _         -> Set.unions $ map freeVars (subs exp)
 
--- Calls freeNamesSet with empty sets and a given expression, and converts the
--- resulting set to a list. Makes calls from other files simpler, removing the
--- need for them to import Data.Set.
+-- Composes Set.toList with freeVars, yeilding a list of the free names in an
+-- Expression, as opposed to a Set
 freeNames :: Expression -> [Name]
-freeNames exp = Set.toList (freeNamesSet Set.empty Set.empty exp)
+freeNames = Set.toList . freeVars
 
--- Returns a string which does not exist as a name within a given Expression.
--- Begins by choosing the name "x", and if that already exists in the given
--- expression, add a prime (') character to it. Keep adding prime characters
--- until we have a name for which the nameIn function will return false.
-newName :: Expression -> Name
-newName exp | nameIn "x" exp = newName2 "x" exp
-            | otherwise      = "x"
-    where newName2 lastTry exp
-              | nameIn lastTry' exp = newName2 lastTry' exp
-              | otherwise = lastTry'
-                  where lastTry' = lastTry ++ "'"
-
--- Generates a name that does not exist in the given set of names. Works in
--- the same way as newName.
-newNameSet :: Set.Set Name -> Name
-newNameSet set | Set.member "x" set = newNameSet2 "x" set
+-- Returns a string which does not exist within a given set of names. Begins by
+-- choosing the name "x", and if that already exists in the given set, add a
+-- prime (') character to it. Keep adding prime characters until we have a name
+-- for which the nameIn function will return false.
+newName :: Set.Set Name -> Name
+newName set | Set.member "x" set = newName2 "x" set
                | otherwise          = "x"
-    where newNameSet2 lastTry set
-              | Set.member lastTry' set = newNameSet2 lastTry' set
+    where newName2 lastTry set
+              | Set.member lastTry' set = newName2 lastTry' set
               | otherwise               = lastTry'
                   where lastTry' = lastTry ++ "'"
 
@@ -126,7 +105,7 @@ renameAll = renameAll2 []
 renameAll2 :: [Name] -> [Name] -> Expression -> Expression
 renameAll2 _    []   x = x
 renameAll2 done (h:t) x = renameAll2 (h:done) t (renameBound h freshName x)
-    where freshName = newNameSet (Set.fromList ((names x) ++ done ++ [h] ++ t))
+    where freshName = newName (Set.fromList ((names x) ++ done ++ [h] ++ t))
 
 -- Rename only the bound instances of the given name in the given expression.
 -- Recurse down the tree until we find the given binding, at which point we can
