@@ -13,13 +13,19 @@ import AbstractSyntax
 apply :: Expression -> Expression -> Expression
 apply x y = reduce (App x y)
 
--- Reduces an Expression to its normal form
+-- Performs a single reduction step
 reduce :: Expression -> Expression
 reduce exp = case exp of
-    App (Abs n x) y -> reduce (replace n (preventClashes x y) y)
-    App x         y -> reduce (App (reduce x) y)
+    App (Abs n x) y -> replace n (preventClashes x y) y
+    App x         y -> App (reduce x) (reduce y)
     Abs n x         -> Abs n (reduce x)
     _               -> exp
+
+-- Keep reducing an expression until it stops changing i.e. until it reaches
+-- normal form
+reduceNorm :: Expression -> Expression
+reduceNorm exp = if exp == reducedExp then exp else reduceNorm reducedExp
+    where reducedExp = reduce exp
 
 -- Given two expressions, M and N, derive the expression M' where M' and M are
 -- α-equivalent, but the bound variable names in M have been changes such that
