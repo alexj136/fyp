@@ -35,22 +35,30 @@ subs (Arithmetic x _ y) = [x, y]
 subs (IfThenElse x y z) = [x, y, z]
 subs _                  = []
 
--- The === operator defines alpha-equivalence of expressions, i.e. are two
--- Expressions equal if we disregard names. Some examples:
+-- The === operator checks if two expressions are α-equivalent, i.e. are they
+-- are equal disregarding names. Some examples:
 -- \x.x   === \y.y   -> True
 -- \xy.yx === \sz.zs -> True
 -- \ab.ac === \xy.yz -> False
 (===) :: Expression -> Expression -> Bool
+(===) x y = renamedX == renamedY
+    where renamedX = renameAll allNames x
+          renamedY = renameAll allNames y
+          allNames = Set.toList $ Set.fromList $ names x ++ names y
+
+{-- PREVIOUS IMPLEMENTATION - Closer to the definition of α-equivalence, but in
+    practice more susceptible to name clash problems.
 (===) (Literal x)         (Literal y)          = x == y
 (===) (Var n)             (Var n')             = n == n'
-(===) (Abs n x)           (Abs n' y)           = renamedX === renamedY
-    where renamedY = renameAll allNames y
-          renamedX = renameAll allNames x
-          allNames = Set.toList $ Set.fromList $ names x ++ names y
+(===) (Abs n x)           (Abs n' y)           = renamedX == renamedY
+    where renamedX = renameAll allNames (Abs n  x)
+          renamedY = renameAll allNames (Abs n' y)
+          allNames = Set.toList $ Set.fromList $ names x ++ names y ++ [n, n']
 (===) (App x y)           (App a b)            = x === a && y === b
 (===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
 (===) (IfThenElse x y z)  (IfThenElse a b c)   = x === a && y === b   && z === c
 (===) _                   _                    = False
+--}
 
 -- Creates a list of all name occurences in an Expression - If a name is used
 -- twice, it will appear twice in the returned list, etc.
@@ -77,7 +85,7 @@ freeVars exp = case exp of
     Var x     -> Set.singleton x
     Abs x m   -> Set.delete x (freeVars m)
     Literal _ -> Set.empty
-    _         -> Set.unions $ map freeVars (subs exp)
+    _         -> Set.unions $ map freeVars $ subs exp
 
 -- Composes Set.toList with freeVars, yeilding a list of the free names in an
 -- Expression, as opposed to a Set
