@@ -11,7 +11,7 @@ import AbstractSyntax
 
 -- Function for convenience in the REPL, shorthand for: reduce (Application x y)
 apply :: Expression -> Expression -> Expression
-apply x y = reduce (App x y)
+apply x y = reduceNorm (App x y)
 
 -- Performs a single reduction step
 reduce :: Expression -> Expression

@@ -8,24 +8,26 @@ main = do
        putStrLn "Running tests for Interpreter:"
        runTestTT tests
 
--- Some useful lambda expressions
+-- USEFUL LAMBDA EXPRESSIONS
+-- Identity function
 iD  = Abs "x" (Var "x")
--- Booleans
+
+-- Boolean constants & functions
 tRU = Abs "x" (Abs "y" (Var "x"))
 fAL = Abs "x" (Abs "y" (Var "y"))
 aND = Abs "x" (Abs "y" (App (App (Var "x") (Var "y")) (fAL)))
 oR  = Abs "x" (Abs "y" (App (App (Var "x") (tRU)) (Var "y")))
 nOT = Abs "x" (Abs "y" (Abs "z" (App (App (Var "x") (Var "z")) (Var "y"))))
--- Functions to generate integers
+
+-- Function that generates church numeral natural numbers
 lamInt :: Int -> Expression
 lamInt n = Abs "f" (Abs "x" (nApps n))
+    where nApps n | n  < 0 = error "Cannot generate negative number"
+                  | n == 0 = Var "x"
+                  | n  > 0 = App (Var "f") (nApps (n - 1))
 
-nApps :: Int -> Expression
-nApps n | n  < 0 = error "Cannot generate negative number"
-        | n == 0 = Var "x"
-        | n  > 0 = App (Var "f") (nApps (n - 1))
-
-suc = Abs "n" (Abs "f" (Abs "x" (App (App (Var "n") (Var "f")) (Var "x"))))
+-- Arithmetic operations
+suc = Abs "n" (Abs "f" (Abs "x" (App (Var "f") (App (App (Var "n") (Var "f")) (Var "x")))))
 pow = Abs "b" (Abs "e" (App (Var "e") (Var "b")))
 
 tests = TestList [
@@ -39,7 +41,7 @@ tests = TestList [
 
 testIdentityFunction =
     TestCase (assert (
-        reduceNorm (App iD (Literal 0)) === Literal 0
+        reduceNorm (App iD (Var "Hello!")) === Var "Hello!"
     ))
 
 testAnd =
@@ -66,7 +68,7 @@ testNot =
 
 testSuccessor =
     TestCase (assert (
-        and $ map (\x -> (reduceNorm (App suc (lamInt x)) === lamInt (x+1))) [0, 4 .. 80]
+        and $ map (\x -> (reduceNorm (App suc (lamInt x)) === lamInt (x+1))) [0, 3 .. 60]
     ))
 
 testExponentiation =
