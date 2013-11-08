@@ -14,7 +14,7 @@ import AbstractSyntax
 apply :: Expression -> Expression -> Expression
 apply x y = reduceNorm (App x y)
 
--- Performs a single reduction step
+-- Performs at least one reduction step
 reduce :: Expression -> Expression
 reduce exp = case exp of
     App (Abs n x) y -> replace n (preventClashes x y) y
@@ -26,7 +26,8 @@ reduce exp = case exp of
 -- normal form
 reduceNorm :: Expression -> Expression
 reduceNorm exp = if exp == reducedExp then exp else reduceNorm reducedExp
-    where reducedExp = reduce exp
+    where reducedExp :: Expression
+          reducedExp = reduce exp
 
 -- Given two expressions, M and N, derive the expression M' where M' and M are
 -- α-equivalent, but the bound variable names in M have been changes such that
@@ -39,7 +40,7 @@ preventClashes x y = renameAll (freeNames y) x
 eval :: Expression -> Int
 eval (Arithmetic x op y) = getOp op (eval x) (eval y)
 eval (Constant (CInt x)) = x
-eval _                   = error "Cannot calculate value of ill-typed expression"
+eval _                   = error "Can't calculate value of ill-typed expression"
 
 -- Function to replace one Expression with another - implements function
 -- application with Expressions. Assumes that there are no name clashes.
@@ -65,14 +66,12 @@ replace n bodyExp argExp = case bodyExp of
           renamedY = renameAll allNames y
           allNames = Set.toList $ Set.fromList $ names x ++ names y
 
-{-- PREVIOUS IMPLEMENTATION - Closer to the definition of α-equivalence, but in
-    practice more susceptible to name clash problems.
+{-- PREVIOUS IMPLEMENTATION - Closer to the definition of α-equivalence, but
+--  suffers from the name clash problem.
 (===) (Constant x)        (Constant y)         = x == y
 (===) (Var n)             (Var n')             = n == n'
-(===) (Abs n x)           (Abs n' y)           = renamedX == renamedY
-    where renamedX = renameAll allNames (Abs n  x)
-          renamedY = renameAll allNames (Abs n' y)
-          allNames = Set.toList $ Set.fromList $ names x ++ names y ++ [n, n']
+(===) (Abs n x)           (Abs n' y)           = x === renamedY
+    where renamedY = renameAll
 (===) (App x y)           (App a b)            = x === a && y === b
 (===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
 (===) _                   _                    = False
@@ -96,13 +95,13 @@ newName set | Set.member "x" set = newName2 "x" set
 -- list, such that no name clashes can occur if Expressions containing names in
 -- the given list are substituted into the given Expression.
 renameAll :: [Name] -> Expression -> Expression
-renameAll = renameAll2 []
-
-renameAll2 :: [Name] -> [Name] -> Expression -> Expression
-renameAll2 _    []   x = x
-renameAll2 done (h:t) x = renameAll2 (h:done) t (renameBound h freshName x)
-    where freshName :: Name
-          freshName = newName (Set.fromList ((names x) ++ done ++ [h] ++ t))
+renameAll = rnmAll2 []
+    where rnmAll2 :: [Name] -> [Name] -> Expression -> Expression
+          rnmAll2 done todo x = case todo of
+              []  -> x
+              h:t -> rnmAll2 (h:done) t (renameBound h fresh x)
+              where fresh :: Name
+                    fresh = newName $ Set.fromList ((names x) ++ done ++ todo)
 
 -- Rename only the bound instances of the given name in the given expression.
 -- Recurse down the tree until we find the given binding, at which point we can
