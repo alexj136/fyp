@@ -11,7 +11,6 @@ data Expression = Abs Name Expression
 -- Churchy Expressions:
                 | Literal Int
                 | Arithmetic Expression Op Expression
-                | IfThenElse Expression Expression Expression
     deriving (Show, Eq)
 
 type Name = String
@@ -32,7 +31,6 @@ subs :: Expression -> [Expression]
 subs (Abs _ x)          = [x]
 subs (App x y)          = [x, y]
 subs (Arithmetic x _ y) = [x, y]
-subs (IfThenElse x y z) = [x, y, z]
 subs _                  = []
 
 -- The === operator checks if two expressions are α-equivalent, i.e. are they
@@ -56,7 +54,6 @@ subs _                  = []
           allNames = Set.toList $ Set.fromList $ names x ++ names y ++ [n, n']
 (===) (App x y)           (App a b)            = x === a && y === b
 (===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
-(===) (IfThenElse x y z)  (IfThenElse a b c)   = x === a && y === b   && z === c
 (===) _                   _                    = False
 --}
 
@@ -131,7 +128,6 @@ renameBound from to exp         = case exp of
             | otherwise -> Abs n (renamed x)
     App x x'            -> App (renamed x) (renamed x')
     Arithmetic x op x'  -> Arithmetic (renamed x) op (renamed x')
-    IfThenElse x x' x'' -> IfThenElse (renamed x) (renamed x') (renamed x'')
     where renamed = renameBound from to
 
 -- Renames every name with value 'from' to value 'to' in an Expression, with no
@@ -146,6 +142,5 @@ blindRename from to exp = case exp of
             | otherwise -> Var n
     App x x'            -> App (renamed x) (renamed x')
     Arithmetic x op x'  -> Arithmetic (renamed x) op (renamed x')
-    IfThenElse x x' x'' -> IfThenElse (renamed x) (renamed x') (renamed x'')
     Literal x           -> Literal x
     where renamed = blindRename from to

@@ -28,52 +28,54 @@ lamInt n = Abs "f" (Abs "x" (nApps n))
 
 -- Arithmetic operations
 suc = Abs "n" (Abs "f" (Abs "x" (App (Var "f") (App (App (Var "n") (Var "f")) (Var "x")))))
+plu = Abs "m" (Abs "n" (Abs "f" (Abs "x" (App (App (Var "m") (Var "f")) (App (App (Var "n") (Var "f")) (Var "x"))))))
 pow = Abs "b" (Abs "e" (App (Var "e") (Var "b")))
 
 tests = TestList [
-        TestLabel "Test of the identity function" testIdentityFunction,
-        TestLabel "Tests that the lambda And function works" testAnd,
-        TestLabel "Tests that the lambda Or function works" testOr,
-        TestLabel "Tests that the lambda Not function works" testNot,
-        TestLabel "Tests that the successor function works" testSuccessor,
-        TestLabel "Test of natural number exponentiation" testExponentiation
+        testIdentityFunction, testAnd, testOr, testNot, testSuccessor,
+        testExponentiation,   testPlus
     ]
 
-testIdentityFunction =
+testIdentityFunction = TestLabel "Test of the identity function" (
     TestCase (assert (
         reduceNorm (App iD (Var "Hello!")) === Var "Hello!"
-    ))
+    )))
 
-testAnd =
+testAnd = TestLabel "Tests that the lambda And function works" (
     TestCase (assert (
         and [ reduceNorm (App (App aND tRU) tRU) === tRU ,
               reduceNorm (App (App aND tRU) fAL) === fAL ,
               reduceNorm (App (App aND fAL) tRU) === fAL ,
               reduceNorm (App (App aND fAL) fAL) === fAL ]
-    ))
+    )))
 
-testOr =
+testOr = TestLabel "Tests that the lambda Or function works" (
     TestCase (assert (
         and [ reduceNorm (App (App oR tRU) tRU) === tRU ,
               reduceNorm (App (App oR tRU) fAL) === tRU ,
               reduceNorm (App (App oR fAL) tRU) === tRU ,
               reduceNorm (App (App oR fAL) fAL) === fAL ]
-    ))
+    )))
 
-testNot =
+testNot = TestLabel "Tests that the lambda Not function works" (
     TestCase (assert (
         and [ reduceNorm (App nOT fAL) === tRU ,
               reduceNorm (App nOT tRU) === fAL ]
-    ))
+    )))
 
-testSuccessor =
+testSuccessor = TestLabel "Tests that the successor function works" (
     TestCase (assert (
         and $ map (\x -> (reduceNorm (App suc (lamInt x)) === lamInt (x+1))) [0, 3 .. 60]
-    ))
+    )))
 
-testExponentiation =
+testExponentiation = TestLabel "Test of natural number exponentiation" (
     TestCase (assert (
         and [ reduceNorm (App (App (pow) (lamInt 2)) (lamInt 2)) === lamInt 4  ,
               reduceNorm (App (App (pow) (lamInt 3)) (lamInt 3)) === lamInt 27 ,
               reduceNorm (App (App (pow) (lamInt 3)) (lamInt 4)) === lamInt 81 ]
-    ))
+    )))
+
+testPlus = TestLabel "Test of natural number addition" (
+    TestCase (assert (
+        and $ map (\x -> reduceNorm (App (App plu (lamInt $ fst x)) (lamInt $ snd x)) === lamInt (fst x + snd x)) [(i, j) | i <- [1..20], j <- [1..20]]
+    )))

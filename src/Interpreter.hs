@@ -37,7 +37,6 @@ preventClashes x y = renameAll (freeNames y) x
 -- abstractions, applications and names, are not handled.
 eval :: Expression -> Int
 eval (Arithmetic x op y) = getOp op (eval x) (eval y)
-eval (IfThenElse i t e)  = if (eval i) /= 0 then (eval t) else (eval e)
 eval (Literal x)         = x
 eval _                   = error "Cannot calculate value of a lambda term"
 
@@ -51,6 +50,5 @@ replace n bodyExp argExp = case bodyExp of
     Var n'   | n == n'  -> argExp
              | n /= n'  -> Var n'
     Arithmetic x op x'  -> Arithmetic (replaced x) op (replaced x')
-    IfThenElse x x' x'' -> IfThenElse (replaced x) (replaced x') (replaced x'')
     Literal x           -> Literal x
     where replaced subBodyExp = replace n subBodyExp argExp
