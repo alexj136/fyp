@@ -32,9 +32,19 @@ plu = Abs "m" (Abs "n" (Abs "f" (Abs "x" (App (App (Var "m") (Var "f")) (App (Ap
 pow = Abs "b" (Abs "e" (App (Var "e") (Var "b")))
 
 tests = TestList [
-        testIdentityFunction, testAnd, testOr, testNot, testSuccessor,
-        testExponentiation,   testPlus
+        testRename,    testIdentityFunction, testAnd, testOr, testNot,
+        testSuccessor, testExponentiation,   testPlus
     ]
+
+-- Asserts that renaming the expression \x.\y.xy produces something
+-- alpha-equivalent but not containing the names x or y.
+testRename = TestLabel "Test of renaming" (TestCase (
+    let exp = (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
+        renamedExp = renameAll ["x", "y"] exp in
+            assert (and [ renamedExp === exp          ,
+                          not (nameIn "x" renamedExp) ,
+                          not (nameIn "y" renamedExp) ])
+    ))
 
 testIdentityFunction = TestLabel "Test of the identity function" (
     TestCase (assert (
