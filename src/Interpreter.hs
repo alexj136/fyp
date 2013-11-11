@@ -17,10 +17,20 @@ apply x y = reduceNorm (App x y)
 -- Performs at least one reduction step
 reduce :: Expression -> Expression
 reduce exp = case exp of
-    App (Abs n x) y -> replace n (preventClashes x y) y
-    App x         y -> App (reduce x) (reduce y)
-    Abs n x         -> Abs n (reduce x)
-    _               -> exp
+    Abs n x           -> Abs n (reduce x)
+    App (Abs n x) y   -> replace n (preventClashes x y) y
+    --App x         y   -> App (reduce x) (reduce y)
+    App x         y   -> case x of
+        Constant _    -> App x (reduce y)
+        Var      _    -> App x (reduce y)
+        _             -> App (reduce x) y
+    Arithmetic (Constant (CInt a)) op (Constant (CInt b))
+                      -> Constant (CInt (getOp op a b))
+    Arithmetic x op y -> case x of
+        Constant _    -> Arithmetic x op (reduce y)
+        Var      _    -> Arithmetic x op (reduce y)
+        _             -> Arithmetic (reduce x) op y
+    _                 -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
 -- normal form
@@ -67,7 +77,7 @@ replace n bodyExp argExp = case bodyExp of
           allNames = Set.toList $ Set.fromList $ names x ++ names y
 
 {-- PREVIOUS IMPLEMENTATION - Closer to the definition of α-equivalence, but
---  suffers from the name clash problem.
+    suffers from the name clash problem.
 (===) (Constant x)        (Constant y)         = x == y
 (===) (Var n)             (Var n')             = n == n'
 (===) (Abs n x)           (Abs n' y)           = x === renamedY

@@ -31,6 +31,8 @@ suc = Abs "n" (Abs "f" (Abs "x" (App (Var "f") (App (App (Var "n") (Var "f")) (V
 plu = Abs "m" (Abs "n" (Abs "f" (Abs "x" (App (App (Var "m") (Var "f")) (App (App (Var "n") (Var "f")) (Var "x"))))))
 pow = Abs "b" (Abs "e" (App (Var "e") (Var "b")))
 
+yco = App (Abs "g" (Abs "x" (App (Var "g") (App (Var "x") (Var "x"))))) (Abs "x" (App (Var "g") (App (Var "x") (Var "x"))))
+
 tests = TestList [
         testRename,    testIdentityFunction, testAnd, testOr, testNot,
         testSuccessor, testExponentiation,   testPlus
