@@ -25,14 +25,16 @@ instance Show Expression where
 
         TAbs v t (Arithmetic x op y)
             -> concat ['λ':v, " : ", show t, " . ", show x, ' ':show op, ' ':show y]
-        TAbs v t (App m n)   -> 'λ':v ++ '.':show m ++ ' ':show n
-        TAbs v t x           -> 'λ':v ++ '.':show x
+        TAbs v t (App m n)   -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
+        TAbs v t x           -> concat ['λ':v, " : ", show t, '.':show x]
 
         Var v                -> v
         App m n              -> '(':show m ++ ' ':show n ++ ")"
         Constant c           -> show c
         Arithmetic m op n    -> '(':show m ++ ' ':show op ++ ' ':show n ++ ")"
 
+-- TypeValue represents a constant value that cannot have a function type. The
+-- possible constant values can be integers, floats, chars and booleans.
 data TypeValue = CInt   Int
                | CChar  Char
                | CFloat Float
@@ -41,11 +43,12 @@ data TypeValue = CInt   Int
 
 instance Show TypeValue where
     show typeVal = case typeVal of
-        CInt   x -> show x ++ " : Int"
-        CChar  x -> show x ++ " : Char"
-        CFloat x -> show x ++ " : Float"
-        CBool  x -> show x ++ " : Bool"
+        CInt   x -> '(':show x ++ " : Int)"
+        CChar  x -> '(':show x ++ " : Char)"
+        CFloat x -> '(':show x ++ " : Float)"
+        CBool  x -> '(':show x ++ " : Bool)"
 
+-- Type is a recursive data type used for representing the types of functions
 data Type = TInt | TChar | TFloat | TBool | TFunc Type Type
     deriving Eq
 
@@ -57,6 +60,8 @@ instance Show Type where
         TBool     -> "Bool"
         TFunc a b -> show a ++ " -> " ++ show b
 
+-- The Op data type represents the possible kinds of arithmetic operation that
+-- can be performed.
 data Op = Add | Sub | Mul | Div | Mod
     deriving Eq
 

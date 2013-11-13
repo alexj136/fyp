@@ -1,5 +1,5 @@
 import Test.HUnit
-import Test.QuickCheck
+--import Test.QuickCheck
 import AbstractSyntax
 import Interpreter
 
