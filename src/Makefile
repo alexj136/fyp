@@ -1,4 +1,4 @@
-MODULES  = AbstractSyntax Interpreter Main
+MODULES  = TypedSyntax CoreSyntax Interpreter Main
 TESTS    = test/TestInterpreter
 
 OBJECTS  = $(MODULES:=.o)  $(TESTS:=.o)

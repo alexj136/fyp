@@ -1,6 +1,6 @@
 -- This module defines the abstract syntax of the language, and a few basic
 -- functions over them, which retrieve information from them.
-module AbstractSyntax where
+module CoreSyntax where
 
 import qualified Data.Set as Set
 
@@ -9,10 +9,9 @@ type Name = String
 -- Lambda Expressions need a mechanism to handle naming clashes when replacing
 -- variables (bound variables with mathcing names should be renamed
 data Expression = Abs Name Expression
-                | TAbs Name Type Expression
                 | Var Name
                 | App Expression Expression
-                | Constant TypeValue
+                | Constant Value
                 | Arithmetic Expression Op Expression
     deriving Eq
 
@@ -22,43 +21,25 @@ instance Show Expression where
             -> 'λ':v ++ '.':show x ++ ' ':show op ++ ' ':show y
         Abs v (App m n)      -> 'λ':v ++ '.':show m ++ ' ':show n
         Abs v x              -> 'λ':v ++ '.':show x
-
-        TAbs v t (Arithmetic x op y)
-            -> concat ['λ':v, " : ", show t, " . ", show x, ' ':show op, ' ':show y]
-        TAbs v t (App m n)   -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
-        TAbs v t x           -> concat ['λ':v, " : ", show t, '.':show x]
-
         Var v                -> v
         App m n              -> '(':show m ++ ' ':show n ++ ")"
-        Constant c           -> show c
+        Constant v           -> show v
         Arithmetic m op n    -> '(':show m ++ ' ':show op ++ ' ':show n ++ ")"
 
 -- TypeValue represents a constant value that cannot have a function type. The
 -- possible constant values can be integers, floats, chars and booleans.
-data TypeValue = CInt   Int
-               | CChar  Char
-               | CFloat Float
-               | CBool  Bool
+data Value = IntVal   Int
+           | CharVal  Char
+           | FloatVal Float
+           | BoolVal  Bool
     deriving Eq
 
-instance Show TypeValue where
-    show typeVal = case typeVal of
-        CInt   x -> '(':show x ++ " : Int)"
-        CChar  x -> '(':show x ++ " : Char)"
-        CFloat x -> '(':show x ++ " : Float)"
-        CBool  x -> '(':show x ++ " : Bool)"
-
--- Type is a recursive data type used for representing the types of functions
-data Type = TInt | TChar | TFloat | TBool | TFunc Type Type
-    deriving Eq
-
-instance Show Type where
-    show t = case t of
-        TInt      -> "Int"
-        TChar     -> "Char"
-        TFloat    -> "Float"
-        TBool     -> "Bool"
-        TFunc a b -> show a ++ " -> " ++ show b
+instance Show Value where
+    show val = case val of
+        IntVal   x -> show x
+        CharVal  x -> show x
+        FloatVal x -> show x
+        BoolVal  x -> show x
 
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
