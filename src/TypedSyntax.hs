@@ -6,32 +6,24 @@ import qualified Data.Set as Set
 
 type Name = String
 
--- Lambda Expressions need a mechanism to handle naming clashes when replacing
--- variables (bound variables with mathcing names should be renamed
-data Expression = Abs Name Expression
-                | TAbs Name Type Expression
-                | Var Name
-                | App Expression Expression
-                | Constant Type Value
-                | Arithmetic Expression Op Expression
+data TypedExp = Abs Name Type TypedExp
+              | Var Name
+              | App TypedExp TypedExp
+              | Constant Type Value
+              | Arithmetic TypedExp Op TypedExp
     deriving Eq
 
-instance Show Expression where
+instance Show TypedExp where
     show exp = case exp of
-        Abs v (Arithmetic x op y)
-            -> 'λ':v ++ '.':show x ++ ' ':show op ++ ' ':show y
-        Abs v (App m n)      -> 'λ':v ++ '.':show m ++ ' ':show n
-        Abs v x              -> 'λ':v ++ '.':show x
-
-        TAbs v t (Arithmetic x op y)
+        Abs v t (Arithmetic x op y)
             -> concat ['λ':v, " : ", show t, " . ", show x, ' ':show op, ' ':show y]
-        TAbs v t (App m n)   -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
-        TAbs v t x           -> concat ['λ':v, " : ", show t, '.':show x]
+        Abs v t (App m n)   -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
+        Abs v t x           -> concat ['λ':v, " : ", show t, '.':show x]
 
-        Var v                -> v
-        App m n              -> '(':show m ++ ' ':show n ++ ")"
-        Constant t v         -> '(':show v ++ " : " ++ show t ++ ")"
-        Arithmetic m op n    -> '(':show m ++ ' ':show op ++ ' ':show n ++ ")"
+        Var v               -> v
+        App m n             -> '(':show m ++ ' ':show n ++ ")"
+        Constant t v        -> '(':show v ++ " : " ++ show t ++ ")"
+        Arithmetic m op n   -> '(':show m ++ ' ':show op ++ ' ':show n ++ ")"
 
 -- TypeValue represents a constant value that cannot have a function type. The
 -- possible constant values can be integers, floats, chars and booleans.
@@ -87,40 +79,40 @@ getOp Div = div
 getOp Mod = mod
 
 -- Returns a list of the subexpressions of the given tree node
-subs :: Expression -> [Expression]
-subs (Abs _ x)          = [x]
+subs :: TypedExp -> [TypedExp]
+subs (Abs _ _ x)        = [x]
 subs (App x y)          = [x, y]
 subs (Arithmetic x _ y) = [x, y]
 subs _                  = []
 
--- Creates a list of all name occurences in an Expression - If a name is used
+-- Creates a list of all name occurences in an TypedExp - If a name is used
 -- twice, it will appear twice in the returned list, etc.
-names :: Expression -> [Name]
-names (Abs n x)      = n : names x
+names :: TypedExp -> [Name]
+names (Abs n _ x)    = n : names x
 names (Var n)        = [n]
 names (Constant _ _) = []
 names exp            = concat (map names (subs exp))
 
 -- Returns true if there are any occurences (free or bound) of the given string
--- as a name in the given Expression. Used by newName to generate names that are
+-- as a name in the given TypedExp. Used by newName to generate names that are
 -- not found in a given expression.
-nameIn :: Name -> Expression -> Bool
-nameIn n (Abs n' x)     = (n == n') || nameIn n x
+nameIn :: Name -> TypedExp -> Bool
+nameIn n (Abs n' _ x)   = (n == n') || nameIn n x
 nameIn n (Var n')       = n == n'
 nameIn _ (Constant _ _) = False
 nameIn n exp            = any (nameIn n) (subs exp)
 
--- Creates a set of all free variables in an Expression, which can be used when
+-- Creates a set of all free variables in a TypedExp, which can be used when
 -- reducing a function application, as it determines which names will need to be
 -- changed in order to prevent name clashes.
-freeVars :: Expression -> Set.Set Name
+freeVars :: TypedExp -> Set.Set Name
 freeVars exp = case exp of
     Var x        -> Set.singleton x
-    Abs x m      -> Set.delete x (freeVars m)
+    Abs x _ m    -> Set.delete x (freeVars m)
     Constant _ _ -> Set.empty
     _            -> Set.unions $ map freeVars $ subs exp
 
--- Composes Set.toList with freeVars, yeilding a list of the free names in an
--- Expression, as opposed to a Set
-freeNames :: Expression -> [Name]
+-- Composes Set.toList with freeVars, yeilding a list of the free names in a
+-- TypedExp, as opposed to a Set
+freeNames :: TypedExp -> [Name]
 freeNames = Set.toList . freeVars
