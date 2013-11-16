@@ -1,7 +1,6 @@
 import Test.HUnit
---import Test.QuickCheck
 import CoreSyntax
-import Interpreter
+import CoreInterpreter
 
 main :: IO Counts
 main = do

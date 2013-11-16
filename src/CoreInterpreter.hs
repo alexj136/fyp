@@ -1,4 +1,4 @@
-module Interpreter where
+module CoreInterpreter where
 
 import qualified Data.Set as Set
 import CoreSyntax

@@ -2,24 +2,25 @@
 -- terms, such as conditionals etc.
 module TypedTerms where
 
-import TypedSyntax
+import qualified CoreSyntax as C
+import qualified TypedSyntax as T
 
-_idInt_   = Abs "x" (TFunc TInt  TInt)  (Var "x")
-_idBool_  = Abs "x" (TFunc TBool TBool) (Var "x")
-_idChar_  = Abs "x" (TFunc TChar TChar) (Var "x")
-_idInt_   = Abs "x" (TFunc TInt  TInt)  (Var "x")
+_idInt_   = T.Abs "x" (TFunc TInt  TInt)  (T.Var "x")
+_idBool_  = T.Abs "x" (TFunc TBool TBool) (T.Var "x")
+_idChar_  = T.Abs "x" (TFunc TChar TChar) (T.Var "x")
+_idInt_   = T.Abs "x" (TFunc TInt  TInt)  (T.Var "x")
 
 -- Function that generates church numeral natural numbers
-lamInt :: Int -> Expression
-lamInt n = Abs "f" (Abs "x" (nApps n))
-    where nApps :: Int -> TypedExp
+lamInt :: Int -> C.Expression
+lamInt n = C.Abs "f" (C.Abs "x" (nApps n))
+    where nApps :: Int -> C.Expression
           nApps n | n  < 0 = error "Cannot generate negative number"
-                  | n == 0 = Var "x"
-                  | n  > 0 = App (Var "f") (nApps (n - 1))
+                  | n == 0 = C.Var "x"
+                  | n  > 0 = C.App (C.Var "f") (nApps (n - 1))
 
 -- Arithmetic operations
-suc = Abs "n" (Abs "f" (Abs "x" (App (Var "f") (App (App (Var "n") (Var "f")) (Var "x")))))
-plu = Abs "m" (Abs "n" (Abs "f" (Abs "x" (App (App (Var "m") (Var "f")) (App (App (Var "n") (Var "f")) (Var "x"))))))
-pow = Abs "b" (Abs "e" (App (Var "e") (Var "b")))
+suc = C.Abs "n" (C.Abs "f" (C.Abs "x" (C.App (C.Var "f") (C.App (C.App (C.Var "n") (C.Var "f")) (C.Var "x")))))
+plu = C.Abs "m" (C.Abs "n" (C.Abs "f" (C.Abs "x" (C.App (C.App (C.Var "m") (C.Var "f")) (C.App (C.App (C.Var "n") (C.Var "f")) (C.Var "x"))))))
+pow = C.Abs "b" (C.Abs "e" (C.App (C.Var "e") (C.Var "b")))
 
-yco = App (Abs "g" (Abs "x" (App (Var "g") (App (Var "x") (Var "x"))))) (Abs "x" (App (Var "g") (App (Var "x") (Var "x"))))
+yco = C.App (C.Abs "g" (C.Abs "x" (C.App (C.Var "g") (C.App (C.Var "x") (C.Var "x"))))) (C.Abs "x" (C.App (C.Var "g") (C.App (C.Var "x") (C.Var "x"))))

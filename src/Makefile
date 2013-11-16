@@ -1,5 +1,5 @@
-MODULES  = TypedSyntax CoreSyntax Interpreter Main
-TESTS    = test/TestInterpreter
+MODULES  = TypedSyntax TypeChecker CoreSyntax CoreInterpreter Main
+TESTS    = test/TestCoreInterpreter
 
 OBJECTS  = $(MODULES:=.o)  $(TESTS:=.o)
 HIFILES  = $(MODULES:=.hi) $(TESTS:=.hi)
@@ -14,6 +14,6 @@ clean:
 Main: Main.hs
 	ghc --make -o Main Main.hs
 
-test/TestInterpreter: test/TestInterpreter.hs
-	ghc --make -o test/TestInterpreter test/TestInterpreter.hs
-	@test/TestInterpreter
+test/TestCoreInterpreter: test/TestCoreInterpreter.hs
+	ghc --make -o test/TestCoreInterpreter test/TestCoreInterpreter.hs
+	@test/TestCoreInterpreter
