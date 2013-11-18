@@ -1,6 +1,6 @@
 import Test.HUnit
-import CoreSyntax
-import CoreInterpreter
+import PureSyntax
+import PureInterpreter
 
 main :: IO Counts
 main = do

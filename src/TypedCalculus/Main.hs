@@ -1,5 +1,3 @@
-import CoreSyntax
-import CoreInterpreter
 import TypedSyntax
 import TypeChecker
 

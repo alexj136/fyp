@@ -1,7 +1,7 @@
-module CoreInterpreter where
+module PureInterpreter where
 
 import qualified Data.Set as Set
-import CoreSyntax
+import PureSyntax
 
 -- REPLACEMENT ALGORITHM
 -- Create a list of unbound names in the argument expression
@@ -17,20 +17,12 @@ apply x y = reduceNorm (App x y)
 -- Performs at least one reduction step
 reduce :: Expression -> Expression
 reduce exp = case exp of
-    Abs n x           -> Abs n (reduce x)
-    App (Abs n x) y   -> replace n (preventClashes x y) y
-    --App x         y   -> App (reduce x) (reduce y)
-    App x         y   -> case x of
-        Constant _    -> App x (reduce y)
-        Var      _    -> App x (reduce y)
-        _             -> App (reduce x) y
-    Arithmetic (Constant (IntVal a)) op (Constant (IntVal b))
-                      -> Constant (IntVal (getOp op a b))
-    Arithmetic x op y -> case x of
-        Constant _    -> Arithmetic x op (reduce y)
-        Var      _    -> Arithmetic x op (reduce y)
-        _             -> Arithmetic (reduce x) op y
-    _                 -> exp
+    Abs n x         -> Abs n (reduce x)
+    App (Abs n x) y -> replace n (preventClashes x y) y
+    App x         y -> case x of
+        Var _       -> App x (reduce y)
+        _           -> App (reduce x) y
+    _               -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
 -- normal form
@@ -45,13 +37,6 @@ reduceNorm exp = if exp == reducedExp then exp else reduceNorm reducedExp
 preventClashes :: Expression -> Expression -> Expression
 preventClashes x y = renameAll (freeNames y) x
 
--- Evaluates an Expression, and returns its value. Expressions with remaining
--- abstractions, applications and names, are not handled.
-eval :: Expression -> Int
-eval (Arithmetic x op y)   = getOp op (eval x) (eval y)
-eval (Constant (IntVal x)) = x
-eval _                     = error "Can't calculate value of ill-typed expression"
-
 -- Function to replace one Expression with another - implements function
 -- application with Expressions. Assumes that there are no name clashes.
 replace :: Name -> Expression -> Expression -> Expression
@@ -61,8 +46,6 @@ replace n bodyExp argExp = case bodyExp of
     App x x'           -> App (replaced x) (replaced x')
     Var n'   | n == n' -> argExp
              | n /= n' -> Var n'
-    Arithmetic x op x' -> Arithmetic (replaced x) op (replaced x')
-    Constant v         -> Constant v
     where replaced subBodyExp = replace n subBodyExp argExp
 
 -- The === operator checks if two expressions are α-equivalent, i.e. are they
@@ -122,13 +105,11 @@ renameAll = rnmAll2 []
 -- before we find the binding, we don't need to do anything - the name is not
 -- bound at that point and therefore doesn't need renaming.
 renameBound :: Name -> Name -> Expression -> Expression
-renameBound _    _  (Constant v) = Constant v
 renameBound _    _  (Var n)      = Var n
 renameBound from to exp          = case exp of
     Abs n x | n == from -> Abs to (blindRename from to x)
             | otherwise -> Abs n (renamed x)
     App x x'            -> App (renamed x) (renamed x')
-    Arithmetic x op x'  -> Arithmetic (renamed x) op (renamed x')
     where renamed :: Expression -> Expression
           renamed = renameBound from to
 
@@ -143,7 +124,5 @@ blindRename from to exp = case exp of
     Var n   | n == from -> Var to
             | otherwise -> Var n
     App x x'            -> App (renamed x) (renamed x')
-    Arithmetic x op x'  -> Arithmetic (renamed x) op (renamed x')
-    Constant v          -> Constant v
     where renamed :: Expression -> Expression
           renamed = blindRename from to
