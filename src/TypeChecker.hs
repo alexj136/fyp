@@ -1,8 +1,6 @@
 module TypeChecker where
 
 import TypedSyntax
-import qualified CoreSyntax as C
-
 import qualified Data.Map as M
 
 data TypeCheckResult = Pass TypedExp | Fail TypedExp String
@@ -36,31 +34,17 @@ typeOf ctx exp = case exp of
         CharVal  _ -> TChar
         FloatVal _ -> TFloat
         BoolVal  _ -> TBool
-    BinaryOp op m n -> binaryOpType ctx op m n
+    BinaryOp t -> typeOfBinaryOp t
 
 -- Infer the type of a BinaryOp from its type and arguments
-binaryOpType :: Context -> BOp -> TypedExp -> TypedExp -> Type
-binaryOpType ctx op m n =
-    if opIs [Add, Sub, Mul, Div, Mod] then case (tM, tN) of
-        ( TBool  , _      ) -> errMsg
-        ( _      , TBool  ) -> errMsg
-        ( TChar  , _      ) -> errMsg
-        ( _      , TChar  ) -> errMsg
-        ( TInt   , TInt   ) -> TInt   --TFunc TInt   (TFunc TInt   TInt  )
-        ( TInt   , TFloat ) -> TFloat --TFunc TInt   (TFunc TFloat TFloat)
-        ( TFloat , TInt   ) -> TFloat --TFunc TFloat (TFunc TInt   TFloat)
-        ( TFloat , TFloat ) -> TFloat --TFunc TFloat (TFunc TFloat TFloat)
-    else if opIs [] then case (tM, tN) of
-        _ -> error $ "Op type: '" ++ show op ++ "' not yet implemented"
-    else error $ "Op type: '" ++ show op ++ "' not yet implemented"
-    where opIs = or . map (== op)
-          tM = typeOf ctx m
-          tN = typeOf ctx n
-          errMsg = error $ concat ["Error: Cannot apply '", show op,
-                         "' to '", show tM, "' and '", show tN, "'"]
-
--- Throw away the types from a TypedExp to obtain an untyped Expression
-discardTypes :: TypeCheckResult -> C.Expression
-discardTypes (Fail _ s) = error $ "discardTypes failed: " ++ s
-discardTypes (Pass exp) = case exp of
-    _ -> error "discardTypes not yet implemented"
+typeOfBinaryOp :: BinaryOpType -> Type
+typeOfBinaryOp t = case t of
+    Add -> TFunc TInt  (TFunc TInt  TInt )
+    Sub -> TFunc TInt  (TFunc TInt  TInt )
+    Mul -> TFunc TInt  (TFunc TInt  TInt )
+    Div -> TFunc TInt  (TFunc TInt  TInt )
+    Mod -> TFunc TInt  (TFunc TInt  TInt )
+    And -> TFunc TBool (TFunc TBool TBool)
+    Or  -> TFunc TBool (TFunc TBool TBool)
+    Xor -> TFunc TBool (TFunc TBool TBool)
+    _   -> error "Binary operation type not yet implemented"

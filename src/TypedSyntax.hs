@@ -10,21 +10,20 @@ data TypedExp = Abs Name Type TypedExp
               | Var Name
               | App TypedExp TypedExp
               | Constant Value
-              | BinaryOp BOp TypedExp TypedExp
+              | BinaryOp BinaryOpType
 --            | UnaryOp UOp TypedExp -- Not yet implemented
     deriving Eq
 
 instance Show TypedExp where
     show exp = case exp of
-        Abs v t (BinaryOp op m n)
-            -> concat ['λ':v, " : ", show t, " . ", show op, ' ':show m, ' ':show n]
+        -- First case just stops brackets from appearing around applications
+        -- that appear immidiately within an abstraction
         Abs v t (App m n) -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
         Abs v t x         -> concat ['λ':v, " : ", show t, '.':show x]
-
         Var v             -> v
         App m n           -> '(':show m ++ ' ':show n ++ ")"
         Constant v        -> show v
-        BinaryOp op m n   -> '(':show op ++ ' ':show m ++ ' ':show n ++ ")"
+        BinaryOp t        -> show t
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
@@ -61,26 +60,26 @@ instance Show Type where
 
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
-data BOp = Add | Sub | Mul | Div | Mod       -- Arithmetic (TInt & TFloat)
---       | Lss | LsE | Equ | NEq | Gtr | GtE -- Arithmetic, but yield TBool
---       | And | Or  | Xor                   -- TBool
+data BinaryOpType = Add | Sub | Mul | Div | Mod
+--                | Lss | LsE | Equ | NEq | Gtr | GtE
+                  | And | Or  | Xor
     deriving Eq
 
 data UOp = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
     deriving Eq
 
-instance Show BOp where
+instance Show BinaryOpType where
     show Add = "+"
     show Sub = "-"
     show Mul = "*"
     show Div = "/"
     show Mod = "%"
---  show And = "&"
---  show Or  = "|"
---  show Xor = "#"
+    show And = "&"
+    show Or  = "|"
+    show Xor = "#"
 
--- Retrieve the function that corresponds to the given BOp
-getBOp :: (Integral a, Num a) => BOp -> (a -> a -> a)
+-- Retrieve the function that corresponds to the given BinaryOpType
+getBOp :: (Integral a, Num a) => BinaryOpType -> (a -> a -> a)
 getBOp Add = (+)
 getBOp Sub = (-)
 getBOp Mul = (*)
@@ -91,7 +90,6 @@ getBOp Mod = mod
 subs :: TypedExp -> [TypedExp]
 subs (Abs _ _ x)      = [x]
 subs (App x y)        = [x, y]
-subs (BinaryOp _ x y) = [x, y]
 subs _                = []
 
 -- Creates a list of all name occurences in an TypedExp - If a name is used
