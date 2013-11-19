@@ -35,9 +35,10 @@ typeOf ctx exp = case exp of
               tN = typeOf ctx n
     Constant val -> case val of
         IntVal   _ -> TInt
+        CharVal  _ -> TChar
+        FloatVal _ -> TFloat
         BoolVal  _ -> TBool
     BinaryOp t -> typeOfBinaryOp t
-    UnaryOp  t -> typeOfUnaryOp  t
 
 -- Infer the type of a BinaryOp from its type and arguments
 typeOfBinaryOp :: BinaryOpType -> Type
@@ -50,7 +51,4 @@ typeOfBinaryOp t = case t of
     And -> TFunc TBool (TFunc TBool TBool)
     Or  -> TFunc TBool (TFunc TBool TBool)
     Xor -> TFunc TBool (TFunc TBool TBool)
-
-typeOfUnaryOp :: UnaryOpType -> Type
-typeOfUnaryOp IsZ = TFunc TInt  TBool
-typeOfUnaryOp Not = TFunc TBool TBool
+    _   -> error "Binary operation type not yet implemented"

@@ -11,7 +11,7 @@ data TypedExp = Abs Name Type TypedExp
               | App TypedExp TypedExp
               | Constant Value
               | BinaryOp BinaryOpType
-              | UnaryOp UnaryOpType
+--            | UnaryOp UOp TypedExp -- Not yet implemented
     deriving Eq
 
 instance Show TypedExp where
@@ -24,21 +24,26 @@ instance Show TypedExp where
         App m n           -> '(':show m ++ ' ':show n ++ ")"
         Constant v        -> show v
         BinaryOp t        -> show t
-        UnaryOp t         -> show t
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
 data Value = IntVal   Int
+           | CharVal  Char
+           | FloatVal Float
            | BoolVal  Bool
     deriving Eq
 
 instance Show Value where
     show val = case val of
         IntVal   x -> show x
+        CharVal  x -> show x
+        FloatVal x -> show x
         BoolVal  x -> show x
 
 -- Type is a recursive data type used for representing the types of functions
 data Type = TInt
+          | TChar
+          | TFloat
           | TBool
           | TList Type
           | TFunc Type Type
@@ -47,6 +52,8 @@ data Type = TInt
 instance Show Type where
     show t = case t of
         TInt      -> "Int"
+        TChar     -> "Char"
+        TFloat    -> "Float"
         TBool     -> "Bool"
         TList a   -> '[':show a ++ "]"
         TFunc a b -> show a ++ " -> " ++ show b
@@ -56,6 +63,9 @@ instance Show Type where
 data BinaryOpType = Add | Sub | Mul | Div | Mod
 --                | Lss | LsE | Equ | NEq | Gtr | GtE
                   | And | Or  | Xor
+    deriving Eq
+
+data UOp = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
     deriving Eq
 
 instance Show BinaryOpType where
@@ -68,12 +78,13 @@ instance Show BinaryOpType where
     show Or  = "|"
     show Xor = "#"
 
-data UnaryOpType = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
-    deriving Eq
-
-instance Show UnaryOpType where
-    show IsZ = "isZero"
-    show Not = "!"
+-- Retrieve the function that corresponds to the given BinaryOpType
+getBOp :: (Integral a, Num a) => BinaryOpType -> (a -> a -> a)
+getBOp Add = (+)
+getBOp Sub = (-)
+getBOp Mul = (*)
+getBOp Div = div
+getBOp Mod = mod
 
 -- Returns a list of the subexpressions of the given tree node
 subs :: TypedExp -> [TypedExp]
