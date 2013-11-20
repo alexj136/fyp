@@ -1,7 +1,7 @@
-module PureInterpreter where
+module TypedInterpreter where
 
 import qualified Data.Set as Set
-import PureSyntax
+import TypedSyntax
 
 -- REPLACEMENT ALGORITHM
 -- Create a list of unbound names in the argument expression
@@ -10,33 +10,42 @@ import PureSyntax
 --     call renameBound newName functionBody to do the replacement
 -- Finally carry out the substitution
 
--- Function for convenience in the REPL, shorthand for: reduce (Application x y)
+-- Function for convenience in the REPL, shorthand for: reduce (App x y)
 apply :: TypedExp -> TypedExp -> TypedExp
 apply x y = reduceNorm (App x y)
 
 -- Performs at least one reduction step
 reduce :: TypedExp -> TypedExp
 reduce exp = case exp of
-    App (App (BinaryOp op) m) n -> case op of
-        Add -> Constant (IntVal ((+) valM valN))
-        Sub -> Constant (IntVal ((-) valM valN))
-        Mul -> Constant (IntVal ((*) valM valN))
-        Div -> Constant (IntVal (div valM valN))
-        Mod -> Constant (IntVal (mod valM valN))
-        And -> Constant (IntVal (valM && valN))
-        Or  -> Constant (IntVal (valM || valN))
-        Xor -> Constant (IntVal (xor valM valN))
-        where valM = reduceNorm m
-              valN = reduceNorm n
-    App (UnaryOp op) m -> case op of
-        IsZ -> valM == 0
-        Not -> not valM
-    Abs v t m                   -> Abs n (reduce x)
-    App (Abs v t m) y           -> replace n (preventClashes x y) y
-    App x           y           -> case x of
-        Var _                   -> App x (reduce y)
-        _                       -> App (reduce x) y
-    _                           -> exp
+    App (App (BinaryOp op) m) n -> case ( op , redM , redN ) of
+        ( Add , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  ((+) x y))
+        ( Sub , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  ((-) x y))
+        ( Mul , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  ((*) x y))
+        ( Div , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (div x y))
+        ( Mod , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (mod x y))
+        ( Xor , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (xor x y))
+        ( And , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (x && y))
+        ( Or  , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (x || y))
+        where redM, redN :: TypedExp
+              redM = reduce m
+              redN = reduce n
+              xor :: Bool -> Bool -> Bool
+              xor a b = case ( a , b ) of
+                  ( True  , True  ) -> False
+                  ( True  , False ) -> True
+                  ( False , True  ) -> True
+                  ( False , False ) -> False
+    App (UnaryOp op) m -> case ( op , redM ) of
+        ( IsZ , Constant (IntVal  x) ) -> Constant (BoolVal (x == 0))
+        ( Not , Constant (BoolVal x) ) -> Constant (BoolVal (not x))
+        where redM = reduce m
+    Abs v t m         -> Abs v t (reduce m)
+    App (Abs v t m) n -> replace v (preventClashes m n) n
+    App m           n -> case m of
+        Var      _ -> App m (reduce n)
+        Constant _ -> App m (reduce n)
+        _             -> App (reduce m) n
+    _                 -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
 -- normal form
@@ -54,13 +63,13 @@ preventClashes x y = renameAll (freeNames y) x
 -- Function to replace one expression with another - implements function
 -- application with expressions. Assumes that there are no name clashes.
 replace :: Name -> TypedExp -> TypedExp -> TypedExp
-replace n bodyExp argExp = case bodyExp of
-    Abs n' x | n /= n' -> Abs n' (replaced x)
-             | n == n' -> Abs n' x
-    App x x'           -> App (replaced x) (replaced x')
-    Var n'   | n == n' -> argExp
-             | n /= n' -> Var n'
-    where replaced subBodyExp = replace n subBodyExp argExp
+replace varName bodyExp argExp = case bodyExp of
+    Abs v t m | varName /= v -> Abs v t (replaced m)
+              | varName == v -> Abs v t m
+    App m n                  -> App (replaced m) (replaced n)
+    Var v     | varName == v -> argExp
+              | varName /= v -> Var v
+    where replaced subBodyExp = replace varName subBodyExp argExp
 
 -- The === operator checks if two expressions are α-equivalent, i.e. are they
 -- are equal disregarding names. Some examples:
@@ -119,11 +128,11 @@ renameAll = rnmAll2 []
 -- before we find the binding, we don't need to do anything - the name is not
 -- bound at that point and therefore doesn't need renaming.
 renameBound :: Name -> Name -> TypedExp -> TypedExp
-renameBound _    _  (Var n)      = Var n
 renameBound from to exp          = case exp of
-    Abs n x | n == from -> Abs to (blindRename from to x)
-            | otherwise -> Abs n (renamed x)
-    App x x'            -> App (renamed x) (renamed x')
+    Abs v t m | v == from -> Abs to t (blindRename from to m)
+              | otherwise -> Abs v  t (renamed m)
+    App m n               -> App (renamed m) (renamed n)
+    _                     -> exp
     where renamed :: TypedExp -> TypedExp
           renamed = renameBound from to
 
@@ -133,10 +142,11 @@ renameBound from to exp          = case exp of
 -- been eliminated.
 blindRename :: Name -> Name -> TypedExp -> TypedExp
 blindRename from to exp = case exp of
-    Abs n x | n == from -> Abs to (renamed x)
-            | otherwise -> Abs n (renamed x)
-    Var n   | n == from -> Var to
-            | otherwise -> Var n
-    App x x'            -> App (renamed x) (renamed x')
+    Abs v t m | v == from -> Abs to t (renamed m)
+              | otherwise -> Abs v  t (renamed m)
+    Var v     | v == from -> Var to
+              | otherwise -> Var v
+    App m n               -> App (renamed m) (renamed n)
+    _                     -> exp
     where renamed :: TypedExp -> TypedExp
           renamed = blindRename from to
