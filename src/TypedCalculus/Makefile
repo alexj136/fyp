@@ -1,5 +1,5 @@
-MODULES  = TypedSyntax TypeChecker Main
-TESTS    = TestTypeChecker
+MODULES  = TypedSyntax TypeChecker TypedInterpreter Main
+TESTS    = TestTypeChecker TestTypedInterpreter
 
 OBJECTS  = $(MODULES:=.o)  $(TESTS:=.o)
 HIFILES  = $(MODULES:=.hi) $(TESTS:=.hi)
@@ -16,3 +16,7 @@ Main: Main.hs
 TestTypeChecker: TestTypeChecker.hs
 	ghc --make -o TestTypeChecker TestTypeChecker.hs
 	@./TestTypeChecker
+
+TestTypedInterpreter: TestTypedInterpreter.hs
+	ghc --make -o TestTypedInterpreter TestTypedInterpreter.hs
+	@./TestTypedInterpreter

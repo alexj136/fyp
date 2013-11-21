@@ -21,6 +21,7 @@ reduce exp = case exp of
     App (Abs n x) y -> replace n (preventClashes x y) y
     App x         y -> case x of
         Var _       -> App x (reduce y)
+        Abs _ _     -> App x (reduce y)
         _           -> App (reduce x) y
     _               -> exp
 

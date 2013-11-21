@@ -20,10 +20,13 @@ tests = TestList [
 testIntID = TestLabel "Some simple cases with an integer ID function" (TestCase (
     assert $ and
         [ typeOf M.empty (App intID (Constant (IntVal 0))) == TInt
-        , typeOf (M.fromList [("x", TInt)]) intID == TFunc TInt TInt
+        , typeOf (contextFrom "x" TInt) intID == TFunc TInt TInt
         ]
     ))
 
 testBlahBlah = TestLabel "blah blah" (TestCase (
-    assert True
+    assert $ and
+        [ typeOf M.empty (App intID (Constant (IntVal 0))) == TInt
+        , typeOf (contextFrom "x" TInt) intID == TFunc TInt TInt
+        ]
     ))
