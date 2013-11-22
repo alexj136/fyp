@@ -29,6 +29,7 @@ lamInt n = Abs "f" (Abs "x" (nApps n))
 -- Arithmetic operations
 isZero = Abs "n" (App (App (Var "n") (Abs "x" fAL)) tRU)
 suc = Abs "n" (Abs "f" (Abs "x" (App (Var "f") (App (App (Var "n") (Var "f")) (Var "x")))))
+pre = Abs "n" (Abs "f" (Abs "x" (App (App (App (Var "n") (Abs "g" (Abs "h" (App (Var "h") (App (Var "g") (Var "f")))))) (Abs "u" (Var "x"))) iD)))
 plu = Abs "m" (Abs "n" (Abs "f" (Abs "x" (App (App (Var "m") (Var "f")) (App (App (Var "n") (Var "f")) (Var "x"))))))
 pow = Abs "b" (Abs "e" (App (Var "e") (Var "b")))
 mul = Abs "m" (Abs "n" (Abs "f" (App (Var "m") (App (Var "n") (Var "f")))))
@@ -38,7 +39,7 @@ fix = Abs "f" (App innerFix innerFix)
     where innerFix = Abs "x" (App (Var "f") (Abs "y" (App (App (Var "x") (Var "x")) (Var "y"))))
 
 -- factorial function as a lambda term
-fact = Abs "f" (Abs "x" (App (App (App (cond) (App isZero (Var "x"))) (lamInt 1)) (App (App mul (Var "x")) (App (Var "f") (App suc (Var "x"))))))
+fact = Abs "f" (Abs "x" (App (App (App (cond) (App isZero (Var "x"))) (lamInt 1)) (App (App mul (Var "x")) (App (Var "f") (App pre (Var "x"))))))
 -- actual factorial function for comparison
 factorial :: Int -> Int
 factorial n = factCPS n 1
@@ -46,11 +47,20 @@ factorial n = factCPS n 1
           factCPS n acc | n == 0    = acc
                         | otherwise = factCPS (n-1) (n * acc)
 
-tests = TestList [
-        testRename,    testIdentityFunction, testAnd,  testOr,     testNot,
-        testSuccessor, testExponentiation,   testPlus, testIsZero, testCond,
-        testMul,       testFact
-    ]
+tests = TestList [ testRename
+                 , testIdentityFunction
+                 , testAnd
+                 , testOr
+                 , testNot
+                 , testSuccessor
+                 , testPredecessor
+                 , testExponentiation
+                 , testPlus
+                 , testIsZero
+                 , testCond
+                 , testMul
+                 , testFact
+                 ]
 
 -- Asserts that renaming the expression \x.\y.xy produces something
 -- alpha-equivalent but not containing the names x or y.
@@ -94,6 +104,11 @@ testSuccessor = TestLabel "Tests that the successor function works" (
         and $ map (\x -> (reduceNorm (App suc (lamInt x)) === lamInt (x+1))) [0, 3 .. 60]
     )))
 
+testPredecessor = TestLabel "Tests that the predecessor function works" (
+    TestCase (assert (
+        and $ map (\x -> (reduceNorm (App pre (lamInt x)) === lamInt (x-1))) [1, 3 .. 61]
+    )))
+
 testExponentiation = TestLabel "Test of natural number exponentiation" (
     TestCase (assert (
         and [ reduceNorm (App (App (pow) (lamInt 2)) (lamInt 2)) === lamInt 4  ,
@@ -127,5 +142,5 @@ testMul = TestLabel "Test of natural number multiplucation" (
 
 testFact = TestLabel "Test of the fixed-point recursive factorial function" (
     TestCase (assert (
-        and $ map (\x -> reduceNorm (App (App fix fact) (lamInt x)) === lamInt (factorial x)) [0]
+        and $ map (\x -> reduceNorm (App (App fix fact) (lamInt x)) === lamInt (factorial x)) [0..3]
     )))

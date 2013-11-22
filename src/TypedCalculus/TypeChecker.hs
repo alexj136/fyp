@@ -33,13 +33,11 @@ typeOf ctx exp = case exp of
                     show tM, "' to '", show tN, "'."]
         where tM = typeOf ctx m
               tN = typeOf ctx n
-    Constant val -> case val of
-        IntVal   _ -> TInt
-        BoolVal  _ -> TBool
+    Constant (IntVal  _) -> TInt
+    Constant (BoolVal _) -> TBool
     BinaryOp t -> typeOfBinaryOp t
     UnaryOp  t -> typeOfUnaryOp  t
 
--- Infer the type of a BinaryOp from its type and arguments
 typeOfBinaryOp :: BinaryOpType -> Type
 typeOfBinaryOp t = case t of
     Add -> TFunc TInt  (TFunc TInt  TInt )
