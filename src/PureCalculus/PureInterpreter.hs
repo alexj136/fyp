@@ -19,10 +19,9 @@ reduce :: Expression -> Expression
 reduce exp = case exp of
     Abs n x         -> Abs n (reduce x)
     App (Abs n x) y -> replace n (preventClashes x y) y
-    App x         y -> case x of
-        Var _       -> App x (reduce y)
-        Abs _ _     -> App x (reduce y)
-        _           -> App (reduce x) y
+    App x         y | redX === x -> App x (reduce y) -- only reduce rhs when lhs
+                    | otherwise  -> App (reduce x) y -- is in normal form
+        where redX = reduce x
     _               -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches

@@ -34,7 +34,8 @@ pow = Abs "b" (Abs "e" (App (Var "e") (Var "b")))
 mul = Abs "m" (Abs "n" (Abs "f" (App (Var "m") (App (Var "n") (Var "f")))))
 
 -- fix combinator for recursion
-fix = App (Abs "x" (Abs "y" (App (Var "y") (App (App (Var "x") (Var "x")) (Var "y"))))) (Abs "x" (Abs "y" (App (Var "y") (App (App (Var "x") (Var "x")) (Var "y")))))
+fix = Abs "f" (App innerFix innerFix)
+    where innerFix = Abs "x" (App (Var "f") (Abs "y" (App (App (Var "x") (Var "x")) (Var "y"))))
 
 -- factorial function as a lambda term
 fact = Abs "f" (Abs "x" (App (App (App (cond) (App isZero (Var "x"))) (lamInt 1)) (App (App mul (Var "x")) (App (Var "f") (App suc (Var "x"))))))
@@ -126,5 +127,5 @@ testMul = TestLabel "Test of natural number multiplucation" (
 
 testFact = TestLabel "Test of the fixed-point recursive factorial function" (
     TestCase (assert (
-        and $ map (\x -> App (App fix fact) (lamInt x) === lamInt 1) [0]
+        and $ map (\x -> reduceNorm (App (App fix fact) (lamInt x)) === lamInt (factorial x)) [0]
     )))
