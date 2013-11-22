@@ -3,25 +3,24 @@ module PureInterpreter where
 import qualified Data.Set as Set
 import PureSyntax
 
--- REPLACEMENT ALGORITHM
--- Create a list of unbound names in the argument expression
--- For each name in that list
---     call newName to get a name that doesn't exist in function body
---     call renameBound newName functionBody to do the replacement
--- Finally carry out the substitution
-
--- Function for convenience in the REPL, shorthand for: reduce (Application x y)
+-- Function for convenience in the REPL, shorthand for: reduce (App m n)
 apply :: Expression -> Expression -> Expression
-apply x y = reduceNorm (App x y)
+apply m n = reduceNorm (App m n)
+
+-- Applies a list of expressions to one another, for example,
+-- 'applyAll [M, N, O, P]' is equivalent to reduceNorm (((M N) O) P)
+applyAll :: [Expression] -> Expression
+applyAll (m:n:rest) = foldl apply m (n:rest)
+applyAll _          = error "Two expressions required by applyAll"
 
 -- Performs at least one reduction step
 reduce :: Expression -> Expression
 reduce exp = case exp of
-    Abs n x         -> Abs n (reduce x)
-    App (Abs n x) y -> replace n (preventClashes x y) y
-    App x         y | redX === x -> App x (reduce y) -- only reduce rhs when lhs
-                    | otherwise  -> App (reduce x) y -- is in normal form
-        where redX = reduce x
+    Abs v m         -> Abs v (reduce m)
+    App (Abs v m) n -> replace v (preventClashes m n) n
+    App m         n | redM === m -> App m (reduce n) -- only reduce rhs when lhs
+                    | otherwise  -> App (reduce m) n -- is in normal form
+        where redM = reduce m
     _               -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
@@ -40,13 +39,13 @@ preventClashes x y = renameAll (freeNames y) x
 -- Function to replace one Expression with another - implements function
 -- application with Expressions. Assumes that there are no name clashes.
 replace :: Name -> Expression -> Expression -> Expression
-replace n bodyExp argExp = case bodyExp of
-    Abs n' x | n /= n' -> Abs n' (replaced x)
-             | n == n' -> Abs n' x
-    App x x'           -> App (replaced x) (replaced x')
-    Var n'   | n == n' -> argExp
-             | n /= n' -> Var n'
-    where replaced subBodyExp = replace n subBodyExp argExp
+replace v bodyExp argExp = case bodyExp of
+    Abs v' m | v /= v' -> Abs v' (replaced m)
+             | v == v' -> Abs v' m
+    App m  n           -> App (replaced m) (replaced n)
+    Var v'   | v == v' -> argExp
+             | v /= v' -> Var v'
+    where replaced subBodyExp = replace v subBodyExp argExp
 
 -- The === operator checks if two expressions are α-equivalent, i.e. are they
 -- are equal disregarding names. Some examples:
@@ -54,20 +53,16 @@ replace n bodyExp argExp = case bodyExp of
 -- \xy.yx === \sz.zs -> True
 -- \ab.ac === \xy.yz -> False
 (===) :: Expression -> Expression -> Bool
-(===) x y = renamedX == renamedY
-    where renamedX = renameAll allNames x
-          renamedY = renameAll allNames y
-          allNames = Set.toList $ Set.fromList $ names x ++ names y
+(===) m n = rename m == rename n
+    where rename = renameAll allNames
+          allNames = Set.toList $ Set.fromList $ names m ++ names n
 
 {-- PREVIOUS IMPLEMENTATION - Closer to the definition of α-equivalence, but
     suffers from the name clash problem.
-(===) (Constant x)        (Constant y)         = x == y
-(===) (Var n)             (Var n')             = n == n'
-(===) (Abs n x)           (Abs n' y)           = x === renamedY
+(===) (Var n)   (Var n')   = n == n'
+(===) (Abs n x) (Abs n' y) = x === renamedY
     where renamedY = renameAll
-(===) (App x y)           (App a b)            = x === a && y === b
-(===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
-(===) _                   _                    = False
+(===) (App x y) (App a b)  = x === a && y === b
 --}
 
 -- Returns a string which does not exist within a given set of names. Begins by
@@ -105,11 +100,11 @@ renameAll = rnmAll2 []
 -- before we find the binding, we don't need to do anything - the name is not
 -- bound at that point and therefore doesn't need renaming.
 renameBound :: Name -> Name -> Expression -> Expression
-renameBound _    _  (Var n)      = Var n
-renameBound from to exp          = case exp of
-    Abs n x | n == from -> Abs to (blindRename from to x)
-            | otherwise -> Abs n (renamed x)
-    App x x'            -> App (renamed x) (renamed x')
+renameBound from to exp = case exp of
+    Abs v m | v == from -> Abs to (blindRename from to m)
+            | otherwise -> Abs v (renamed m)
+    App m n             -> App (renamed m) (renamed n)
+    Var _               -> exp
     where renamed :: Expression -> Expression
           renamed = renameBound from to
 
@@ -119,10 +114,10 @@ renameBound from to exp          = case exp of
 -- been eliminated.
 blindRename :: Name -> Name -> Expression -> Expression
 blindRename from to exp = case exp of
-    Abs n x | n == from -> Abs to (renamed x)
-            | otherwise -> Abs n (renamed x)
-    Var n   | n == from -> Var to
-            | otherwise -> Var n
-    App x x'            -> App (renamed x) (renamed x')
+    Abs v m | v == from -> Abs to (renamed m)
+            | otherwise -> Abs v (renamed m)
+    Var v   | v == from -> Var to
+            | otherwise -> Var v
+    App m n             -> App (renamed m) (renamed n)
     where renamed :: Expression -> Expression
           renamed = blindRename from to

@@ -1,13 +1,10 @@
+module TestTypeChecker where
+
 import Test.HUnit
 import TypedSyntax
 import TypeChecker
 
 import qualified Data.Map as M
-
-main :: IO Counts
-main = do
-       putStrLn "Running tests for TypeChecker:"
-       runTestTT tests
 
 -- USEFUL EXPRESSIONS
 -- Identity function

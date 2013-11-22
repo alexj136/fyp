@@ -11,7 +11,7 @@ data TypedExp = Abs Name Type TypedExp
               | App TypedExp TypedExp
               | Constant Value
               | BinaryOp BinaryOpType
---            | UnaryOp UOp TypedExp -- Not yet implemented
+              | UnaryOp UnaryOpType
     deriving Eq
 
 instance Show TypedExp where
@@ -65,7 +65,7 @@ data BinaryOpType = Add | Sub | Mul | Div | Mod
                   | And | Or  | Xor
     deriving Eq
 
-data UOp = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
+data UnaryOpType = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
     deriving Eq
 
 instance Show BinaryOpType where

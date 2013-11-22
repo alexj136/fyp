@@ -1,22 +1,16 @@
-MODULES  = TypedSyntax TypeChecker TypedInterpreter Main
+MAIN     = RunTests
+MODULES  = TypedSyntax TypeChecker TypedInterpreter
 TESTS    = TestTypeChecker TestTypedInterpreter
 
-OBJECTS  = $(MODULES:=.o)  $(TESTS:=.o)
-HIFILES  = $(MODULES:=.hi) $(TESTS:=.hi)
-BINARIES = $(MODULES)      $(TESTS)
+OBJECTS  = $(MAIN:=.o)  $(MODULES:=.o)  $(TESTS:=.o)
+HIFILES  = $(MAIN:=.hi) $(MODULES:=.hi) $(TESTS:=.hi)
+BINARIES = $(MAIN)      $(MODULES)      $(TESTS)
 
-all: Main $(TESTS)
+all: $(MAIN)
 
 clean:
-	rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
+	@rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
 
-Main: Main.hs
-	ghc --make -o Main Main.hs
-
-TestTypeChecker: TestTypeChecker.hs
-	ghc --make -o TestTypeChecker TestTypeChecker.hs
-	@./TestTypeChecker
-
-TestTypedInterpreter: TestTypedInterpreter.hs
-	ghc --make -o TestTypedInterpreter TestTypedInterpreter.hs
-	@./TestTypedInterpreter
+RunTests: RunTests.hs
+	@ghc --make -o RunTests RunTests.hs
+	@./RunTests

@@ -1,18 +1,16 @@
-MODULES  = PureSyntax PureInterpreter Main
+MAIN     = RunTests
+MODULES  = PureSyntax PureInterpreter
 TESTS    = TestPureCalculus
 
-OBJECTS  = $(MODULES:=.o)  $(TESTS:=.o)
-HIFILES  = $(MODULES:=.hi) $(TESTS:=.hi)
-BINARIES = $(MODULES)      $(TESTS)
+OBJECTS  = $(MAIN:=.o)  $(MODULES:=.o)  $(TESTS:=.o)
+HIFILES  = $(MAIN:=.hi) $(MODULES:=.hi) $(TESTS:=.hi)
+BINARIES = $(MAIN)      $(MODULES)      $(TESTS)
 
-all: Main $(TESTS)
+all: $(MAIN)
 
 clean:
-	rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
+	@rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
 
-Main: Main.hs
-	ghc --make -o Main Main.hs
-
-TestPureCalculus: TestPureCalculus.hs
-	ghc --make -o TestPureCalculus TestPureCalculus.hs
-	@./TestPureCalculus
+RunTests: RunTests.hs
+	@ghc --make -o RunTests RunTests.hs
+	@./RunTests

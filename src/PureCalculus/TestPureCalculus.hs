@@ -1,11 +1,8 @@
+module TestPureCalculus where
+
 import Test.HUnit
 import PureSyntax
 import PureInterpreter
-
-main :: IO Counts
-main = do
-       putStrLn "Running tests for Interpreter:"
-       runTestTT tests
 
 -- USEFUL LAMBDA EXPRESSIONS
 -- Identity function
