@@ -1,6 +1,6 @@
 -- This module defines the abstract syntax of the language, and a few basic
 -- functions over them, which retrieve information from them.
-module TypedSyntax where
+module PolymorphicSyntax where
 
 import qualified Data.Set as Set
 
@@ -24,48 +24,40 @@ instance Show TypedExp where
         App m n           -> '(':show m ++ ' ':show n ++ ")"
         Constant v        -> show v
         BinaryOp t        -> show t
+        UnaryOp t         -> show t
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
-data Value = IntVal   Int
-           | CharVal  Char
-           | FloatVal Float
-           | BoolVal  Bool
+data Value = IntVal  Int
+           | BoolVal Bool
     deriving Eq
 
 instance Show Value where
     show val = case val of
         IntVal   x -> show x
-        CharVal  x -> show x
-        FloatVal x -> show x
         BoolVal  x -> show x
 
 -- Type is a recursive data type used for representing the types of functions
 data Type = TInt
-          | TChar
-          | TFloat
           | TBool
           | TList Type
           | TFunc Type Type
+          | TVar Int -- Type variables are numbers, not strings
     deriving Eq
 
 instance Show Type where
     show t = case t of
         TInt      -> "Int"
-        TChar     -> "Char"
-        TFloat    -> "Float"
         TBool     -> "Bool"
         TList a   -> '[':show a ++ "]"
         TFunc a b -> show a ++ " -> " ++ show b
+        TVar name -> show name
 
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
 data BinaryOpType = Add | Sub | Mul | Div | Mod
 --                | Lss | LsE | Equ | NEq | Gtr | GtE
                   | And | Or  | Xor
-    deriving Eq
-
-data UnaryOpType = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
     deriving Eq
 
 instance Show BinaryOpType where
@@ -78,13 +70,12 @@ instance Show BinaryOpType where
     show Or  = "|"
     show Xor = "#"
 
--- Retrieve the function that corresponds to the given BinaryOpType
-getBOp :: (Integral a, Num a) => BinaryOpType -> (a -> a -> a)
-getBOp Add = (+)
-getBOp Sub = (-)
-getBOp Mul = (*)
-getBOp Div = div
-getBOp Mod = mod
+data UnaryOpType = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
+    deriving Eq
+
+instance Show UnaryOpType where
+    show IsZ = "isZero"
+    show Not = "!"
 
 -- Returns a list of the subexpressions of the given tree node
 subs :: TypedExp -> [TypedExp]
