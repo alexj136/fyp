@@ -53,6 +53,32 @@ instance Show Type where
         TFunc a b -> show a ++ " -> " ++ show b
         TVar name -> show name
 
+instance Ord Type where
+    (<=) a b = case ( a , b ) of
+        -- Every type is greater than Bool
+        ( TBool       , _           ) -> True
+
+        -- Only Bool is less than Int
+        ( TInt        , TBool       ) -> False
+        ( TInt        , _           ) -> True
+
+        -- Lists are greater than Bool and Int, but less than everything else.
+        -- List A is less than or equal to List B if A is less than or equal to
+        -- List B.
+        ( TList t     , TBool       ) -> False
+        ( TList t     , TInt        ) -> False
+        ( TList t1    , TList t2    ) -> t1 <= t2
+        ( TList t     , _           ) -> True
+
+        ( TFunc _  _  , TBool       ) -> False
+        ( TFunc _  _  , TInt        ) -> False
+        ( TFunc _  _  , TList _     ) -> False
+        ( TFunc t1 t2 , TFunc t3 t4 ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
+        ( TFunc t1 t2 , _           ) -> True
+
+        ( TVar v1     , TVar v2     ) -> v1 <= v2
+        ( TVar _      , _           ) -> False
+
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
 data BinaryOpType = Add | Sub | Mul | Div | Mod
