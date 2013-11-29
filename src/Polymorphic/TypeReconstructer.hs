@@ -10,6 +10,7 @@ type Context = M.Map Name Type
 
 type ConstraintSet = S.Set (Type, Type)
 
+{--
 -- Given a set of constraints, generate a fresh type variable that does not
 -- already exist in that set
 freshTVar :: ConstraintSet -> Int
@@ -36,24 +37,36 @@ freshTVar constr  = freshTVar' 0 constr
         breakSet :: Ord a => S.Set a -> (a, S.Set a)
         breakSet s | S.size s == 0 = error "hasTVar: cannot break an empty set"
                    | otherwise     = (sf, S.delete sf s) where sf = S.findMin s
+--}
 
 -- Get the typing constraints from an expression, that are required for type
--- unification
-getConstraints :: Context -> TypedExp -> ConstraintSet -> (ConstraintSet, Type)
-getConstraints ctx exp constr = case exp of
-    Abs v t m -> (constr, TFunc t (typeOf ctx' m)) --DONE
-        where ctx' = addToContext v t ctx
-    Var v -> (constr, typeFromContext ctx v) --DONE
-    App m n -> case tM of
-        TFunc a b | tN == a -> b
-        _ -> error $ concat ["Error: Cannot apply '",
-                    show tM, "' to '", show tN, "'."]
-        where tM = typeOf ctx m
-              tN = typeOf ctx n
-    Constant (IntVal  _) -> (constr, TInt ) --DONE
-    Constant (BoolVal _) -> (constr, TBool) --DONE
-    BinaryOp t -> (constr, typeOfBinaryOp t) --DONE
-    UnaryOp  t -> (constr, typeOfUnaryOp  t) --DONE
+-- unification. Prevents type variable name clashes by taking as a parameter the
+-- lowest number that is safe to use as a type variable, and returning in the
+-- tuple the highest type variable that it consequently uses, so that subsequent
+-- calls can avoid using the same names (names are integers)
+getConstraints :: Int -> Context -> TypedExp -> (ConstraintSet, Type, Int)
+getConstraints i ctx exp = case exp of
+    Abs v t m            -> (constrM, TFunc (TVar i') tM, i' + 1)
+        where (constrM, tM, i') = getConstraints i ctx' m
+              ctx' = addToContext v t ctx
+    Var v                -> (S.empty, typeFromContext ctx v, i)
+    App m n              -> (constr', tX, i'' + 1)
+        where constr' = S.unions [consM, consN, S.singleton (tM, TFunc tN tX)]
+              tX = TVar i''
+              (consM, tM, i' ) = getConstraints i  ctx m
+              (consN, tN, i'') = getConstraints i' ctx n
+    Constant (IntVal  _) -> (S.empty, TInt , i)
+    Constant (BoolVal _) -> (S.empty, TBool, i)
+    BinaryOp t           -> (S.empty, typeOfBinaryOp t, i)
+    UnaryOp  t           -> (S.empty, typeOfUnaryOp  t, i)
+
+{--
+constr ( M N )
+    let ( tM, cM ) = constr ( M ) in
+    let ( tN, cN ) = constr ( N ) in
+    let tB = newTypeVar() in
+    ( tB, cM U cN U ( tM = tN -> tB ) )
+--}
 
 -- Look up the type of a variable from a Context
 typeFromContext :: Context -> Name -> Type
