@@ -51,8 +51,10 @@ instance Show Type where
         TBool     -> "Bool"
         TList a   -> '[':show a ++ "]"
         TFunc a b -> show a ++ " -> " ++ show b
-        TVar name -> show name
+        TVar name -> 't':show name
 
+-- It is helpful to make Types orderable so that manipulating large sets of
+-- Types is faster
 instance Ord Type where
     (<=) a b = case ( a , b ) of
         -- Every type is greater than Bool
