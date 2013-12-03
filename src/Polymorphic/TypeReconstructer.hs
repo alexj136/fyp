@@ -33,11 +33,24 @@ freshTVar constr  = freshTVar' 0 constr
         typeHasTVar x (TList t)     = typeHasTVar x t
         typeHasTVar x (TVar y)      = x == y
         typeHasTVar _ _             = False
-
-        breakSet :: Ord a => S.Set a -> (a, S.Set a)
-        breakSet s | S.size s == 0 = error "hasTVar: cannot break an empty set"
-                   | otherwise     = (sf, S.delete sf s) where sf = S.findMin s
 --}
+
+-- Remove an element from a set, returning the element and the rest of the set,
+-- together in a tuple
+breakSet :: Ord a => S.Set a -> (a, S.Set a)
+breakSet s | S.size s == 0 = error "Cannot break an empty set"
+           | otherwise     = (sf, S.delete sf s) where sf = S.findMin s
+
+-- Type unification algorithm to calculate solutions to constraint sets. Builds
+-- a new constraint set from the given one. The new set will not contain any of
+-- the type variables introduced by the constraint generation algorithm,
+-- assuming that the given program was typeable.
+{-- unify :: ConstraintSet -> Maybe ConstraintSet
+unify c | S.size c == 0 = Just S.empty
+        | t1 == t2      = Just (unify rest)
+        | 
+        | otherwise     = Nothing
+    where ((t1, t2), rest) = breakSet c --}
 
 -- Get the typing constraints from an expression, that are required for type
 -- unification. Prevents type variable name clashes by taking as a parameter the
