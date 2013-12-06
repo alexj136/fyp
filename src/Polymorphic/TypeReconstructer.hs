@@ -35,22 +35,73 @@ freshTVar constr  = freshTVar' 0 constr
         typeHasTVar _ _             = False
 --}
 
--- Remove an element from a set, returning the element and the rest of the set,
--- together in a tuple
-breakSet :: Ord a => S.Set a -> (a, S.Set a)
-breakSet s | S.size s == 0 = error "Cannot break an empty set"
-           | otherwise     = (sf, S.delete sf s) where sf = S.findMin s
-
 -- Type unification algorithm to calculate solutions to constraint sets. Builds
 -- a new constraint set from the given one. The new set will not contain any of
 -- the type variables introduced by the constraint generation algorithm,
 -- assuming that the given program was typeable.
-{-- unify :: ConstraintSet -> Maybe ConstraintSet
+unify :: ConstraintSet -> Maybe ConstraintSet
 unify c | S.size c == 0 = Just S.empty
-        | t1 == t2      = Just (unify rest)
-        | 
+
+        -- If the types are already equal, unify the rest of the set
+        | t1 == t2 = unify rest
+
+        -- If t1 is a TVar, not occuring in t2, ...
+        | isTVar t1 && (not $ occurs (numOfTVar t1) t2) =
+            unify $ replaceTypes t1 {-- with --} t2 {-- in --} rest -- .[t1->t2]
+
+        -- If t2 is a TVar, not occuring in t1, ...
+        | isTVar t2 && (not $ occurs (numOfTVar t2) t1) =
+            unify $ replaceTypes t2 {-- with --} t1 {-- in --} rest -- .[t2->t1]
+
+        -- If both t1 and t2 are function types, set the from-types and the
+        -- to-types of each type as equal in the constraint set, and unify that
+        -- constraint set
+        | isTFunc t1 && isTFunc t2 =
+            unify $ S.insert ( tFuncFrom t1 , tFuncFrom t2 )
+                  $ S.insert ( tFuncTo   t1 , tFuncTo   t2 ) rest
+
+        -- Otherwise, there are no rules we can apply, so fail
         | otherwise     = Nothing
-    where ((t1, t2), rest) = breakSet c --}
+
+    where
+
+        ((t1, t2), rest) = breakSet c
+
+        -- Remove an element from a set, returning the element and the rest of
+        -- the set, together in a tuple
+        breakSet :: Ord a => S.Set a -> (a, S.Set a)
+        breakSet s | S.size s == 0 = error "Cannot break an empty set"
+                   | otherwise     = (sf, S.delete sf s) where sf = S.findMin s
+
+        -- Checks if a given type variable (TVars are integers) occurs in a
+        -- given type expression
+        occurs :: Int -> Type -> Bool
+        occurs x (TVar y)      = x == y
+        occurs x (TFunc t1 t2) = occurs x t1 || occurs x t2
+        occurs x (TList t)     = occurs x t
+        occurs _ _             = False
+
+        -- Determine if a type is a type variable
+        isTVar :: Type -> Bool
+        isTVar (TVar _) = True
+        isTVar _        = False
+
+        -- Retrieve the type variable number from a type variable
+        numOfTVar :: Type -> Int
+        numOfTVar (TVar x) = x
+        numOfTVar _        = error "Cannot get name of non-TVar Type"
+
+        -- Determine if a type is a function type
+        isTFunc :: Type -> Bool
+        isTFunc (TFunc _ _) = True
+        isTFunc _           = False
+
+        -- Retrieve the subtypes of function types
+        tFuncFrom, tFuncTo :: Type -> Type
+        tFuncFrom (TFunc x _) = x
+        tFuncFrom _           = error "Cannot get subtype of function type"
+        tFuncTo   (TFunc _ x) = x
+        tFuncTo   _           = error "Cannot get subtype of function type"
 
 -- Get the typing constraints from an expression, that are required for type
 -- unification. Prevents type variable name clashes by taking as a parameter the
