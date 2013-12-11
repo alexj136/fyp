@@ -61,7 +61,7 @@ unify c | S.size c == 0 = Just S.empty
                   $ S.insert ( tFuncTo   t1 , tFuncTo   t2 ) rest
 
         -- Otherwise, there are no rules we can apply, so fail
-        | otherwise     = Nothing
+        | otherwise = Nothing
 
     where
 
