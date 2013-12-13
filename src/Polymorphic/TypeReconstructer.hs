@@ -8,50 +8,42 @@ data TypeCheckResult = Pass TypedExp | Fail TypedExp String
 
 type Context = M.Map Name Type
 
-type ConstraintSet = S.Set (Type, Type)
+type Constraint = (Type, Type)
+type ConstraintSet = S.Set Constraint
 
-{--
--- Given a set of constraints, generate a fresh type variable that does not
--- already exist in that set
-freshTVar :: ConstraintSet -> Int
-freshTVar constr  = freshTVar' 0 constr
-    where
-        freshTVar' :: Int -> ConstraintSet -> Int
-        freshTVar' x constr | hasTVar x constr = freshTVar' (x + 1) constr
-                            | otherwise        = x
+-- Apply a function to every Type in a ConstraintSet - output of funtion must
+-- also be a Type
+constrSetMap :: (Type -> Type) -> ConstraintSet -> ConstraintSet
+constrSetMap f = S.map (constrMap f)
 
-        hasTVar :: Int -> ConstraintSet -> Bool
-        hasTVar x constr
-            | S.size constr == 0                   = False
-            | typeHasTVar x t1 || typeHasTVar x t2 = True
-            | otherwise                            = hasTVar x rest
+-- Apply a function to both the Types in a Constraint - output of funtion must
+-- also be a Type
+constrMap :: (Type -> Type) -> Constraint-> Constraint
+constrMap f (t1, t2) = (f t1, f t2)
 
-        ((t1, t2), rest) = breakSet constr
-
-        typeHasTVar :: Int -> Type -> Bool
-        typeHasTVar x (TFunc t1 t2) = typeHasTVar x t1 || typeHasTVar x t2
-        typeHasTVar x (TList t)     = typeHasTVar x t
-        typeHasTVar x (TVar y)      = x == y
-        typeHasTVar _ _             = False
---}
+-- Build a new ConstraintSet from two types
+newConstrSet :: Type -> Type -> ConstraintSet
+newConstrSet t1 t2 = S.singleton (t1, t2)
 
 -- Type unification algorithm to calculate solutions to constraint sets. Builds
 -- a new constraint set from the given one. The new set will not contain any of
 -- the type variables introduced by the constraint generation algorithm,
 -- assuming that the given program was typeable.
-unify :: ConstraintSet -> Maybe ConstraintSet
-unify c | S.size c == 0 = Just S.empty
+unify :: ConstraintSet -> Maybe (Type -> Type)
+unify c | S.size c == 0 = Just (\t -> t)
 
         -- If the types are already equal, unify the rest of the set
         | t1 == t2 = unify rest
 
-        -- If t1 is a TVar, not occuring in t2, ...
-        | isTVar t1 && (not $ occurs (numOfTVar t1) t2) =
-            unify $ replaceTypes t1 {-- with --} t2 {-- in --} rest -- .[t1->t2]
+        -- If t1 is a TVar, not occurring in t2, ...
+        | isTVar t1 && (not $ occurs (numOfTVar t1) t2) = do
+            unifyRest <- unify (constrSetMap (typeSubst (t1, t2)) rest)
+            return $ unifyRest . typeSubst (t1, t2)
 
-        -- If t2 is a TVar, not occuring in t1, ...
-        | isTVar t2 && (not $ occurs (numOfTVar t2) t1) =
-            unify $ replaceTypes t2 {-- with --} t1 {-- in --} rest -- .[t2->t1]
+        -- If t2 is a TVar, not occurring in t1, ...
+        | isTVar t2 && (not $ occurs (numOfTVar t2) t1) = do
+            unifyRest <- unify (constrSetMap (typeSubst (t2, t1)) rest)
+            return $ unifyRest . typeSubst (t2, t1)
 
         -- If both t1 and t2 are function types, set the from-types and the
         -- to-types of each type as equal in the constraint set, and unify that
@@ -64,8 +56,19 @@ unify c | S.size c == 0 = Just S.empty
         | otherwise = Nothing
 
     where
-
         ((t1, t2), rest) = breakSet c
+
+        -- typeSubst takes a pair of types (the first is a TVar) and replaces
+        -- all occurences of
+        typeSubst :: Constraint -> Type -> Type
+        typeSubst (TVar x, tArg) tBody = case tBody of
+            TVar y | x == y -> tArg
+                   | x /= y -> TVar y
+            TFunc t1 t2     -> TFunc (typeSubst' t1) (typeSubst' t2)
+            TList ty        -> TList (typeSubst' ty)
+            basicType       -> basicType
+            where typeSubst' = typeSubst (TVar x, tArg)
+        typeSubst _ _ = error "typeSubst: only TVars can be substituted"
 
         -- Remove an element from a set, returning the element and the rest of
         -- the set, together in a tuple
