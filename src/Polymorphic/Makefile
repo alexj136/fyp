@@ -10,6 +10,7 @@ all: $(MAIN)
 
 clean:
 	@rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
+	@echo "CLEANED"
 
 RunTests: RunTests.hs
 	@ghc --make -o RunTests RunTests.hs

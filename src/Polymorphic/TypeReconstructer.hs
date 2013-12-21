@@ -4,9 +4,16 @@ import PolymorphicSyntax
 import qualified Data.Map as M
 import qualified Data.Set as S
 
-data TypeCheckResult = Pass TypedExp | Fail TypedExp String
+--data TypeCheckResult = Pass TypedExp | Fail TypedExp String
 
-type Context = M.Map Name Type
+-- Do type inference on an expression - get the constraints & type, unify the
+-- constraints, and use the function returned by unify to rewrite the type
+-- without type variables
+infer :: TypedExp -> Maybe Type
+infer exp = do
+            rewrite <- unify constraints
+            return $ rewrite typeOfExp
+    where (constraints, typeOfExp, _) = getConstraints 0 M.empty exp
 
 type Constraint = (Type, Type)
 type ConstraintSet = S.Set Constraint
@@ -26,9 +33,8 @@ newConstrSet :: Type -> Type -> ConstraintSet
 newConstrSet t1 t2 = S.singleton (t1, t2)
 
 -- Type unification algorithm to calculate solutions to constraint sets. Builds
--- a new constraint set from the given one. The new set will not contain any of
--- the type variables introduced by the constraint generation algorithm,
--- assuming that the given program was typeable.
+-- a function from types to types. The generated function will take a Type
+-- expression, and replace all the type variables with concrete types.
 unify :: ConstraintSet -> Maybe (Type -> Type)
 unify c | S.size c == 0 = Just (\t -> t)
 
@@ -106,6 +112,10 @@ unify c | S.size c == 0 = Just (\t -> t)
         tFuncTo   (TFunc _ x) = x
         tFuncTo   _           = error "Cannot get subtype of function type"
 
+-- The context type used to represent context. A context is a map that maps
+-- variable names to their types
+type Context = M.Map Name Type
+
 -- Get the typing constraints from an expression, that are required for type
 -- unification. Prevents type variable name clashes by taking as a parameter the
 -- lowest number that is safe to use as a type variable, and returning in the
@@ -127,7 +137,7 @@ getConstraints i ctx exp = case exp of
     BinaryOp t           -> (S.empty, typeOfBinaryOp t, i)
     UnaryOp  t           -> (S.empty, typeOfUnaryOp  t, i)
 
-{--
+{-- Constraint generation algorithm (application case):
 constr ( M N )
     let ( tM, cM ) = constr ( M ) in
     let ( tN, cN ) = constr ( N ) in
@@ -149,23 +159,7 @@ addToContext = M.insert
 contextFrom :: Name -> Type -> Context
 contextFrom n t = M.fromList[(n, t)]
 
--- Recursively infer the type of an expression
-typeOf :: Context -> TypedExp -> Type
-typeOf ctx exp = case exp of
-    Abs v t m -> TFunc t (typeOf ctx' m)
-        where ctx' = addToContext v t ctx
-    Var v -> typeFromContext ctx v
-    App m n -> case tM of
-        TFunc a b | tN == a -> b
-        _ -> error $ concat ["Error: Cannot apply '",
-                    show tM, "' to '", show tN, "'."]
-        where tM = typeOf ctx m
-              tN = typeOf ctx n
-    Constant (IntVal  _) -> TInt
-    Constant (BoolVal _) -> TBool
-    BinaryOp t -> typeOfBinaryOp t
-    UnaryOp  t -> typeOfUnaryOp  t
-
+-- Lookup the types of the various binary and unary operations
 typeOfBinaryOp :: BinaryOpType -> Type
 typeOfBinaryOp t = case t of
     Add -> TFunc TInt  (TFunc TInt  TInt )
