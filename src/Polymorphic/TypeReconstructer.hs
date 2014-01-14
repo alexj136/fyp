@@ -51,9 +51,9 @@ unify c | S.size c == 0 = Just (\t -> t)
             unifyRest <- unify (constrSetMap (typeSubst (t2, t1)) rest)
             return $ unifyRest . typeSubst (t2, t1)
 
-        -- If both t1 and t2 are function types, set the from-types and the
-        -- to-types of each type as equal in the constraint set, and unify that
-        -- constraint set
+        -- If both t1 and t2 are function types, set the argument-types and the
+        -- return-types of each type as equal in the constraint set, and unify
+        -- that constraint set
         | isTFunc t1 && isTFunc t2 =
             unify $ S.insert ( tFuncFrom t1 , tFuncFrom t2 )
                   $ S.insert ( tFuncTo   t1 , tFuncTo   t2 ) rest
