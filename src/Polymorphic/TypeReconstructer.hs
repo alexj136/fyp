@@ -10,11 +10,19 @@ import qualified Data.Set as S
 -- constraints, and use the function returned by unify to rewrite the type
 -- without type variables
 infer :: TypedExp -> Maybe Type
-infer exp = do
+infer exp = case (inferWithConstraints exp) of
+    Just (ty, _) -> Just ty
+    Nothing      -> Nothing
+
+inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
+inferWithConstraints exp = do
             rewrite <- unify constraints
-            return $ rewrite typeOfExp
+            return (rewrite typeOfExp, constraints)
+--inferWithConstraints exp = unify constraints >>= return
     where (constraints, typeOfExp, _) = getConstraints 0 M.empty exp
 
+-- A constraint is a pair of types (the first is a TVar), that are supposedly
+-- equivalent
 type Constraint = (Type, Type)
 type ConstraintSet = S.Set Constraint
 
@@ -64,8 +72,9 @@ unify c | S.size c == 0 = Just (\t -> t)
     where
         ((t1, t2), rest) = breakSet c
 
-        -- typeSubst takes a pair of types (the first is a TVar) and replaces
-        -- all occurences of
+        -- typeSubst takes a constraint and a type and replaces all occurences
+        -- of the first type in the constraint with the second, within the given
+        -- type
         typeSubst :: Constraint -> Type -> Type
         typeSubst (TVar x, tArg) tBody = case tBody of
             TVar y | x == y -> tArg
