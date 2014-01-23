@@ -8,10 +8,6 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Maybe (fromJust)
 
--- USEFUL EXPRESSIONS
--- Identity function
---intID = Abs "x" TInt (Var "x")
-
 tests = TestList
     [ testSimpleUnifies
     , testBlahBlah
@@ -44,5 +40,10 @@ testSimpleUnifies = TestLabel "Simple tests of unify" (TestCase (
     ))
 
 testBlahBlah = TestLabel "blah blah" (TestCase (
-    assert True
+    assert $ and
+        [ True
+        , True
+        , True
+        , True
+        ]
     ))

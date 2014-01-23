@@ -15,10 +15,13 @@ infer exp = case (inferWithConstraints exp) of
     Nothing      -> Nothing
 
 inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
-inferWithConstraints exp = do
-            rewrite <- unify constraints
-            return (rewrite typeOfExp, constraints)
---inferWithConstraints exp = unify constraints >>= return
+--inferWithConstraints exp = do
+            --rewrite <- unify constraints
+            --return (rewrite typeOfExp, constraints)
+inferWithConstraints exp = case unify constraints of
+    Nothing      -> Nothing
+    Just rewrite -> Just (rewrite typeOfExp, constraints)
+--inferWithConstraints exp = unify constraints >>= return (\x -> (x typeOfExp, constraints))
     where (constraints, typeOfExp, _) = getConstraints 0 M.empty exp
 
 -- A constraint is a pair of types (the first is a TVar), that are supposedly
@@ -117,9 +120,9 @@ unify c | S.size c == 0 = Just (\t -> t)
         -- Retrieve the subtypes of function types
         tFuncFrom, tFuncTo :: Type -> Type
         tFuncFrom (TFunc x _) = x
-        tFuncFrom _           = error "Cannot get subtype of function type"
+        tFuncFrom _           = error "Cannot get subtype of non-function type"
         tFuncTo   (TFunc _ x) = x
-        tFuncTo   _           = error "Cannot get subtype of function type"
+        tFuncTo   _           = error "Cannot get subtype of non-function type"
 
 -- The context type used to represent context. A context is a map that maps
 -- variable names to their types
