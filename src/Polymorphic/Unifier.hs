@@ -4,6 +4,10 @@ import PolymorphicSyntax
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+--------------------------------------------------------------------------------
+--                                UNIFICATION
+--------------------------------------------------------------------------------
+
 --data TypeCheckResult = Pass TypedExp | Fail TypedExp String
 
 -- Do type inference on an expression - get the constraints & type, unify the
@@ -15,13 +19,11 @@ infer exp = case (inferWithConstraints exp) of
     Nothing      -> Nothing
 
 inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
---inferWithConstraints exp = do
-            --rewrite <- unify constraints
-            --return (rewrite typeOfExp, constraints)
-inferWithConstraints exp = case unify constraints of
-    Nothing      -> Nothing
-    Just rewrite -> Just (rewrite typeOfExp, constraints)
---inferWithConstraints exp = unify constraints >>= return (\x -> (x typeOfExp, constraints))
+inferWithConstraints exp = do
+    rewrite <- unify constraints
+    return (rewrite typeOfExp, constraints)
+--inferWithConstraints exp = unify constraints >>=
+    --return (\x -> (x typeOfExp, constraints))
     where (constraints, typeOfExp, _) = getConstraints 0 M.empty exp
 
 -- A constraint is a pair of types (the first is a TVar), that are supposedly
@@ -123,6 +125,10 @@ unify c | S.size c == 0 = Just (\t -> t)
         tFuncFrom _           = error "Cannot get subtype of non-function type"
         tFuncTo   (TFunc _ x) = x
         tFuncTo   _           = error "Cannot get subtype of non-function type"
+
+--------------------------------------------------------------------------------
+--                           CONSTRAINT GENERATION
+--------------------------------------------------------------------------------
 
 -- The context type used to represent context. A context is a map that maps
 -- variable names to their types

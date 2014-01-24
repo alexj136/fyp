@@ -1,4 +1,6 @@
-doc/interim.aux
-doc/interim.log
-doc/interim.pdf
-doc/task_dependencies.png
+syntax: glob
+*.aux
+*.log
+*.pdf
+*.png
+*.swp

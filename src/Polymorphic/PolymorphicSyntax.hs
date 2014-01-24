@@ -119,7 +119,7 @@ names (Var n)      = [n]
 names (Constant _) = []
 names exp          = concat (map names (subs exp))
 
--- Returns true if there are any occurences (free or bound) of the given string
+-- Returns true if there are any occurrences (free or bound) of the given string
 -- as a name in the given TypedExp. Used by newName to generate names that are
 -- not found in a given expression.
 nameIn :: Name -> TypedExp -> Bool
@@ -138,7 +138,7 @@ freeVars exp = case exp of
     Constant _ -> Set.empty
     _          -> Set.unions $ map freeVars $ subs exp
 
--- Composes Set.toList with freeVars, yeilding a list of the free names in a
+-- Composes Set.toList with freeVars, yielding a list of the free names in a
 -- TypedExp, as opposed to a Set
 freeNames :: TypedExp -> [Name]
 freeNames = Set.toList . freeVars
