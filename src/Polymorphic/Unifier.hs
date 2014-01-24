@@ -1,4 +1,4 @@
-module TypeReconstructer where
+module Unifier where
 
 import PolymorphicSyntax
 import qualified Data.Map as M

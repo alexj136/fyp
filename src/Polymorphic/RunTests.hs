@@ -1,7 +1,7 @@
 import Test.HUnit
-import qualified TestTypeReconstructer as A
+import qualified TestUnifier as A
 
 main :: IO Counts
 main = do
-       putStrLn "Running tests for TypeReconstructer:"
+       putStrLn "Running tests for Unifier:"
        runTestTT A.tests

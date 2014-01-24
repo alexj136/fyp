@@ -1,8 +1,8 @@
-module TestTypeReconstructer where
+module TestUnifier where
 
 import Test.HUnit
 import PolymorphicSyntax
-import TypeReconstructer
+import Unifier
 
 import qualified Data.Map as M
 import qualified Data.Set as S
