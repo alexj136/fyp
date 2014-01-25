@@ -47,11 +47,11 @@ data Type = TInt
 
 instance Show Type where
     show t = case t of
-        TInt      -> "Int"
-        TBool     -> "Bool"
-        TList a   -> '[':show a ++ "]"
-        TFunc a b -> show a ++ " -> " ++ show b
-        TVar varNo -> 't':show varNo
+        TInt       -> "Int"
+        TBool      -> "Bool"
+        TList a    -> '[':show a ++ "]"
+        TFunc a b  -> show a ++ " -> " ++ show b
+        TVar varNo -> 'T':show varNo
 
 -- It is helpful to make Types orderable so that manipulating large sets of
 -- Types is faster
