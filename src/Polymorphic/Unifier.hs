@@ -141,7 +141,7 @@ type Context = M.Map Name Type
 -- calls can avoid using the same names (names are integers)
 getConstraints :: Int -> Context -> TypedExp -> (ConstraintSet, Type, Int)
 getConstraints i ctx exp = case exp of
-    Abs v t m            -> (constrM, TFunc (TVar i') tM, i' + 1)
+    Abs v t m            -> (constrM, TFunc t tM, i')
         where (constrM, tM, i') = getConstraints i ctx' m
               ctx' = addToContext v t ctx
     Var v                -> (S.empty, typeFromContext ctx v, i)
