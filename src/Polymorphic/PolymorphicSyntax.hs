@@ -2,7 +2,11 @@
 -- functions over them, which retrieve information from them.
 module PolymorphicSyntax where
 
-import qualified Data.Set as Set
+import qualified Data.Set as S
+
+--------------------------------------------------------------------------------
+--                            ESSENTIAL DATA TYPES
+--------------------------------------------------------------------------------
 
 type Name = String
 
@@ -105,6 +109,10 @@ instance Show UnaryOpType where
     show IsZ = "isZero"
     show Not = "!"
 
+--------------------------------------------------------------------------------
+--                  FUNCTIONS TO GAIN INFORMATION ON TERMS
+--------------------------------------------------------------------------------
+
 -- Returns a list of the subexpressions of the given tree node
 subs :: TypedExp -> [TypedExp]
 subs (Abs _ _ x)      = [x]
@@ -131,14 +139,59 @@ nameIn n exp          = any (nameIn n) (subs exp)
 -- Creates a set of all free variables in a TypedExp, which can be used when
 -- reducing a function application, as it determines which names will need to be
 -- changed in order to prevent name clashes.
-freeVars :: TypedExp -> Set.Set Name
+freeVars :: TypedExp -> S.Set Name
 freeVars exp = case exp of
-    Var x      -> Set.singleton x
-    Abs x _ m  -> Set.delete x (freeVars m)
-    Constant _ -> Set.empty
-    _          -> Set.unions $ map freeVars $ subs exp
+    Var x      -> S.singleton x
+    Abs x _ m  -> S.delete x (freeVars m)
+    Constant _ -> S.empty
+    _          -> S.unions $ map freeVars $ subs exp
 
--- Composes Set.toList with freeVars, yielding a list of the free names in a
+-- Composes S.toList with freeVars, yielding a list of the free names in a
 -- TypedExp, as opposed to a Set
 freeNames :: TypedExp -> [Name]
-freeNames = Set.toList . freeVars
+freeNames = S.toList . freeVars
+
+--------------------------------------------------------------------------------
+--                  FUNCTIONS TO GAIN INFORMATION ON TYPES
+--------------------------------------------------------------------------------
+
+-- Get a list of all type variable names in a type. The order of the list
+-- the order in which those type variables appear in the type.
+tVarNames :: Type -> [Int]
+tVarNames (TVar x)      = [x]
+tVarNames (TFunc t1 t2) = tVarNames t1 ++ tVarNames t2
+tVarNames (TList t)     = tVarNames t
+tVarNames _             = []
+
+-- Converts all occurences of a particular TVar name to a different name within
+-- a type
+renameType :: Int -> Int -> Type -> Type
+renameType from to (TVar x)      = TVar (if x == from then to else x)
+renameType from to (TFunc t1 t2) = TFunc renamedT1 renamedT2
+    where renamedT1 = renameType from to t1
+          renamedT2 = renameType from to t2
+renameType from to (TList t)     = TList (renameType from to t)
+renameType _    _  other         = other
+
+-- Rename all occurences of all the types in the given list to another type.
+-- The integer parameter is the first TVar name that will be used to replace old
+-- ones, and the next used will be its successor, etcetera.
+renameAllTypes :: Int -> [Int] -> Type -> Type
+renameAllTypes _     []      ty = ty
+renameAllTypes newTy (hd:tl) ty =
+    renameAllTypes (newTy + 1) tl (renameType hd newTy ty)
+
+-- Determine the highest TVar number used in a type - defaults to zero if none
+-- are used
+maxTVar :: Type -> Int
+maxTVar = (foldl max 0) . tVarNames
+
+-- Check if two types are equivalent - similar to α-equivalence, but for type
+-- variable names.
+typeEquiv :: Type -> Type -> Bool
+typeEquiv t1 t2 =
+    renameAllTypes next namesT1 t1 == renameAllTypes next namesT2 t2
+    where
+        next = 1 + max (maxTVar t1) (maxTVar t2)
+        namesT1 = tVarNames t1
+        namesT2 = tVarNames t2

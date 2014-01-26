@@ -1,6 +1,6 @@
 MAIN     = RunTests
 MODULES  = Unifier PolymorphicSyntax
-TESTS    = TestUnifier
+TESTS    = TestUnifier TestPolymorphicSyntax
 
 OBJECTS  = $(MAIN:=.o)  $(MODULES:=.o)  $(TESTS:=.o)
 HIFILES  = $(MAIN:=.hi) $(MODULES:=.hi) $(TESTS:=.hi)

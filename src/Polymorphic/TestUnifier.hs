@@ -4,13 +4,11 @@ import Test.HUnit
 import PolymorphicSyntax
 import Unifier
 
-import qualified Data.Map as M
-import qualified Data.Set as S
 import Data.Maybe (fromJust)
 
 tests = TestList
     [ testInfers
-    , testBlahBlah
+    , testBigInfers
     ]
 
 testInfers = TestLabel "Simple tests of type inference" (TestCase (
@@ -20,11 +18,9 @@ testInfers = TestLabel "Simple tests of type inference" (TestCase (
         ]
     ))
 
-testBlahBlah = TestLabel "blah blah" (TestCase (
-    assert $ and
-        [ True
-        , True
-        , True
-        , True
-        ]
-    ))
+testBigInfers = TestLabel "Test that λxyz.xz(yz) has the correct type inferred" (TestCase (
+    assert (
+        typeEquiv
+            (fromJust (infer (Abs "x" (TVar (-1)) (Abs "y" (TVar (-2)) (Abs "z" (TVar (-3)) (App (App (Var "x") (Var "z")) (App (Var "y") (Var "z"))))))))
+            (TFunc (TFunc (TVar 2) (TFunc (TVar 1) (TVar 0))) (TFunc (TFunc (TVar 2) (TVar 1)) (TFunc (TVar 2) (TVar 0))))
+    )))
