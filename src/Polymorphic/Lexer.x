@@ -29,8 +29,12 @@ tokens :-
     "not"                  { \s -> TokenNot    }
     "iszero"               { \s -> TokenIsZero }
 
-    $lower [$alnum \_ \']* { \s -> TokenIdLC s }
-    $upper [$alnum \_ \']* { \s -> TokenIdUC s }
+    "True"                 { \s -> TokenBool True    }
+    "False"                { \s -> TokenBool False   }
+
+    [1-9][0-9]*            { \s -> TokenInt (read s) }
+    $lower [$alnum \_ \']* { \s -> TokenIdLC s       }
+    $upper [$alnum \_ \']* { \s -> TokenIdUC s       }
 
 {
 data Token =

@@ -144,6 +144,9 @@ getConstraints i ctx exp = case exp of
     Abs v t m            -> (constrM, TFunc t tM, i')
         where (constrM, tM, i') = getConstraints i ctx' m
               ctx' = addToContext v t ctx
+    AbsInf v m           -> (constrM, TFunc (TVar i') tM, i' + 1)
+        where (constrM, tM, i') = getConstraints i ctx' m
+              ctx' = addToContext v (TVar i') ctx
     Var v                -> (S.empty, typeFromContext ctx v, i)
     App m n              -> (constr', tX, i'' + 1)
         where constr' = S.unions [consM, consN, S.singleton (tM, TFunc tN tX)]

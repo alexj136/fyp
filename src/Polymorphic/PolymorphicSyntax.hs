@@ -10,25 +10,28 @@ import qualified Data.Set as S
 
 type Name = String
 
-data TypedExp = Abs Name Type TypedExp
-              | Var Name
-              | App TypedExp TypedExp
-              | Constant Value
-              | BinaryOp BinaryOpType
-              | UnaryOp UnaryOpType
+data TypedExp = Abs Name Type TypedExp -- Abstraction labelled with a type
+              | AbsInf Name TypedExp   -- Unlabelled Abs - type is inferred
+              | Var Name               -- Variable
+              | App TypedExp TypedExp  -- Function application
+              | Constant Value         -- Integer & boolean constants
+              | BinaryOp BinaryOpType  -- Operators like +, - etc
+              | UnaryOp UnaryOpType    -- Unary operators: not, iszero
     deriving Eq
 
 instance Show TypedExp where
     show exp = case exp of
         -- First case just stops brackets from appearing around applications
         -- that appear immidiately within an abstraction
-        Abs v t (App m n) -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
-        Abs v t x         -> concat ['λ':v, " : ", show t, '.':show x]
-        Var v             -> v
-        App m n           -> '(':show m ++ ' ':show n ++ ")"
-        Constant v        -> show v
-        BinaryOp t        -> show t
-        UnaryOp t         -> show t
+        Abs v t (App m n)  -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
+        Abs v t x          -> concat ['λ':v, " : ", show t, '.':show x]
+        AbsInf v (App m n) -> concat ['λ':v, " . ", show m, ' ':show n]
+        AbsInf v x         -> concat ['λ':v, " . ", show x]
+        Var v              -> v
+        App m n            -> '(':show m ++ ' ':show n ++ ")"
+        Constant v         -> show v
+        BinaryOp t         -> show t
+        UnaryOp t          -> show t
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
@@ -47,8 +50,6 @@ data Type = TInt
           | TList Type
           | TFunc Type Type
           | TVar Int    -- Type variables are numbers, not strings
-          | TNone       -- Type initially assigned to expressions by the parser,
-                        -- which will later be replaced by a real Type
     deriving Eq
 
 instance Show Type where
@@ -58,34 +59,26 @@ instance Show Type where
         TList a    -> '[':show a ++ "]"
         TFunc a b  -> show a ++ " -> " ++ show b
         TVar varNo -> 'T':show varNo
-        TNone      -> "NONE"
 
 -- It is helpful to make Types orderable so that manipulating large sets of
 -- Types is faster
 instance Ord Type where
     (<=) a b = case ( a , b ) of
-        -- Every type is greater than None
-        ( TNone       , _           ) -> True
-
-        -- Only None is less than Bool
-        ( TBool       , TNone       ) -> False
+        -- Every type is greater than Bool
         ( TBool       , _           ) -> True
 
-        -- Only Bool and None are less than Int
-        ( TInt        , TNone       ) -> False
+        -- Only Bool is less than Int
         ( TInt        , TBool       ) -> False
         ( TInt        , _           ) -> True
 
         -- Lists are greater than Bool and Int, but less than everything else.
         -- List A is less than or equal to List B if A is less than or equal to
         -- List B.
-        ( TList _     , TNone       ) -> False
         ( TList _     , TBool       ) -> False
         ( TList _     , TInt        ) -> False
         ( TList t1    , TList t2    ) -> t1 <= t2
         ( TList _     , _           ) -> True
 
-        ( TFunc _  _  , TNone       ) -> False
         ( TFunc _  _  , TBool       ) -> False
         ( TFunc _  _  , TInt        ) -> False
         ( TFunc _  _  , TList _     ) -> False
@@ -125,14 +118,16 @@ instance Show UnaryOpType where
 
 -- Returns a list of the subexpressions of the given tree node
 subs :: TypedExp -> [TypedExp]
-subs (Abs _ _ x)      = [x]
-subs (App x y)        = [x, y]
-subs _                = []
+subs (Abs _ _ x)  = [x]
+subs (AbsInf _ x) = [x]
+subs (App x y)    = [x, y]
+subs _            = []
 
 -- Creates a list of all name occurences in an TypedExp - If a name is used
 -- twice, it will appear twice in the returned list, etc.
 names :: TypedExp -> [Name]
 names (Abs n _ x)  = n : names x
+names (AbsInf n x) = n : names x
 names (Var n)      = [n]
 names (Constant _) = []
 names exp          = concat (map names (subs exp))
@@ -141,10 +136,11 @@ names exp          = concat (map names (subs exp))
 -- as a name in the given TypedExp. Used by newName to generate names that are
 -- not found in a given expression.
 nameIn :: Name -> TypedExp -> Bool
-nameIn n (Abs n' _ x) = (n == n') || nameIn n x
-nameIn n (Var n')     = n == n'
-nameIn _ (Constant _) = False
-nameIn n exp          = any (nameIn n) (subs exp)
+nameIn n (Abs n' _ x)  = (n == n') || nameIn n x
+nameIn n (AbsInf n' x) = (n == n') || nameIn n x
+nameIn n (Var n')      = n == n'
+nameIn _ (Constant _)  = False
+nameIn n exp           = any (nameIn n) (subs exp)
 
 -- Creates a set of all free variables in a TypedExp, which can be used when
 -- reducing a function application, as it determines which names will need to be
@@ -153,6 +149,7 @@ freeVars :: TypedExp -> S.Set Name
 freeVars exp = case exp of
     Var x      -> S.singleton x
     Abs x _ m  -> S.delete x (freeVars m)
+    AbsInf x m -> S.delete x (freeVars m)
     Constant _ -> S.empty
     _          -> S.unions $ map freeVars $ subs exp
 

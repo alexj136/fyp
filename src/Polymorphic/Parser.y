@@ -34,7 +34,11 @@ ARG         := [a-z][a-zA-Z]*
 %name parse
 %tokentype { Token }
 %error { parseError }
-%left exp
+
+%left  exp
+%right dot lam equals
+%right openbr
+%left  closbr
 
 %token
     lam     { TokenLambda  }
@@ -43,7 +47,7 @@ ARG         := [a-z][a-zA-Z]*
     closbr  { TokenClosBr  }
     equals  { TokenEquals  }
     identLC { TokenIdLC $$ }
-    identUC { TokenIdUC $$ }
+--  identUC { TokenIdUC $$ }
     int     { TokenInt  $$ }
     bool    { TokenBool $$ }
 
@@ -63,21 +67,28 @@ arglist : identLC arglist { $1 : $2 }
 exp :: { TypedExp }
 exp : exp exp             { App $1 $2             } 
     | openbr exp closbr   { $2                    }
-    | lam identLC dot exp { Abs $2 TNone $4       }
+    | lam identLC dot exp { AbsInf $2 $4          }
     | identLC             { Var $1                }
     | int                 { Constant (IntVal $1)  }
     | bool                { Constant (BoolVal $1) }
 
 {
-data Decl = Decl {
-    name     :: String,  -- The name if the function
-    userType :: Type,    -- The user-specified type, which we will check
-    body     :: TypedExp -- The body of the function
+data Decl = Decl {    -- A standard function declaration
+    name  :: String,  -- The name if the function
+    body  :: TypedExp -- The body of the function
+} | DeclWTy {         -- For use with given type declarations (not yet implemented)
+    name  :: String,
+    tyDec :: Type,    -- The user-specified type, which we will check
+    body  :: TypedExp
 } deriving (Show, Eq)
 
 makeDecl :: String -> [String] -> TypedExp -> Decl
-makeDecl n []   x = Decl n TNone x
-makeDecl n args x = makeDecl n (init args) (Abs (last args) TNone x)
+makeDecl n []   x = Decl n x
+makeDecl n args x = makeDecl n (init args) (AbsInf (last args) x)
+
+makeDeclWTy :: Type -> String -> [String] -> TypedExp -> Decl
+makeDeclWTy t n []   x = DeclWTy n t x
+makeDeclWTy t n args x = makeDeclWTy t n (init args) (AbsInf (last args) x)
 
 parseError :: [Token] -> a
 parseError token = error $ "Parse error on " ++ (show token)

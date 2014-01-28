@@ -120,7 +120,7 @@ action_3 (13) = happyShift action_6
 action_3 (6) = happyGoto action_5
 action_3 _ = happyReduce_5
 
-action_4 (17) = happyAccept
+action_4 (16) = happyAccept
 action_4 _ = happyFail
 
 action_5 (12) = happyShift action_9
@@ -137,16 +137,16 @@ action_8 _ = happyReduce_4
 action_9 (8) = happyShift action_11
 action_9 (10) = happyShift action_12
 action_9 (13) = happyShift action_13
-action_9 (15) = happyShift action_14
-action_9 (16) = happyShift action_15
+action_9 (14) = happyShift action_14
+action_9 (15) = happyShift action_15
 action_9 (7) = happyGoto action_10
 action_9 _ = happyFail
 
 action_10 (8) = happyShift action_11
 action_10 (10) = happyShift action_12
 action_10 (13) = happyShift action_13
-action_10 (15) = happyShift action_14
-action_10 (16) = happyShift action_15
+action_10 (14) = happyShift action_14
+action_10 (15) = happyShift action_15
 action_10 (7) = happyGoto action_18
 action_10 _ = happyReduce_3
 
@@ -156,8 +156,8 @@ action_11 _ = happyFail
 action_12 (8) = happyShift action_11
 action_12 (10) = happyShift action_12
 action_12 (13) = happyShift action_13
-action_12 (15) = happyShift action_14
-action_12 (16) = happyShift action_15
+action_12 (14) = happyShift action_14
+action_12 (15) = happyShift action_15
 action_12 (7) = happyGoto action_16
 action_12 _ = happyFail
 
@@ -171,8 +171,8 @@ action_16 (8) = happyShift action_11
 action_16 (10) = happyShift action_12
 action_16 (11) = happyShift action_20
 action_16 (13) = happyShift action_13
-action_16 (15) = happyShift action_14
-action_16 (16) = happyShift action_15
+action_16 (14) = happyShift action_14
+action_16 (15) = happyShift action_15
 action_16 (7) = happyGoto action_18
 action_16 _ = happyFail
 
@@ -182,16 +182,16 @@ action_17 _ = happyFail
 action_18 (8) = happyShift action_11
 action_18 (10) = happyShift action_12
 action_18 (13) = happyShift action_13
-action_18 (15) = happyShift action_14
-action_18 (16) = happyShift action_15
+action_18 (14) = happyShift action_14
+action_18 (15) = happyShift action_15
 action_18 (7) = happyGoto action_18
 action_18 _ = happyReduce_6
 
 action_19 (8) = happyShift action_11
 action_19 (10) = happyShift action_12
 action_19 (13) = happyShift action_13
-action_19 (15) = happyShift action_14
-action_19 (16) = happyShift action_15
+action_19 (14) = happyShift action_14
+action_19 (15) = happyShift action_15
 action_19 (7) = happyGoto action_21
 action_19 _ = happyFail
 
@@ -200,8 +200,8 @@ action_20 _ = happyReduce_7
 action_21 (8) = happyShift action_11
 action_21 (10) = happyShift action_12
 action_21 (13) = happyShift action_13
-action_21 (15) = happyShift action_14
-action_21 (16) = happyShift action_15
+action_21 (14) = happyShift action_14
+action_21 (15) = happyShift action_15
 action_21 (7) = happyGoto action_18
 action_21 _ = happyReduce_8
 
@@ -265,7 +265,7 @@ happyReduction_8 ((HappyAbsSyn7  happy_var_4) `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn7
-		 (Abs happy_var_2 TNone happy_var_4
+		 (AbsInf happy_var_2 happy_var_4
 	) `HappyStk` happyRest
 
 happyReduce_9 = happySpecReduce_1  7 happyReduction_9
@@ -290,7 +290,7 @@ happyReduction_11 (HappyTerminal (TokenBool happy_var_1))
 happyReduction_11 _  = notHappyAtAll 
 
 happyNewToken action sts stk [] =
-	action 17 17 notHappyAtAll (HappyState action) sts stk []
+	action 16 16 notHappyAtAll (HappyState action) sts stk []
 
 happyNewToken action sts stk (tk:tks) =
 	let cont i = action i i tk (HappyState action) sts stk tks in
@@ -301,13 +301,12 @@ happyNewToken action sts stk (tk:tks) =
 	TokenClosBr -> cont 11;
 	TokenEquals -> cont 12;
 	TokenIdLC happy_dollar_dollar -> cont 13;
-	TokenIdUC happy_dollar_dollar -> cont 14;
-	TokenInt  happy_dollar_dollar -> cont 15;
-	TokenBool happy_dollar_dollar -> cont 16;
+	TokenInt  happy_dollar_dollar -> cont 14;
+	TokenBool happy_dollar_dollar -> cont 15;
 	_ -> happyError' (tk:tks)
 	}
 
-happyError_ 17 tk tks = happyError' tks
+happyError_ 16 tk tks = happyError' tks
 happyError_ _ tk tks = happyError' (tk:tks)
 
 newtype HappyIdentity a = HappyIdentity a
@@ -334,15 +333,22 @@ parse tks = happyRunIdentity happySomeParser where
 happySeq = happyDontSeq
 
 
-data Decl = Decl {
-    name     :: String,  -- The name if the function
-    userType :: Type,    -- The user-specified type, which we will check
-    body     :: TypedExp -- The body of the function
+data Decl = Decl {    -- A standard function declaration
+    name  :: String,  -- The name if the function
+    body  :: TypedExp -- The body of the function
+} | DeclWTy {         -- For use with given type declarations (not yet implemented)
+    name  :: String,
+    tyDec :: Type,    -- The user-specified type, which we will check
+    body  :: TypedExp
 } deriving (Show, Eq)
 
 makeDecl :: String -> [String] -> TypedExp -> Decl
-makeDecl n []   x = Decl n TNone x
-makeDecl n args x = makeDecl n (init args) (Abs (last args) TNone x)
+makeDecl n []   x = Decl n x
+makeDecl n args x = makeDecl n (init args) (AbsInf (last args) x)
+
+makeDeclWTy :: Type -> String -> [String] -> TypedExp -> Decl
+makeDeclWTy t n []   x = DeclWTy n t x
+makeDeclWTy t n args x = makeDeclWTy t n (init args) (AbsInf (last args) x)
 
 parseError :: [Token] -> a
 parseError token = error $ "Parse error on " ++ (show token)
