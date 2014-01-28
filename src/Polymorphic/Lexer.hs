@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LINE 1 "Lexer.x" #-}
 
-module Lexer (lex, Token, nameOf) where
+module Lexer where
 
 #if __GLASGOW_HASKELL__ >= 603
 #include "ghcconfig.h"
@@ -206,6 +206,10 @@ data Token =
     | TokenLambda       -- Lambda abstractions
     | TokenDot          -- Delimits abstractions from funtion bodies
 
+    -- Constants
+    | TokenInt Int      -- Integer literals
+    | TokenBool Bool    -- Boolean literals
+
     -- BINARY OPERATORS
     | TokenAdd          -- Addition operator
     | TokenSub          -- Subtraction operator
@@ -218,12 +222,6 @@ data Token =
     | TokenIsZero       -- 'Is-zero' function token
 
     deriving (Show, Eq)
-
--- Retrieve the identifier name of an identifier token
-nameOf :: Token -> String
-nameOf (TokenIdLC n) = n
-nameOf (TokenIdUC n) = n
-nameOf _             = error "Cannot get name of non-identifier token"
 
 -- The lexer function
 scan :: String -> [Token]

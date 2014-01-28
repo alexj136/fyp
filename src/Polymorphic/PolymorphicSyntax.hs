@@ -46,7 +46,9 @@ data Type = TInt
           | TBool
           | TList Type
           | TFunc Type Type
-          | TVar Int -- Type variables are numbers, not strings
+          | TVar Int    -- Type variables are numbers, not strings
+          | TNone       -- Type initially assigned to expressions by the parser,
+                        -- which will later be replaced by a real Type
     deriving Eq
 
 instance Show Type where
@@ -56,26 +58,34 @@ instance Show Type where
         TList a    -> '[':show a ++ "]"
         TFunc a b  -> show a ++ " -> " ++ show b
         TVar varNo -> 'T':show varNo
+        TNone      -> "NONE"
 
 -- It is helpful to make Types orderable so that manipulating large sets of
 -- Types is faster
 instance Ord Type where
     (<=) a b = case ( a , b ) of
-        -- Every type is greater than Bool
+        -- Every type is greater than None
+        ( TNone       , _           ) -> True
+
+        -- Only None is less than Bool
+        ( TBool       , TNone       ) -> False
         ( TBool       , _           ) -> True
 
-        -- Only Bool is less than Int
+        -- Only Bool and None are less than Int
+        ( TInt        , TNone       ) -> False
         ( TInt        , TBool       ) -> False
         ( TInt        , _           ) -> True
 
         -- Lists are greater than Bool and Int, but less than everything else.
         -- List A is less than or equal to List B if A is less than or equal to
         -- List B.
-        ( TList t     , TBool       ) -> False
-        ( TList t     , TInt        ) -> False
+        ( TList _     , TNone       ) -> False
+        ( TList _     , TBool       ) -> False
+        ( TList _     , TInt        ) -> False
         ( TList t1    , TList t2    ) -> t1 <= t2
-        ( TList t     , _           ) -> True
+        ( TList _     , _           ) -> True
 
+        ( TFunc _  _  , TNone       ) -> False
         ( TFunc _  _  , TBool       ) -> False
         ( TFunc _  _  , TInt        ) -> False
         ( TFunc _  _  , TList _     ) -> False

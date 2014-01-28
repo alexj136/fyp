@@ -1,5 +1,5 @@
 {
-module Lexer (lex, Token, nameOf) where
+module Lexer where
 }
 
 %wrapper "basic"
@@ -62,12 +62,6 @@ data Token =
     | TokenIsZero       -- 'Is-zero' function token
 
     deriving (Show, Eq)
-
--- Retrieve the identifier name of an identifier token
-nameOf :: Token -> String
-nameOf (TokenIdLC n) = n
-nameOf (TokenIdUC n) = n
-nameOf _             = error "Cannot get name of non-identifier token"
 
 -- The lexer function
 scan :: String -> [Token]

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -w #-}
-module Parser (parse) where
+module Parser where
 
 import Lexer
 import PolymorphicSyntax
@@ -37,7 +37,7 @@ data HappyAbsSyn
 	| HappyErrorToken Int
 	| HappyAbsSyn4 ([Decl])
 	| HappyAbsSyn5 (Decl)
-	| HappyAbsSyn6 ([Token])
+	| HappyAbsSyn6 ([String])
 	| HappyAbsSyn7 (TypedExp)
 
 {- to allow type-synonyms as our monads (likely
@@ -265,13 +265,13 @@ happyReduction_8 ((HappyAbsSyn7  happy_var_4) `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn7
-		 (Abs happy_var_2 happy_var_4
+		 (Abs happy_var_2 TNone happy_var_4
 	) `HappyStk` happyRest
 
 happyReduce_9 = happySpecReduce_1  7 happyReduction_9
 happyReduction_9 (HappyTerminal (TokenIdLC happy_var_1))
 	 =  HappyAbsSyn7
-		 (Var (nameOf happy_var_1)
+		 (Var happy_var_1
 	)
 happyReduction_9 _  = notHappyAtAll 
 
@@ -334,10 +334,14 @@ parse tks = happyRunIdentity happySomeParser where
 happySeq = happyDontSeq
 
 
-data Decl = Decl Token [Token] TypedExp
+data Decl = Decl {
+    name :: String,
+    args :: [String],
+    body :: TypedExp
+} deriving (Show, Eq)
 
 parseError :: [Token] -> a
-parseError token = error "Parse error on " ++ (show token)
+parseError token = error $ "Parse error on " ++ (show token)
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "<command-line>" #-}

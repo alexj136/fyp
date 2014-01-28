@@ -1,5 +1,5 @@
 {
-module Parser (parse) where
+module Parser where
 
 import Lexer
 import PolymorphicSyntax
@@ -56,21 +56,25 @@ decls : decl decls        { $1 : $2 }
 decl :: { Decl }
 decl : identLC arglist equals exp { Decl $1 $2 $4 }
 
-arglist :: { [Token] }
+arglist :: { [String] }
 arglist : identLC arglist { $1 : $2 }
         | {- empty -}     { [] }
 
 exp :: { TypedExp }
-exp : exp exp             { App $1 $2 } 
-    | openbr exp closbr   { $2 }
-    | lam identLC dot exp { Abs $2 $4 }
-    | identLC             { Var (nameOf $1) }
-    | int                 { Constant (IntVal $1) }
+exp : exp exp             { App $1 $2             } 
+    | openbr exp closbr   { $2                    }
+    | lam identLC dot exp { Abs $2 TNone $4       }
+    | identLC             { Var $1                }
+    | int                 { Constant (IntVal $1)  }
     | bool                { Constant (BoolVal $1) }
 
 {
-data Decl = Decl Token [Token] TypedExp
+data Decl = Decl {
+    name :: String,
+    args :: [String],
+    body :: TypedExp
+} deriving (Show, Eq)
 
 parseError :: [Token] -> a
-parseError token = error "Parse error on " ++ (show token)
+parseError token = error $ "Parse error on " ++ (show token)
 }
