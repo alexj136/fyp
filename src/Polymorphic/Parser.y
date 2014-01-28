@@ -54,7 +54,7 @@ decls : decl decls        { $1 : $2 }
       | {- empty -}       { [] }
 
 decl :: { Decl }
-decl : identLC arglist equals exp { Decl $1 $2 $4 }
+decl : identLC arglist equals exp { makeDecl $1 $2 $4 }
 
 arglist :: { [String] }
 arglist : identLC arglist { $1 : $2 }
@@ -70,10 +70,14 @@ exp : exp exp             { App $1 $2             }
 
 {
 data Decl = Decl {
-    name :: String,
-    args :: [String],
-    body :: TypedExp
+    name     :: String,  -- The name if the function
+    userType :: Type,    -- The user-specified type, which we will check
+    body     :: TypedExp -- The body of the function
 } deriving (Show, Eq)
+
+makeDecl :: String -> [String] -> TypedExp -> Decl
+makeDecl n []   x = Decl n TNone x
+makeDecl n args x = makeDecl n (init args) (Abs (last args) TNone x)
 
 parseError :: [Token] -> a
 parseError token = error $ "Parse error on " ++ (show token)

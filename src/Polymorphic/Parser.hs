@@ -225,7 +225,7 @@ happyReduction_3 ((HappyAbsSyn7  happy_var_4) `HappyStk`
 	(HappyTerminal (TokenIdLC happy_var_1)) `HappyStk`
 	happyRest)
 	 = HappyAbsSyn5
-		 (Decl happy_var_1 happy_var_2 happy_var_4
+		 (makeDecl happy_var_1 happy_var_2 happy_var_4
 	) `HappyStk` happyRest
 
 happyReduce_4 = happySpecReduce_2  6 happyReduction_4
@@ -335,10 +335,14 @@ happySeq = happyDontSeq
 
 
 data Decl = Decl {
-    name :: String,
-    args :: [String],
-    body :: TypedExp
+    name     :: String,  -- The name if the function
+    userType :: Type,    -- The user-specified type, which we will check
+    body     :: TypedExp -- The body of the function
 } deriving (Show, Eq)
+
+makeDecl :: String -> [String] -> TypedExp -> Decl
+makeDecl n []   x = Decl n TNone x
+makeDecl n args x = makeDecl n (init args) (Abs (last args) TNone x)
 
 parseError :: [Token] -> a
 parseError token = error $ "Parse error on " ++ (show token)
