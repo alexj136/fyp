@@ -37,22 +37,40 @@ ARG         := [a-z][a-zA-Z]*
 %left exp
 
 %token
-    lam    { T_Lambda }
-    dot    { T_Dot    }
-    openbr { T_OpenBr }
-    closbr { T_ClosBr }
-    var    { T_Var $$ }
-
+    lam     { TokenLambda  }
+    dot     { TokenDot     }
+    openbr  { TokenOpenBr  }
+    closbr  { TokenClosBr  }
+    equals  { TokenEquals  }
+    identLC { TokenIdLC $$ }
+    identUC { TokenIdUC $$ }
+    int     { TokenInt  $$ }
+    bool    { TokenBool $$ }
 
 %%
 
-exp :: { Exp }
-exp : exp exp           { App $1 $2 } 
-    | openbr exp closbr { $2 }
-    | lam var dot exp   { Abs $2 $4 }
-    | var               { Var (nameOf $1) }
+decls :: { [Decl] }
+decls : decl decls        { $1 : $2 }
+      | {- empty -}       { [] }
+
+decl :: { Decl }
+decl : identLC arglist equals exp { Decl $1 $2 $4 }
+
+arglist :: { [Token] }
+arglist : identLC arglist { $1 : $2 }
+        | {- empty -}     { [] }
+
+exp :: { TypedExp }
+exp : exp exp             { App $1 $2 } 
+    | openbr exp closbr   { $2 }
+    | lam identLC dot exp { Abs $2 $4 }
+    | identLC             { Var (nameOf $1) }
+    | int                 { Constant (IntVal $1) }
+    | bool                { Constant (BoolVal $1) }
 
 {
+data Decl = Decl Token [Token] TypedExp
+
 parseError :: [Token] -> a
-parseError _ = error "Parse error"
+parseError token = error "Parse error on " ++ (show token)
 }

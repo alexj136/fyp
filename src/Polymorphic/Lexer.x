@@ -46,6 +46,10 @@ data Token =
     | TokenLambda       -- Lambda abstractions
     | TokenDot          -- Delimits abstractions from funtion bodies
 
+    -- Constants
+    | TokenInt Int      -- Integer literals
+    | TokenBool Bool    -- Boolean literals
+
     -- BINARY OPERATORS
     | TokenAdd          -- Addition operator
     | TokenSub          -- Subtraction operator
