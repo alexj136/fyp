@@ -26,6 +26,9 @@ tokens :-
     "div"                  { \s -> TokenDiv    }
     "mod"                  { \s -> TokenMod    }
 
+    "let"                  { \s -> TokenLet    }
+    "in"                   { \s -> TokenIn     }
+
     "not"                  { \s -> TokenNot    }
     "iszero"               { \s -> TokenIsZero }
 
@@ -60,6 +63,10 @@ data Token =
     | TokenMul          -- Multiplucation operator
     | TokenDiv          -- Integer division operator
     | TokenMod          -- Modulo operator
+
+    -- LET-IN BINDINGS
+    | TokenLet          -- let keyword
+    | TokenIn           -- in keyword
 
     -- UNARY OPERATORS
     | TokenNot          -- Logical not

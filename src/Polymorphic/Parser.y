@@ -35,10 +35,12 @@ ARG         := [a-z][a-zA-Z]*
 %tokentype { Token }
 %error { parseError }
 
-%left  exp
-%right dot lam equals
+%right equals lam dot let in int bool
+%left identLC
+%left closbr
 %right openbr
-%left  closbr
+%left exp
+%left app
 
 %token
     lam     { TokenLambda  }
@@ -46,6 +48,8 @@ ARG         := [a-z][a-zA-Z]*
     openbr  { TokenOpenBr  }
     closbr  { TokenClosBr  }
     equals  { TokenEquals  }
+    let     { TokenLet     }
+    in      { TokenIn      }
     identLC { TokenIdLC $$ }
 --  identUC { TokenIdUC $$ }
     int     { TokenInt  $$ }
@@ -65,12 +69,13 @@ arglist : identLC arglist { $1 : $2 }
         | {- empty -}     { [] }
 
 exp :: { TypedExp }
-exp : exp exp             { App $1 $2             } 
-    | openbr exp closbr   { $2                    }
-    | lam identLC dot exp { AbsInf $2 $4          }
-    | identLC             { Var $1                }
-    | int                 { Constant (IntVal $1)  }
-    | bool                { Constant (BoolVal $1) }
+exp : exp exp %prec app             { App $1 $2             } 
+    | openbr exp closbr             { $2                    }
+    | lam identLC dot exp           { AbsInf $2 $4          }
+    | let identLC equals exp in exp { App (AbsInf $2 $6) $4 }
+    | identLC                       { Var $1                }
+    | int                           { Constant (IntVal $1)  }
+    | bool                          { Constant (BoolVal $1) }
 
 {
 data Decl = Decl {    -- A standard function declaration
