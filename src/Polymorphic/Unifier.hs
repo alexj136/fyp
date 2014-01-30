@@ -155,8 +155,7 @@ getConstraints i ctx exp = case exp of
               (consN, tN, i'') = getConstraints i' ctx n
     Constant (IntVal  _) -> (S.empty, TInt , i)
     Constant (BoolVal _) -> (S.empty, TBool, i)
-    BinaryOp t           -> (S.empty, typeOfBinaryOp t, i)
-    UnaryOp  t           -> (S.empty, typeOfUnaryOp  t, i)
+    Operation ot         -> (S.empty, typeOfOperation ot, i)
 
 {-- Constraint generation algorithm (application case):
 constr ( M N )
@@ -181,8 +180,8 @@ contextFrom :: Name -> Type -> Context
 contextFrom n t = M.fromList[(n, t)]
 
 -- Lookup the types of the various binary and unary operations
-typeOfBinaryOp :: BinaryOpType -> Type
-typeOfBinaryOp t = case t of
+typeOfOperation :: OpType -> Type
+typeOfOperation ot = case ot of
     Add -> TFunc TInt  (TFunc TInt  TInt )
     Sub -> TFunc TInt  (TFunc TInt  TInt )
     Mul -> TFunc TInt  (TFunc TInt  TInt )
@@ -191,7 +190,5 @@ typeOfBinaryOp t = case t of
     And -> TFunc TBool (TFunc TBool TBool)
     Or  -> TFunc TBool (TFunc TBool TBool)
     Xor -> TFunc TBool (TFunc TBool TBool)
-
-typeOfUnaryOp :: UnaryOpType -> Type
-typeOfUnaryOp IsZ = TFunc TInt  TBool
-typeOfUnaryOp Not = TFunc TBool TBool
+    Not -> TFunc TBool TBool
+    IsZ -> TFunc TInt  TBool

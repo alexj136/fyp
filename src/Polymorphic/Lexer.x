@@ -53,7 +53,7 @@ data Token =
     | TokenLambda       -- Lambda abstractions
     | TokenDot          -- Delimits abstractions from funtion bodies
 
-    -- Constants
+    -- CONSTANTS
     | TokenInt Int      -- Integer literals
     | TokenBool Bool    -- Boolean literals
 
@@ -64,13 +64,13 @@ data Token =
     | TokenDiv          -- Integer division operator
     | TokenMod          -- Modulo operator
 
-    -- LET-IN BINDINGS
-    | TokenLet          -- let keyword
-    | TokenIn           -- in keyword
-
     -- UNARY OPERATORS
     | TokenNot          -- Logical not
     | TokenIsZero       -- 'Is-zero' function token
+
+    -- LET-IN BINDINGS
+    | TokenLet          -- let keyword
+    | TokenIn           -- in keyword
 
     deriving (Show, Eq)
 

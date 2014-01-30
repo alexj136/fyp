@@ -35,6 +35,12 @@ ARG         := [a-z][a-zA-Z]*
 %tokentype { Token }
 %error { parseError }
 
+%left add
+%left sub
+%left mul
+%left div
+%left mod
+
 %right equals lam dot let in int bool
 %left identLC
 %left closbr
@@ -43,23 +49,32 @@ ARG         := [a-z][a-zA-Z]*
 %left app
 
 %token
-    lam     { TokenLambda  }
-    dot     { TokenDot     }
+    identLC { TokenIdLC $$ }
+    identUC { TokenIdUC $$ }
     openbr  { TokenOpenBr  }
     closbr  { TokenClosBr  }
     equals  { TokenEquals  }
-    let     { TokenLet     }
-    in      { TokenIn      }
-    identLC { TokenIdLC $$ }
---  identUC { TokenIdUC $$ }
+
+    lam     { TokenLambda  }
+    dot     { TokenDot     }
+
     int     { TokenInt  $$ }
     bool    { TokenBool $$ }
+    
+    add     { TokenAdd     }
+    sub     { TokenSub     }
+    mul     { TokenMul     }
+    div     { TokenDiv     }
+    mod     { TokenMod     }
+
+    let     { TokenLet     }
+    in      { TokenIn      }
 
 %%
 
 decls :: { [Decl] }
-decls : decl decls        { $1 : $2 }
-      | {- empty -}       { [] }
+decls : decl decls  { $1 : $2 }
+      | {- empty -} { [] }
 
 decl :: { Decl }
 decl : identLC arglist equals exp { makeDecl $1 $2 $4 }
@@ -76,7 +91,14 @@ exp : exp exp %prec app             { App $1 $2             }
     | identLC                       { Var $1                }
     | int                           { Constant (IntVal $1)  }
     | bool                          { Constant (BoolVal $1) }
+    | exp infixop exp               { App (App $2 $1) $3    }
 
+infixop :: { BinaryOp }
+infixop : add { BinaryOp Add }
+        | sub { BinaryOp Sub }
+        | mul { BinaryOp Mul }
+        | div { BinaryOp Div }
+        | mod { BinaryOp Mod }
 {
 data Decl = Decl {    -- A standard function declaration
     name  :: String,  -- The name if the function

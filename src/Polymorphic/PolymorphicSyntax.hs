@@ -15,8 +15,7 @@ data TypedExp = Abs Name Type TypedExp -- Abstraction labelled with a type
               | Var Name               -- Variable
               | App TypedExp TypedExp  -- Function application
               | Constant Value         -- Integer & boolean constants
-              | BinaryOp BinaryOpType  -- Operators like +, - etc
-              | UnaryOp UnaryOpType    -- Unary operators: not, iszero
+              | Operation OpType       -- Operators like +, - etc
     deriving Eq
 
 instance Show TypedExp where
@@ -30,8 +29,7 @@ instance Show TypedExp where
         Var v              -> v
         App m n            -> '(':show m ++ ' ':show n ++ ")"
         Constant v         -> show v
-        BinaryOp t         -> show t
-        UnaryOp t          -> show t
+        Operation ot       -> show ot
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
@@ -90,27 +88,32 @@ instance Ord Type where
 
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
-data BinaryOpType = Add | Sub | Mul | Div | Mod
---                | Lss | LsE | Equ | NEq | Gtr | GtE
-                  | And | Or  | Xor
+data OpType = Add | Sub | Mul | Div | Mod       -- Int  -> Int  -> Int
+            | Lss | LsE | Equ | NEq | Gtr | GtE -- Int  -> Int  -> Bool
+            | And | Or  | Xor                   -- Bool -> Bool -> Bool
+            | Not | IsZ                         -- Other
     deriving Eq
 
-instance Show BinaryOpType where
+instance Show OpType where
     show Add = "+"
     show Sub = "-"
     show Mul = "*"
     show Div = "/"
     show Mod = "%"
+
     show And = "&"
     show Or  = "|"
     show Xor = "#"
 
-data UnaryOpType = IsZ | Not -- IsZ (is-zero) :: TInt -> TBool, Not :: Bool -> Bool
-    deriving Eq
+    show Lss = "<"
+    show LsE = "<="
+    show Equ = "=="
+    show NEq = "/="
+    show Gtr = ">"
+    show GtE = ">="
 
-instance Show UnaryOpType where
-    show IsZ = "isZero"
     show Not = "!"
+    show IsZ = "isZero"
 
 --------------------------------------------------------------------------------
 --                  FUNCTIONS TO GAIN INFORMATION ON TERMS
