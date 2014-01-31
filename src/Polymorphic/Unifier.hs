@@ -8,8 +8,6 @@ import qualified Data.Set as S
 --                                UNIFICATION
 --------------------------------------------------------------------------------
 
---data TypeCheckResult = Pass TypedExp | Fail TypedExp String
-
 -- Do type inference on an expression - get the constraints & type, unify the
 -- constraints, and use the function returned by unify to rewrite the type
 -- without type variables
@@ -22,8 +20,6 @@ inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
 inferWithConstraints exp = do
     rewrite <- unify constraints
     return (rewrite typeOfExp, constraints)
---inferWithConstraints exp = unify constraints >>=
-    --return (\x -> (x typeOfExp, constraints))
     where (constraints, typeOfExp, _) = getConstraints 0 M.empty exp
 
 -- A constraint is a pair of types (the first is a TVar), that are supposedly
@@ -187,8 +183,17 @@ typeOfOperation ot = case ot of
     Mul -> TFunc TInt  (TFunc TInt  TInt )
     Div -> TFunc TInt  (TFunc TInt  TInt )
     Mod -> TFunc TInt  (TFunc TInt  TInt )
+
     And -> TFunc TBool (TFunc TBool TBool)
     Or  -> TFunc TBool (TFunc TBool TBool)
     Xor -> TFunc TBool (TFunc TBool TBool)
+
+    Lss -> TFunc TInt  (TFunc TInt  TBool)
+    LsE -> TFunc TInt  (TFunc TInt  TBool)
+    Equ -> TFunc TInt  (TFunc TInt  TBool)
+    NEq -> TFunc TInt  (TFunc TInt  TBool)
+    Gtr -> TFunc TInt  (TFunc TInt  TBool)
+    GtE -> TFunc TInt  (TFunc TInt  TBool)
+
     Not -> TFunc TBool TBool
     IsZ -> TFunc TInt  TBool

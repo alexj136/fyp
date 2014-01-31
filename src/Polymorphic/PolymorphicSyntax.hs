@@ -77,12 +77,16 @@ instance Ord Type where
         ( TList t1    , TList t2    ) -> t1 <= t2
         ( TList _     , _           ) -> True
 
+        -- TFunc is only less than TVar. The argument type determines which of two
+        -- TFuncs are greater. If the argument types are equal, then the return type
+        -- determines the greater one.
         ( TFunc _  _  , TBool       ) -> False
         ( TFunc _  _  , TInt        ) -> False
         ( TFunc _  _  , TList _     ) -> False
         ( TFunc t1 t2 , TFunc t3 t4 ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
         ( TFunc t1 t2 , _           ) -> True
 
+        -- TVars are greater than everything
         ( TVar v1     , TVar v2     ) -> v1 <= v2
         ( TVar _      , _           ) -> False
 
