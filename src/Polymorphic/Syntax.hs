@@ -5,7 +5,7 @@ module Syntax where
 import qualified Data.Set as S
 
 --------------------------------------------------------------------------------
---                            ESSENTIAL DATA TYPES
+--                         ESSENTIAL DATA DEFINITIONS
 --------------------------------------------------------------------------------
 
 type Name = String
@@ -22,10 +22,11 @@ instance Show TypedExp where
     show exp = case exp of
         -- First case just stops brackets from appearing around applications
         -- that appear immidiately within an abstraction
-        Abs v t (App m n)  -> concat ['λ':v, " : ", show t, '.':show m, ' ':show n]
-        Abs v t x          -> concat ['λ':v, " : ", show t, '.':show x]
-        AbsInf v (App m n) -> concat ['λ':v, " . ", show m, ' ':show n]
-        AbsInf v x         -> concat ['λ':v, " . ", show x]
+        Abs v t (App m n)  ->
+            concat ['λ' : v, " : ", show t, '.' : show m, ' ' : show n]
+        Abs v t x          -> concat ['λ' : v, " : ", show t, '.' : show x]
+        AbsInf v (App m n) -> concat ['λ' : v, " . ", show m, ' ' : show n]
+        AbsInf v x         -> concat ['λ' : v, " . ", show x]
         Var v              -> v
         App m n            -> '(':show m ++ ' ':show n ++ ")"
         Constant v         -> show v
@@ -33,18 +34,21 @@ instance Show TypedExp where
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
-data Value = IntVal  Int
-           | BoolVal Bool
+data Value = BoolVal Bool
+           | IntVal  Int
+           | CharVal Char
     deriving Eq
 
 instance Show Value where
     show val = case val of
-        IntVal   x -> show x
-        BoolVal  x -> show x
+        BoolVal x -> show x
+        IntVal  x -> show x
+        CharVal x -> show x
 
 -- Type is a recursive data type used for representing the types of functions
 data Type = TInt
           | TBool
+          | TChar
           | TList Type
           | TFunc Type Type
           | TVar Int    -- Type variables are numbers, not strings
@@ -54,6 +58,7 @@ instance Show Type where
     show t = case t of
         TInt       -> "Int"
         TBool      -> "Bool"
+        TChar      -> "Char"
         TList a    -> '[':show a ++ "]"
         TFunc a b  -> show a ++ " -> " ++ show b
         TVar varNo -> 'T':show varNo
@@ -69,22 +74,26 @@ instance Ord Type where
         ( TInt        , TBool       ) -> False
         ( TInt        , _           ) -> True
 
-        -- Lists are greater than Bool and Int, but less than everything else.
-        -- List A is less than or equal to List B if A is less than or equal to
-        -- List B.
+        -- Bool and Int are less than Char
+        ( TChar       , TBool       ) -> False
+        ( TChar       , TInt        ) -> False
+        ( TChar       , _           ) -> True
+
+        -- Lists are greater than Bool, Int & Char, but less than everything
+        -- else. List A is less than or equal to List B if A is less than or
+        -- equal to List B.
         ( TList _     , TBool       ) -> False
         ( TList _     , TInt        ) -> False
+        ( TList _     , TChar       ) -> False
         ( TList t1    , TList t2    ) -> t1 <= t2
         ( TList _     , _           ) -> True
 
-        -- TFunc is only less than TVar. The argument type determines which of two
-        -- TFuncs are greater. If the argument types are equal, then the return type
-        -- determines the greater one.
-        ( TFunc _  _  , TBool       ) -> False
-        ( TFunc _  _  , TInt        ) -> False
-        ( TFunc _  _  , TList _     ) -> False
+        -- TFunc is only less than TVar. The argument type determines which of
+        -- two TFuncs are greater. If the argument types are equal, then the
+        -- return type determines the greater one.
+        ( TFunc _  _  , TVar _      ) -> True
         ( TFunc t1 t2 , TFunc t3 t4 ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
-        ( TFunc t1 t2 , _           ) -> True
+        ( TFunc _  _  , _           ) -> False
 
         -- TVars are greater than everything
         ( TVar v1     , TVar v2     ) -> v1 <= v2
@@ -97,6 +106,18 @@ data OpType = Add | Sub | Mul | Div | Mod       -- Int  -> Int  -> Int
             | And | Or  | Xor                   -- Bool -> Bool -> Bool
             | Not | IsZ                         -- Other
     deriving Eq
+
+-- Tell if an operation type is binary. Will not need to change in
+-- implementation as long as operations with more than two arguments are
+-- implemented.
+isBinary :: OpType -> Bool
+isBinary Not = False
+isBinary IsZ = False
+isBinary _   = True
+
+-- Tell if an operation is unary. Just the negation of isBinary.
+isUnary :: OpType -> Bool
+isUnary = not . isBinary
 
 instance Show OpType where
     show Add = "+"

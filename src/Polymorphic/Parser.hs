@@ -2,7 +2,7 @@
 module Parser where
 
 import Lexer
-import PolymorphicSyntax
+import Syntax
 
 {-- CONTEXT FREE GRAMMAR
 
@@ -17,12 +17,12 @@ EXP         := EXP EXP
             |  BINARYOP
             |  UNARYOP
 INT         := [1-9][0-9]*
-BINARYOP    := +
+OPERATION   := +
             |  -
             |  *
             |  div
             |  mod
-UNARYOP     := iszero
+            |  iszero
             |  not
 FUNC_NAME,
 ID,
