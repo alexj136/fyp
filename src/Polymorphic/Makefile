@@ -1,6 +1,6 @@
 MAIN     = RunTests
-MODULES  = Unifier PolymorphicSyntax Lexer Parser
-TESTS    = TestUnifier TestPolymorphicSyntax
+MODULES  = Unifier Syntax Lexer Parser
+TESTS    = TestUnifier TestSyntax
 
 OBJECTS  = $(MAIN:=.o)  $(MODULES:=.o)  $(TESTS:=.o)
 HIFILES  = $(MAIN:=.hi) $(MODULES:=.hi) $(TESTS:=.hi)

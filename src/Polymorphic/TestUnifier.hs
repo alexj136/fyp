@@ -1,7 +1,7 @@
 module TestUnifier where
 
 import Test.HUnit
-import PolymorphicSyntax
+import Syntax
 import Unifier
 
 import Data.Maybe (fromJust)

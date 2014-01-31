@@ -1,10 +1,10 @@
 import Test.HUnit
-import qualified TestUnifier as A
-import qualified TestPolymorphicSyntax as B
+import qualified TestSyntax as A
+import qualified TestUnifier as B
 
 main :: IO Counts
 main = do
-       putStrLn "Running tests for Unifier:"
+       putStrLn "Running tests for Syntax:"
        runTestTT A.tests
-       putStrLn "Running tests for PolymorphicSyntax:"
+       putStrLn "Running tests for Unifier:"
        runTestTT B.tests

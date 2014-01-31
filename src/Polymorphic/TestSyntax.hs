@@ -1,7 +1,7 @@
-module TestPolymorphicSyntax where
+module TestSyntax where
 
 import Test.HUnit
-import PolymorphicSyntax
+import Syntax
 
 tests = TestList
     [ testTypeEquiv

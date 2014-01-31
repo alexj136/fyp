@@ -1,6 +1,6 @@
 module Unifier where
 
-import PolymorphicSyntax
+import Syntax
 import qualified Data.Map as M
 import qualified Data.Set as S
 

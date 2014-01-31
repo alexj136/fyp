@@ -1,6 +1,6 @@
 -- This module defines the abstract syntax of the language, and a few basic
 -- functions over them, which retrieve information from them.
-module PolymorphicSyntax where
+module Syntax where
 
 import qualified Data.Set as S
 

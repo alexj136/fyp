@@ -2,7 +2,7 @@
 module Parser where
 
 import Lexer
-import PolymorphicSyntax
+import Syntax
 
 {-- CONTEXT FREE GRAMMAR
 
