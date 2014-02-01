@@ -133,10 +133,12 @@ renameAll = rnmAll2 []
 -- bound at that point and therefore doesn't need renaming.
 renameBound :: Name -> Name -> TypedExp -> TypedExp
 renameBound from to exp          = case exp of
-    Abs v t m | v == from -> Abs to t (blindRename from to m)
-              | otherwise -> Abs v  t (renamed m)
-    App m n               -> App (renamed m) (renamed n)
-    _                     -> exp
+    Abs v t m  | v == from -> Abs to t (blindRename from to m)
+               | otherwise -> Abs v  t (renamed m)
+    AbsInf v m | v == from -> AbsInf to (blindRename from to m)
+               | otherwise -> AbsInf v  (renamed m)
+    App m n                -> App (renamed m) (renamed n)
+    _                      -> exp
     where renamed :: TypedExp -> TypedExp
           renamed = renameBound from to
 
@@ -146,11 +148,13 @@ renameBound from to exp          = case exp of
 -- been eliminated.
 blindRename :: Name -> Name -> TypedExp -> TypedExp
 blindRename from to exp = case exp of
-    Abs v t m | v == from -> Abs to t (renamed m)
-              | otherwise -> Abs v  t (renamed m)
-    Var v     | v == from -> Var to
-              | otherwise -> Var v
-    App m n               -> App (renamed m) (renamed n)
-    _                     -> exp
+    Abs v t m  | v == from -> Abs to t (renamed m)
+               | otherwise -> Abs v  t (renamed m)
+    AbsInf v m | v == from -> AbsInf to (renamed m)
+               | otherwise -> AbsInf v  (renamed m)
+    Var v      | v == from -> Var to
+               | otherwise -> Var v
+    App m n                -> App (renamed m) (renamed n)
+    _                      -> exp
     where renamed :: TypedExp -> TypedExp
           renamed = blindRename from to
