@@ -18,40 +18,39 @@ apply x y = reduceNorm (App x y)
 -- Performs at least one reduction step
 reduce :: TypedExp -> TypedExp
 reduce exp = case exp of
-    App (App (Operation ot) m) n | isBinary ot -> case ( ot , reduce m , reduce n ) of
-        ( Add , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  ((+) x y))
-        ( Sub , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  ((-) x y))
-        ( Mul , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  ((*) x y))
-        ( Div , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (div x y))
-        ( Mod , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (mod x y))
+    App (App (Operation ot) m) n | isBinary ot -> case (ot, reduce m, reduce n) of
+        (Add, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (IntVal  ((+) x y))
+        (Sub, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (IntVal  ((-) x y))
+        (Mul, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (IntVal  ((*) x y))
+        (Div, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (IntVal  (div x y))
+        (Mod, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (IntVal  (mod x y))
 
-        ( Lss , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x <  y))
-        ( LsE , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x <= y))
-        ( Equ , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x == y))
-        ( NEq , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x /= y))
-        ( Gtr , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x >  y))
-        ( GtE , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x >= y))
+        (Lss, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (BoolVal (x <  y))
+        (LsE, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (BoolVal (x <= y))
+        (Equ, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (BoolVal (x == y))
+        (NEq, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (BoolVal (x /= y))
+        (Gtr, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (BoolVal (x >  y))
+        (GtE, Constant (IntVal  x), Constant (IntVal  y)) -> Constant (BoolVal (x >= y))
 
-        ( Xor , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (xor x y))
-        ( And , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (x && y))
-        ( Or  , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (x || y))
-
+        (Xor, Constant (BoolVal x), Constant (BoolVal y)) -> Constant (BoolVal (xor x y))
+        (And, Constant (BoolVal x), Constant (BoolVal y)) -> Constant (BoolVal (x && y))
+        (Or , Constant (BoolVal x), Constant (BoolVal y)) -> Constant (BoolVal (x || y))
         where
             xor :: Bool -> Bool -> Bool
             xor True  b = not b
             xor False b = b
-    App (Operation ot) m | isUnary ot -> case ( ot , redM ) of
-        ( IsZ , Constant (IntVal  x) ) -> Constant (BoolVal (x == 0))
-        ( Not , Constant (BoolVal x) ) -> Constant (BoolVal (not x))
-        where redM = reduce m
-    Abs v t m         -> Abs v t (reduce m)
-    AbsInf v m        -> AbsInf v (reduce m)
-    App (Abs v t m) n -> replace v (preventClashes m n) n
-    App m           n -> case m of
-        Var      _ -> App m (reduce n)
-        Constant _ -> App m (reduce n)
-        _             -> App (reduce m) n
-    _                 -> exp
+    App (Operation ot) m | isUnary ot -> case (ot, reduce m) of
+        (IsZ, Constant (IntVal  x)) -> Constant (BoolVal (x == 0))
+        (Not, Constant (BoolVal x)) -> Constant (BoolVal (not x))
+
+    Abs    v t m       -> Abs    v t (reduce m)
+    AbsInf v   m       -> AbsInf v   (reduce m)
+
+    App (Abs v t m) n  -> replace v (preventClashes m n) n
+    App (Var      v) n -> App (Var      v) (reduce n)
+    App (Constant c) n -> App (Constant c) (reduce n)
+    App m            n -> App (reduce m)   n
+    _                  -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
 -- normal form
