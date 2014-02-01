@@ -101,10 +101,20 @@ instance Ord Type where
 
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
-data OpType = Add | Sub | Mul | Div | Mod       -- Int  -> Int  -> Int
-            | Lss | LsE | Equ | NEq | Gtr | GtE -- Int  -> Int  -> Bool
-            | And | Or  | Xor                   -- Bool -> Bool -> Bool
-            | Not | IsZ                         -- Other
+data OpType
+    -- Operations on Int & Bool primitives
+    = Add | Sub | Mul | Div | Mod       -- Int  -> Int  -> Int
+    | Lss | LsE | Equ | NEq | Gtr | GtE -- Int  -> Int  -> Bool
+    | And | Or  | Xor                   -- Bool -> Bool -> Bool
+    | Not                               -- Bool -> Bool
+    | IsZ                               -- Int  -> Bool
+    
+    -- List operations
+    | Empty     -- The empty list       : [a]
+    | Cons      -- List constructor     :  a  -> [a] -> [a]
+    | Null      -- Is-empty function    : [a] -> Bool
+    | Head      -- Head function        : [a] ->  a
+    | Tail      -- Tail function        : [a] -> [a]
     deriving Eq
 
 -- Tell if an operation type is binary. Will not need to change in
@@ -139,6 +149,12 @@ instance Show OpType where
 
     show Not = "!"
     show IsZ = "isZero"
+
+    show Empty = "[]"
+    show Cons  = ":"
+    show Null  = "null"
+    show Head  = "head"
+    show Tail  = "tail"
 
 --------------------------------------------------------------------------------
 --                  FUNCTIONS TO GAIN INFORMATION ON TERMS

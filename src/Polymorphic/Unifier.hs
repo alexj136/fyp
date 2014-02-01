@@ -151,6 +151,7 @@ getConstraints i ctx exp = case exp of
               (consN, tN, i'') = getConstraints i' ctx n
     Constant (IntVal  _) -> (S.empty, TInt , i)
     Constant (BoolVal _) -> (S.empty, TBool, i)
+    Constant (CharVal _) -> (S.empty, TChar, i)
     Operation ot         -> (S.empty, typeOfOperation ot, i)
 
 {-- Constraint generation algorithm (application case):
@@ -197,3 +198,9 @@ typeOfOperation ot = case ot of
 
     Not -> TFunc TBool TBool
     IsZ -> TFunc TInt  TBool
+
+    Empty -> TList (TVar (-1))
+    Cons  -> TFunc (TVar (-1)) (TFunc (TList (TVar (-1))) (TList (TVar (-1))))
+    Null  -> TFunc (TList (TVar (-1))) TBool
+    Head  -> TFunc (TList (TVar (-1))) (TVar (-1))
+    Tail  -> TFunc (TList (TVar (-1))) (TList (TVar (-1)))
