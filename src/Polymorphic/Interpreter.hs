@@ -24,9 +24,18 @@ reduce exp = case exp of
         ( Mul , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  ((*) x y))
         ( Div , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (div x y))
         ( Mod , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (mod x y))
+
+        ( Lss , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x <  y))
+        ( LsE , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x <= y))
+        ( Equ , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x == y))
+        ( NEq , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x /= y))
+        ( Gtr , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x >  y))
+        ( GtE , Constant (IntVal  x) , Constant (IntVal  y) ) -> Constant (IntVal  (x >= y))
+
         ( Xor , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (xor x y))
         ( And , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (x && y))
         ( Or  , Constant (BoolVal x) , Constant (BoolVal y) ) -> Constant (BoolVal (x || y))
+
         where
             xor :: Bool -> Bool -> Bool
             xor True  b = not b
