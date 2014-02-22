@@ -4,10 +4,6 @@ import Syntax
 import qualified Data.Map as M
 import qualified Data.Set as S
 
---------------------------------------------------------------------------------
---                                UNIFICATION
---------------------------------------------------------------------------------
-
 -- Do type inference on an expression - get the constraints & type, unify the
 -- constraints, and use the function returned by unify to rewrite the type
 -- without type variables
@@ -18,9 +14,17 @@ infer exp = case (inferWithConstraints exp) of
 
 inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
 inferWithConstraints exp = do
-    rewrite <- unify constraints
-    return (rewrite typeOfExp, constraints)
-    where (constraints, typeOfExp, _) = getConstraints 0 M.empty exp
+    rewrite <- unify deQ'dConstraints
+    return (rewrite deQ'dType, constraints)
+  where
+    (constraints, typeOfExp, i) = getConstraints (maxTVarInExp exp) M.empty exp
+    (deQ'dConstraints, i') = deQuantifyConstraintSet i constraints
+    (deQ'dType, i'', _) = deQuantify i' M.empty typeOfExp
+
+
+--------------------------------------------------------------------------------
+--                                UNIFICATION
+--------------------------------------------------------------------------------
 
 -- A constraint is a pair of types (the first is a TVar), that are supposedly
 -- equivalent
@@ -69,58 +73,51 @@ unify c | S.size c == 0 = Just (\t -> t)
 
         -- Otherwise, there are no rules we can apply, so fail
         | otherwise = Nothing
+  where
+    ((t1, t2), rest) = S.deleteFindMin c
 
-    where
-        ((t1, t2), rest) = breakSet c
+    -- typeSubst takes a constraint and a type and replaces all occurences
+    -- of the first type in the constraint with the second, within the given
+    -- type
+    typeSubst :: Constraint -> Type -> Type
+    typeSubst (TVar x, tArg) tBody = case tBody of
+        TVar y | x == y -> tArg
+                | x /= y -> TVar y
+        TFunc t1 t2     -> TFunc (typeSubst' t1) (typeSubst' t2)
+        TList ty        -> TList (typeSubst' ty)
+        basicType       -> basicType
+        where typeSubst' = typeSubst (TVar x, tArg)
+    typeSubst _ _ = error "typeSubst: only TVars can be substituted"
 
-        -- typeSubst takes a constraint and a type and replaces all occurences
-        -- of the first type in the constraint with the second, within the given
-        -- type
-        typeSubst :: Constraint -> Type -> Type
-        typeSubst (TVar x, tArg) tBody = case tBody of
-            TVar y | x == y -> tArg
-                   | x /= y -> TVar y
-            TFunc t1 t2     -> TFunc (typeSubst' t1) (typeSubst' t2)
-            TList ty        -> TList (typeSubst' ty)
-            basicType       -> basicType
-            where typeSubst' = typeSubst (TVar x, tArg)
-        typeSubst _ _ = error "typeSubst: only TVars can be substituted"
+    -- Checks if a given type variable (TVars are integers) occurs in a
+    -- given type expression
+    occurs :: Int -> Type -> Bool
+    occurs x (TVar y)      = x == y
+    occurs x (TFunc t1 t2) = occurs x t1 || occurs x t2
+    occurs x (TList t)     = occurs x t
+    occurs _ _             = False
 
-        -- Remove an element from a set, returning the element and the rest of
-        -- the set, together in a tuple
-        breakSet :: Ord a => S.Set a -> (a, S.Set a)
-        breakSet s | S.size s == 0 = error "Cannot break an empty set"
-                   | otherwise     = (sf, S.delete sf s) where sf = S.findMin s
+    -- Determine if a type is a type variable
+    isTVar :: Type -> Bool
+    isTVar (TVar _) = True
+    isTVar _        = False
 
-        -- Checks if a given type variable (TVars are integers) occurs in a
-        -- given type expression
-        occurs :: Int -> Type -> Bool
-        occurs x (TVar y)      = x == y
-        occurs x (TFunc t1 t2) = occurs x t1 || occurs x t2
-        occurs x (TList t)     = occurs x t
-        occurs _ _             = False
+    -- Retrieve the type variable number from a type variable
+    numOfTVar :: Type -> Int
+    numOfTVar (TVar x) = x
+    numOfTVar _        = error "Cannot get name of non-TVar Type"
 
-        -- Determine if a type is a type variable
-        isTVar :: Type -> Bool
-        isTVar (TVar _) = True
-        isTVar _        = False
+    -- Determine if a type is a function type
+    isTFunc :: Type -> Bool
+    isTFunc (TFunc _ _) = True
+    isTFunc _           = False
 
-        -- Retrieve the type variable number from a type variable
-        numOfTVar :: Type -> Int
-        numOfTVar (TVar x) = x
-        numOfTVar _        = error "Cannot get name of non-TVar Type"
-
-        -- Determine if a type is a function type
-        isTFunc :: Type -> Bool
-        isTFunc (TFunc _ _) = True
-        isTFunc _           = False
-
-        -- Retrieve the subtypes of function types
-        tFuncFrom, tFuncTo :: Type -> Type
-        tFuncFrom (TFunc x _) = x
-        tFuncFrom _           = error "Cannot get subtype of non-function type"
-        tFuncTo   (TFunc _ x) = x
-        tFuncTo   _           = error "Cannot get subtype of non-function type"
+    -- Retrieve the subtypes of function types
+    tFuncFrom, tFuncTo :: Type -> Type
+    tFuncFrom (TFunc x _) = x
+    tFuncFrom _           = error "Cannot get subtype of non-function type"
+    tFuncTo   (TFunc _ x) = x
+    tFuncTo   _           = error "Cannot get subtype of non-function type"
 
 --------------------------------------------------------------------------------
 --                           CONSTRAINT GENERATION
@@ -137,22 +134,54 @@ type Context = M.Map Name Type
 -- calls can avoid using the same names (names are integers)
 getConstraints :: Int -> Context -> TypedExp -> (ConstraintSet, Type, Int)
 getConstraints i ctx exp = case exp of
-    Abs v t m            -> (constrM, TFunc t tM, i')
-        where (constrM, tM, i') = getConstraints i ctx' m
-              ctx' = addToContext v t ctx
-    AbsInf v m           -> (constrM, TFunc (TVar i') tM, i' + 1)
-        where (constrM, tM, i') = getConstraints i ctx' m
-              ctx' = addToContext v (TVar i') ctx
-    Var v                -> (S.empty, typeFromContext ctx v, i)
-    App m n              -> (constr', tX, i'' + 1)
-        where constr' = S.unions [consM, consN, S.singleton (tM, TFunc tN tX)]
-              tX = TVar i''
-              (consM, tM, i' ) = getConstraints i  ctx m
-              (consN, tN, i'') = getConstraints i' ctx n
+
+    -- Explicitly declared abstractions
+    Abs v t m -> (constrM, TFunc t tM, i')
+      where
+        (constrM, tM, i') = getConstraints i ctx' m
+        ctx' = addToContext v t ctx
+
+    -- Undeclared abstractions - inferred via introduction of a type variable
+    AbsInf v m -> (constrM, TFunc (TVar i') tM, i' + 1)
+      where
+        (constrM, tM, i') = getConstraints i ctx' m
+        ctx' = addToContext v (TVar i') ctx
+
+    -- Variables
+    Var v -> (S.empty, typeFromContext ctx v, i)
+
+    -- List constructor
+    App (App (Operation Cons) m) n -> (constr', tN, i'')
+      where
+        constr' = S.unions [constrM, constrN, S.singleton (tN, TList tM)]
+        (constrM, tM, i' ) = getConstraints i  ctx m
+        (constrN, tN, i'') = getConstraints i' ctx n
+
+    -- Function application
+    App m n -> (constr', tX, i'' + 1)
+      where
+        constr' = S.unions [constrM, constrN, S.singleton (tM, TFunc tN tX)]
+        tX = TVar i''
+        (constrM, tM, i' ) = getConstraints i  ctx m
+        (constrN, tN, i'') = getConstraints i' ctx n
+
+    -- Simple stuff
     Constant (IntVal  _) -> (S.empty, TInt , i)
     Constant (BoolVal _) -> (S.empty, TBool, i)
     Constant (CharVal _) -> (S.empty, TChar, i)
     Operation ot         -> (S.empty, typeOfOperation ot, i)
+
+  where
+    -- Look up the type of a variable from a Context
+    typeFromContext :: Context -> Name -> Type
+    typeFromContext ctx n = case M.lookup n ctx of
+        Just t  -> t
+        Nothing ->
+            error ("No binding for variable '" ++ n ++ "' in context query")
+
+    -- Add the given binding to a Context
+    addToContext :: Name -> Type -> Context -> Context
+    addToContext = M.insert
 
 {-- Constraint generation algorithm (application case):
 constr ( M N )
@@ -162,19 +191,6 @@ constr ( M N )
     ( tB, cM U cN U ( tM = tN -> tB ) )
 --}
 
--- Look up the type of a variable from a Context
-typeFromContext :: Context -> Name -> Type
-typeFromContext ctx n = case M.lookup n ctx of
-    Nothing -> error ("No binding for variable '" ++ n ++ "' in context query")
-    Just t  -> t
-
--- Add the given binding to a Context
-addToContext :: Name -> Type -> Context -> Context
-addToContext = M.insert
-
--- Creates a Context from the given Name & Type as a 'singleton' Context
-contextFrom :: Name -> Type -> Context
-contextFrom n t = M.fromList[(n, t)]
 
 -- Lookup the types of the various binary and unary operations
 typeOfOperation :: OpType -> Type
@@ -199,8 +215,41 @@ typeOfOperation ot = case ot of
     Not -> TFunc TBool TBool
     IsZ -> TFunc TInt  TBool
 
-    Empty -> TList (TVar (-1))
-    Cons  -> TFunc (TVar (-1)) (TFunc (TList (TVar (-1))) (TList (TVar (-1))))
-    Null  -> TFunc (TList (TVar (-1))) TBool
-    Head  -> TFunc (TList (TVar (-1))) (TVar (-1))
-    Tail  -> TFunc (TList (TVar (-1))) (TList (TVar (-1)))
+    Empty -> TQuant 0 (TList (TVar 0))
+    Cons  -> TQuant 0 (TFunc (TVar 0) (TFunc (TList (TVar 0)) (TList (TVar 0))))
+    Null  -> TQuant 0 (TFunc (TList (TVar 0)) TBool)
+    Head  -> TQuant 0 (TFunc (TList (TVar 0)) (TVar 0))
+    Tail  -> TQuant 0 (TFunc (TList (TVar 0)) (TList (TVar 0)))
+
+-- Remove all type quantifiers from the constraints & type returned by the
+-- constraint generation algorithm
+deQuantifyConstraintSet :: Int -> ConstraintSet -> (ConstraintSet, Int)
+deQuantifyConstraintSet i constr
+    | S.null constr = (constr, i)
+    | otherwise   = (S.insert (t1', t2') rest', i''')
+        where ((t1, t2), rest) = S.deleteFindMin constr
+              (t1', i' , _)    = deQuantify i  M.empty t1
+              (t2', i'', _)    = deQuantify i' M.empty t1
+              (rest', i''')    = deQuantifyConstraintSet i'' rest
+
+-- Remove type quantifiers from a type expression, replacing locally bound type
+-- variables with globally unique, usable ones. The Int paramerer is a lowest
+-- available type variable. The Map parameter specifies which type variables
+-- should be replaced and what they should be replaced with.
+deQuantify :: Int -> (M.Map Int Int) -> Type -> (Type, Int, M.Map Int Int)
+deQuantify i m t = case t of
+    TInt       -> ( TInt        , i   , m   )
+    TBool      -> ( TBool       , i   , m   )
+    TChar      -> ( TChar       , i   , m   )
+    TList a    -> ( TList a'    , i'  , m'  )
+        where ( a' , i'  , m'  ) = deQuantify i  m  a
+    TFunc a b  -> ( TFunc a' b' , i'' , m'' )
+        where ( a' , i'  , m'  ) = deQuantify i  m  a
+              ( b' , i'' , m'' ) = deQuantify i' m' b
+    TQuant x a -> ( a'          , i'' , m'' )
+        where ( a' , i'' , m'' ) = deQuantify i' m' a
+              m' = M.insert x i m
+              i' = i + 1
+    TVar x     -> case M.lookup x m of
+                  Just x' -> ( TVar x' , i , m )
+                  Nothing -> ( TVar x  , i , m )

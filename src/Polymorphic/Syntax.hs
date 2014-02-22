@@ -10,12 +10,13 @@ import qualified Data.Set as S
 
 type Name = String
 
-data TypedExp = Abs Name Type TypedExp -- Abstraction labelled with a type
-              | AbsInf Name TypedExp   -- Unlabelled Abs - type is inferred
-              | Var Name               -- Variable
-              | App TypedExp TypedExp  -- Function application
-              | Constant Value         -- Integer & boolean constants
-              | Operation OpType       -- Operators like +, - etc
+data TypedExp
+    = Abs Name Type TypedExp -- Abstraction labelled with a type
+    | AbsInf Name TypedExp   -- Unlabelled Abs - type is inferred
+    | Var Name               -- Variable
+    | App TypedExp TypedExp  -- Function application
+    | Constant Value         -- Integer & boolean constants
+    | Operation OpType       -- Operators like +, - etc
     deriving Eq
 
 instance Show TypedExp where
@@ -46,12 +47,14 @@ instance Show Value where
         CharVal x -> show x
 
 -- Type is a recursive data type used for representing the types of functions
-data Type = TInt
-          | TBool
-          | TChar
-          | TList Type
-          | TFunc Type Type
-          | TVar Int    -- Type variables are numbers, not strings
+data Type
+    = TInt
+    | TBool
+    | TChar
+    | TList  Type
+    | TFunc  Type Type
+    | TVar   Int       -- Type variables are numbers, not strings
+    | TQuant Int Type  -- Type quantifier
     deriving Eq
 
 instance Show Type where
@@ -59,9 +62,10 @@ instance Show Type where
         TInt       -> "Int"
         TBool      -> "Bool"
         TChar      -> "Char"
-        TList a    -> '[':show a ++ "]"
+        TList a    -> '[' : show a ++ "]"
         TFunc a b  -> show a ++ " -> " ++ show b
-        TVar varNo -> 'T':show varNo
+        TVar varNo -> 'T' : show varNo
+        TQuant i t -> 'V' : (show i) ++ '.' : (show t)
 
 -- It is helpful to make Types orderable so that manipulating large sets of
 -- Types is faster
@@ -88,16 +92,22 @@ instance Ord Type where
         ( TList t1    , TList t2    ) -> t1 <= t2
         ( TList _     , _           ) -> True
 
-        -- TFunc is only less than TVar. The argument type determines which of
-        -- two TFuncs are greater. If the argument types are equal, then the
-        -- return type determines the greater one.
-        ( TFunc _  _  , TVar _      ) -> True
+        -- TFunc is only less than TVar and TQuant. The argument type determines
+        -- which of two TFuncs are greater. If the argument types are equal,
+        -- then the return type determines the greater one.
         ( TFunc t1 t2 , TFunc t3 t4 ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
-        ( TFunc _  _  , _           ) -> False
+        ( TFunc _ _   , TVar _      ) -> True
+        ( TFunc _ _   , TQuant _ _  ) -> True
+        ( TFunc _ _   , _           ) -> False
 
-        -- TVars are greater than everything
+        -- TVars are greater than everything but TQuants
         ( TVar v1     , TVar v2     ) -> v1 <= v2
+        ( TVar _      , TQuant _ _  ) -> True
         ( TVar _      , _           ) -> False
+
+        -- Type quantifiers are greater than everything. The bound variable
+        -- takes precedence over the body.
+        ( TQuant x t1 , TQuant y t2 ) -> if x == y then t1 <= t2 else x <= y
 
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
@@ -202,6 +212,15 @@ freeVars exp = case exp of
 freeNames :: TypedExp -> [Name]
 freeNames = S.toList . freeVars
 
+maxTVarInExp :: TypedExp -> Int 
+maxTVarInExp exp = maximum (0 : map maxTVar typesInExp)
+    where typesInExp = getTypesInExp exp
+
+-- Get a list containing all types that occur within an expression
+getTypesInExp :: TypedExp -> [Type]
+getTypesInExp (Abs _ t m) = t : getTypesInExp m
+getTypesInExp exp         = concat (map getTypesInExp (subs exp))
+
 --------------------------------------------------------------------------------
 --                  FUNCTIONS TO GAIN INFORMATION ON TYPES
 --------------------------------------------------------------------------------
@@ -209,6 +228,7 @@ freeNames = S.toList . freeVars
 -- Get a list of all type variable names in a type. The order of the list
 -- the order in which those type variables appear in the type.
 tVarNames :: Type -> [Int]
+tVarNames (TQuant x t)  = x : tVarNames t
 tVarNames (TVar x)      = [x]
 tVarNames (TFunc t1 t2) = tVarNames t1 ++ tVarNames t2
 tVarNames (TList t)     = tVarNames t
@@ -217,6 +237,8 @@ tVarNames _             = []
 -- Converts all occurences of a particular TVar name to a different name within
 -- a type
 renameType :: Int -> Int -> Type -> Type
+renameType from to (TQuant x t)  =
+    TQuant (if x == from then to else x) (renameType from to t)
 renameType from to (TVar x)      = TVar (if x == from then to else x)
 renameType from to (TFunc t1 t2) = TFunc renamedT1 renamedT2
     where renamedT1 = renameType from to t1
