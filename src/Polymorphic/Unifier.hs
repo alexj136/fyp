@@ -12,14 +12,21 @@ infer exp = case (inferWithConstraints exp) of
     Just (ty, _) -> Just ty
     Nothing      -> Nothing
 
+iWC :: TypedExp -> Maybe (Type, ConstraintSet)
+iWC exp = do
+    rewrite <- unify constraints
+    return (rewrite ty, constraints)
+  where
+    (constraints, ty, _) = getConstraints (maxTVarInExp exp + 1) M.empty exp
+
 inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
 inferWithConstraints exp = do
     rewrite <- unify deQ'dConstraints
     return (rewrite deQ'dType, constraints)
   where
-    (constraints, typeOfExp, i) = getConstraints (maxTVarInExp exp) M.empty exp
+    (constraints, typeOfExp, i) = getConstraints (maxTVarInExp exp + 1) M.empty exp
     (deQ'dConstraints, i') = deQuantifyConstraintSet i constraints
-    (deQ'dType, i'', _) = deQuantify i' M.empty typeOfExp
+    (deQ'dType, _, _) = deQuantify i' M.empty typeOfExp
 
 
 --------------------------------------------------------------------------------
@@ -229,7 +236,7 @@ deQuantifyConstraintSet i constr
     | otherwise   = (S.insert (t1', t2') rest', i''')
         where ((t1, t2), rest) = S.deleteFindMin constr
               (t1', i' , _)    = deQuantify i  M.empty t1
-              (t2', i'', _)    = deQuantify i' M.empty t1
+              (t2', i'', _)    = deQuantify i' M.empty t2
               (rest', i''')    = deQuantifyConstraintSet i'' rest
 
 -- Remove type quantifiers from a type expression, replacing locally bound type
