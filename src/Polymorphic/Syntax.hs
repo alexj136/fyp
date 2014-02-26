@@ -131,13 +131,32 @@ data OpType
 -- implementation as long as operations with more than two arguments are
 -- implemented.
 isBinary :: OpType -> Bool
-isBinary Not = False
-isBinary IsZ = False
-isBinary _   = True
+isBinary op = case op of
+    Add -> True
+    Sub -> True
+    Mul -> True
+    Div -> True
+    Mod -> True
+    
+    And -> True
+    Or  -> True
+    Xor -> True
+    
+    Lss -> True
+    LsE -> True
+    Equ -> True
+    NEq -> True
+    Gtr -> True
+    GtE -> True
+    
+    _   -> False
 
 -- Tell if an operation is unary. Just the negation of isBinary.
 isUnary :: OpType -> Bool
-isUnary = not . isBinary
+isUnary op = case op of
+    Not -> True
+    IsZ -> True
+    _   -> False
 
 instance Show OpType where
     show Add = "+"

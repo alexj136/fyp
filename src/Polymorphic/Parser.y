@@ -53,7 +53,10 @@ ARG         := [a-z][a-zA-Z]*
     identUC { TokenIdUC $$ }
     openbr  { TokenOpenBr  }
     closbr  { TokenClosBr  }
+    opensq  { TokenOpenSq  }
+    clossq  { TokenClosSq  }
     equals  { TokenEquals  }
+    comma   { TokenComma   }
 
     lam     { TokenLambda  }
     dot     { TokenDot     }

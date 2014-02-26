@@ -18,7 +18,10 @@ tokens :-
     \.                     { \s -> TokenDot    }
     \(                     { \s -> TokenOpenBr }
     \)                     { \s -> TokenClosBr }
+    \[                     { \s -> TokenOpenSq }
+    \]                     { \s -> TokenClosSq }
     "="                    { \s -> TokenEquals }
+    \,                     { \s -> TokenComma  }
 
     "+"                    { \s -> TokenAdd    }
     "-"                    { \s -> TokenSub    }
@@ -47,7 +50,10 @@ data Token =
     | TokenIdUC String  -- Upper-case lead identifier (carries identifier text)
     | TokenOpenBr       -- Open-bracket
     | TokenClosBr       -- Close-bracket
+    | TokenOpenSq       -- Open square bracket
+    | TokenClosSq       -- Close square bracket
     | TokenEquals       -- Delimits declarations from function bodies
+    | TokenComma        -- Commas - list delimiters
 
     -- LAMBDA SYNTAX
     | TokenLambda       -- Lambda abstractions

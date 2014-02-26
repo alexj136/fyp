@@ -156,14 +156,15 @@ getConstraints i ctx exp = case exp of
 
     -- Variables
     Var v -> (S.empty, typeFromContext ctx v, i)
-
+{--
+    Not needed - type quantifiers used instead
     -- List constructor
     App (App (Operation Cons) m) n -> (constr', tN, i'')
       where
         constr' = S.unions [constrM, constrN, S.singleton (tN, TList tM)]
         (constrM, tM, i' ) = getConstraints i  ctx m
         (constrN, tN, i'') = getConstraints i' ctx n
-
+--}
     -- Function application
     App m n -> (constr', tX, i'' + 1)
       where
@@ -233,7 +234,7 @@ typeOfOperation ot = case ot of
 deQuantifyConstraintSet :: Int -> ConstraintSet -> (ConstraintSet, Int)
 deQuantifyConstraintSet i constr
     | S.null constr = (constr, i)
-    | otherwise   = (S.insert (t1', t2') rest', i''')
+    | otherwise     = (S.insert (t1', t2') rest', i''')
         where ((t1, t2), rest) = S.deleteFindMin constr
               (t1', i' , _)    = deQuantify i  M.empty t1
               (t2', i'', _)    = deQuantify i' M.empty t2

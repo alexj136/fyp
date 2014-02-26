@@ -18,6 +18,7 @@ apply x y = reduceNorm (App x y)
 -- Performs at least one reduction step
 reduce :: TypedExp -> TypedExp
 reduce exp = case exp of
+    -- Constant operations
     App (App (Operation ot) m) n | isBinary ot -> case (ot, reduce m, reduce n) of
         (Add, Constant (IntVal x), Constant (IntVal y)) -> Constant (IntVal ((+) x y))
         (Sub, Constant (IntVal x), Constant (IntVal y)) -> Constant (IntVal ((-) x y))
@@ -42,6 +43,13 @@ reduce exp = case exp of
     App (Operation ot) m | isUnary ot -> case (ot, reduce m) of
         (IsZ, Constant (IntVal  x)) -> Constant (BoolVal (x == 0))
         (Not, Constant (BoolVal x)) -> Constant (BoolVal (not x))
+
+    -- List operations
+    App (Operation Null) m -> case reduce m of
+        Operation Empty -> Constant (BoolVal True)
+        _               -> Constant (BoolVal False)
+    App (Operation Head) (App (App (Operation Cons) m) n) -> m
+    App (Operation Tail) (App (App (Operation Cons) m) n) -> n
 
     Abs    v t m       -> Abs    v t (reduce m)
     AbsInf v   m       -> AbsInf v   (reduce m)
