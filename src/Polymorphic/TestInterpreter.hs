@@ -9,6 +9,8 @@ iD  = Abs "x" TInt (Var "x")
 
 tests = TestList [ testIdentityFunction
                  , testArithmeticExpression
+                 , testListHead
+                 , testListTail
                  ]
 
 testIdentityFunction = TestLabel "Test of the identity function" (
@@ -60,3 +62,13 @@ testArithmeticExpression = TestLabel "Tests some arithmetic expressions" (
         constToInt :: TypedExp -> Int
         constToInt (Constant (IntVal x)) = x
         constToInt _ = error "Can't get Int from non-Constant-IntVal TypedExp"
+
+testListHead = TestLabel "Test of the list head function" (
+    TestCase (assert (
+        reduceNorm (App (Operation Head) (App (App (Operation Cons) (Var "Hello")) (App (App (Operation Cons) (Var "Stuff")) (Operation Empty)))) === Var "Hello!"
+    )))
+
+testListTail = TestLabel "Test of the list tail function" (
+    TestCase (assert (
+        reduceNorm (App (Operation Tail) (App (App (Operation Cons) (Var "Hello")) (App (App (Operation Cons) (Var "Stuff")) (Operation Empty)))) === App (App (Operation Cons) (Var "Stuff")) (Operation Empty)
+    )))
