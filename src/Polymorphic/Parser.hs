@@ -39,7 +39,6 @@ data HappyAbsSyn
 	| HappyAbsSyn5 (Decl)
 	| HappyAbsSyn6 ([String])
 	| HappyAbsSyn7 (TypedExp)
-	| HappyAbsSyn8 (BinaryOp)
 
 {- to allow type-synonyms as our monads (likely
  - with explicitly-specified bind and return)
@@ -423,7 +422,7 @@ happyReduction_12 _  = notHappyAtAll
 
 happyReduce_13 = happySpecReduce_3  7 happyReduction_13
 happyReduction_13 (HappyAbsSyn7  happy_var_3)
-	(HappyAbsSyn8  happy_var_2)
+	(HappyAbsSyn7  happy_var_2)
 	(HappyAbsSyn7  happy_var_1)
 	 =  HappyAbsSyn7
 		 (App (App happy_var_2 happy_var_1) happy_var_3
@@ -432,32 +431,32 @@ happyReduction_13 _ _ _  = notHappyAtAll
 
 happyReduce_14 = happySpecReduce_1  8 happyReduction_14
 happyReduction_14 _
-	 =  HappyAbsSyn8
-		 (BinaryOp Add
+	 =  HappyAbsSyn7
+		 (Operation Add
 	)
 
 happyReduce_15 = happySpecReduce_1  8 happyReduction_15
 happyReduction_15 _
-	 =  HappyAbsSyn8
-		 (BinaryOp Sub
+	 =  HappyAbsSyn7
+		 (Operation Sub
 	)
 
 happyReduce_16 = happySpecReduce_1  8 happyReduction_16
 happyReduction_16 _
-	 =  HappyAbsSyn8
-		 (BinaryOp Mul
+	 =  HappyAbsSyn7
+		 (Operation Mul
 	)
 
 happyReduce_17 = happySpecReduce_1  8 happyReduction_17
 happyReduction_17 _
-	 =  HappyAbsSyn8
-		 (BinaryOp Div
+	 =  HappyAbsSyn7
+		 (Operation Div
 	)
 
 happyReduce_18 = happySpecReduce_1  8 happyReduction_18
 happyReduction_18 _
-	 =  HappyAbsSyn8
-		 (BinaryOp Mod
+	 =  HappyAbsSyn7
+		 (Operation Mod
 	)
 
 happyNewToken action sts stk [] =

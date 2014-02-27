@@ -51,10 +51,14 @@ reduce exp = case exp of
     App (Operation Head) (App (App (Operation Cons) m) n) -> m
     App (Operation Tail) (App (App (Operation Cons) m) n) -> n
 
+    -- Abstractions
     Abs    v t m       -> Abs    v t (reduce m)
     AbsInf v   m       -> AbsInf v   (reduce m)
 
+    -- Function application
     App (Abs v t m) n  -> replace v (preventClashes m n) n
+
+    -- Other expressions
     App (Var      v) n -> App (Var      v) (reduce n)
     App (Constant c) n -> App (Constant c) (reduce n)
     App m            n -> App (reduce m)   n

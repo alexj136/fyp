@@ -87,7 +87,7 @@ arglist : identLC arglist { $1 : $2 }
         | {- empty -}     { [] }
 
 exp :: { TypedExp }
-exp : exp exp %prec app             { App $1 $2             } 
+exp : exp exp             %prec app { App $1 $2             } 
     | openbr exp closbr             { $2                    }
     | lam identLC dot exp           { AbsInf $2 $4          }
     | let identLC equals exp in exp { App (AbsInf $2 $6) $4 }
@@ -96,12 +96,12 @@ exp : exp exp %prec app             { App $1 $2             }
     | bool                          { Constant (BoolVal $1) }
     | exp infixop exp               { App (App $2 $1) $3    }
 
-infixop :: { BinaryOp }
-infixop : add { BinaryOp Add }
-        | sub { BinaryOp Sub }
-        | mul { BinaryOp Mul }
-        | div { BinaryOp Div }
-        | mod { BinaryOp Mod }
+infixop :: { TypedExp }
+infixop : add { Operation Add }
+        | sub { Operation Sub }
+        | mul { Operation Mul }
+        | div { Operation Div }
+        | mod { Operation Mod }
 {
 data Decl = Decl {    -- A standard function declaration
     name  :: String,  -- The name if the function

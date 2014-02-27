@@ -1,17 +1,20 @@
-MAIN     = RunTests
 MODULES  = Unifier Syntax Lexer Parser Interpreter
-TESTS    = TestUnifier TestSyntax TestInterpreter
 
-OBJECTS  = $(MAIN:=.o)  $(MODULES:=.o)  $(TESTS:=.o)
-HIFILES  = $(MAIN:=.hi) $(MODULES:=.hi) $(TESTS:=.hi)
-BINARIES = $(MAIN)      $(MODULES)      $(TESTS)
+OBJECTS  = Main.o  $(MODULES:=.o)
+HIFILES  = Main.hi $(MODULES:=.hi)
 
-all: $(MAIN)
+Main: $(MODULES:=.hs) Main.hs
+	@ghc --make Main.hs -o Main
+	@runhaskell RunTests.hs
+
+Lexer.hs: Lexer.x
+	@echo "Generating Lexer"
+	@alex Lexer.x
+
+Parser.hs: Parser.y
+	@echo "Generating Parser"
+	@happy Parser.y
 
 clean:
-	@rm -f $(OBJECTS) $(HIFILES) $(BINARIES)
-	@echo "CLEANED"
-
-RunTests: RunTests.hs
-	@ghc --make -o RunTests RunTests.hs
-	@./RunTests
+	@rm -f Main $(OBJECTS) $(HIFILES)
+	@echo "Cleaned"
