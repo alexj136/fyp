@@ -11,6 +11,7 @@ tests = TestList [ testIdentityFunction
                  , testArithmeticExpression
                  , testListHead
                  , testListTail
+                 , testListHeadTail
                  ]
 
 testIdentityFunction = TestLabel "Test of the identity function" (
@@ -63,12 +64,24 @@ testArithmeticExpression = TestLabel "Tests some arithmetic expressions" (
         constToInt (Constant (IntVal x)) = x
         constToInt _ = error "Can't get Int from non-Constant-IntVal TypedExp"
 
+-- Convert a haskell list of expressions into a syntax-encoded list containing
+-- the same expressions. Makes unit tests of list functions a lot less verbose.
+-- TYPE SAFETY OF THE RESULTING ENCOCDED LISTS IS NOT CHECKED.
+listify :: [TypedExp] -> TypedExp
+listify []    = Operation Empty
+listify (h:t) = App (App (Operation Cons) (h)) (listify t)
+
 testListHead = TestLabel "Test of the list head function" (
     TestCase (assert (
-        reduceNorm (App (Operation Head) (App (App (Operation Cons) (Var "Hello")) (App (App (Operation Cons) (Var "Stuff")) (Operation Empty)))) === Var "Hello!"
+        apply (Operation Head) (listify [Var "Hello", Var "Stuff", Var "Things"]) === Var "Hello"
     )))
 
 testListTail = TestLabel "Test of the list tail function" (
     TestCase (assert (
-        reduceNorm (App (Operation Tail) (App (App (Operation Cons) (Var "Hello")) (App (App (Operation Cons) (Var "Stuff")) (Operation Empty)))) === App (App (Operation Cons) (Var "Stuff")) (Operation Empty)
+        apply (Operation Tail) (listify [Var "Hello", Var "Stuff", Var "Things"]) === listify [Var "Stuff", Var "Things"]
+    )))
+
+testListHeadTail = TestLabel "Combined test of the list head and tail functions" (
+    TestCase (assert (
+        apply (Operation Head) (App (Operation Tail) (listify [Var "Hello", Var "Stuff", Var "Things"])) === Var "Stuff"
     )))

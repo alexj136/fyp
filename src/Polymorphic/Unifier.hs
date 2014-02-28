@@ -12,13 +12,6 @@ infer exp = case (inferWithConstraints exp) of
     Just (ty, _) -> Just ty
     Nothing      -> Nothing
 
-iWC :: TypedExp -> Maybe (Type, ConstraintSet)
-iWC exp = do
-    rewrite <- unify constraints
-    return (rewrite ty, constraints)
-  where
-    (constraints, ty, _) = getConstraints (maxTVarInExp exp + 1) M.empty exp
-
 inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
 inferWithConstraints exp = do
     rewrite <- unify deQ'dConstraints

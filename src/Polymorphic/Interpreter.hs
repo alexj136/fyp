@@ -20,26 +20,33 @@ reduce :: TypedExp -> TypedExp
 reduce exp = case exp of
     -- Constant operations
     App (App (Operation ot) m) n | isBinary ot -> case (ot, reduce m, reduce n) of
-        (Add, Constant (IntVal x), Constant (IntVal y)) -> Constant (IntVal ((+) x y))
-        (Sub, Constant (IntVal x), Constant (IntVal y)) -> Constant (IntVal ((-) x y))
-        (Mul, Constant (IntVal x), Constant (IntVal y)) -> Constant (IntVal ((*) x y))
-        (Div, Constant (IntVal x), Constant (IntVal y)) -> Constant (IntVal (div x y))
-        (Mod, Constant (IntVal x), Constant (IntVal y)) -> Constant (IntVal (mod x y))
+        (Add, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  ((+) x y)
+        (Sub, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  ((-) x y)
+        (Mul, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  ((*) x y)
+        (Div, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  (div x y)
+        (Mod, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  (mod x y)
 
-        (Lss, Constant (IntVal x), Constant (IntVal y)) -> Constant (BoolVal (x <  y))
-        (LsE, Constant (IntVal x), Constant (IntVal y)) -> Constant (BoolVal (x <= y))
-        (Equ, Constant (IntVal x), Constant (IntVal y)) -> Constant (BoolVal (x == y))
-        (NEq, Constant (IntVal x), Constant (IntVal y)) -> Constant (BoolVal (x /= y))
-        (Gtr, Constant (IntVal x), Constant (IntVal y)) -> Constant (BoolVal (x >  y))
-        (GtE, Constant (IntVal x), Constant (IntVal y)) -> Constant (BoolVal (x >= y))
+        (Lss, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x <  y)
+        (LsE, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x <= y)
+        (Equ, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x == y)
+        (NEq, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x /= y)
+        (Gtr, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x >  y)
+        (GtE, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x >= y)
 
-        (Xor, Constant (BoolVal x), Constant (BoolVal y)) -> Constant (BoolVal (xor x y))
-        (And, Constant (BoolVal x), Constant (BoolVal y)) -> Constant (BoolVal (x && y))
-        (Or , Constant (BoolVal x), Constant (BoolVal y)) -> Constant (BoolVal (x || y))
-        where
-            xor :: Bool -> Bool -> Bool
-            xor True  b = not b
-            xor False b = b
+        (Xor, Constant (BoolVal x), Constant (BoolVal y)) -> constBool (xor x y)
+        (And, Constant (BoolVal x), Constant (BoolVal y)) -> constBool (x && y)
+        (Or , Constant (BoolVal x), Constant (BoolVal y)) -> constBool (x || y)
+      where
+        constInt :: Int -> TypedExp
+        constInt x = Constant (IntVal  x)
+
+        constBool :: Bool -> TypedExp
+        constBool x = Constant (BoolVal x)
+
+        xor :: Bool -> Bool -> Bool
+        xor True  b = not b
+        xor False b = b
+
     App (Operation ot) m | isUnary ot -> case (ot, reduce m) of
         (IsZ, Constant (IntVal  x)) -> Constant (BoolVal (x == 0))
         (Not, Constant (BoolVal x)) -> Constant (BoolVal (not x))
@@ -48,8 +55,12 @@ reduce exp = case exp of
     App (Operation Null) m -> case reduce m of
         Operation Empty -> Constant (BoolVal True)
         _               -> Constant (BoolVal False)
+
     App (Operation Head) (App (App (Operation Cons) m) n) -> m
+    App (Operation Head) m ->  App (Operation Head) (reduce m)
+
     App (Operation Tail) (App (App (Operation Cons) m) n) -> n
+    App (Operation Tail) m ->  App (Operation Tail) (reduce m)
 
     -- Abstractions
     Abs    v t m       -> Abs    v t (reduce m)
