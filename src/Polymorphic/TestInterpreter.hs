@@ -12,6 +12,7 @@ tests = TestList [ testIdentityFunction
                  , testListHead
                  , testListTail
                  , testListHeadTail
+                 , testListTailTail
                  ]
 
 testIdentityFunction = TestLabel "Test of the identity function" (
@@ -84,4 +85,9 @@ testListTail = TestLabel "Test of the list tail function" (
 testListHeadTail = TestLabel "Combined test of the list head and tail functions" (
     TestCase (assert (
         apply (Operation Head) (App (Operation Tail) (listify [Var "Hello", Var "Stuff", Var "Things"])) === Var "Stuff"
+    )))
+
+testListTailTail = TestLabel "Test of the tail function applied twice" (
+    TestCase (assert (
+        apply (Operation Tail) (App (Operation Tail) (listify [Var "Hello", Var "Stuff", Var "Things"])) === listify [Var "Things"]
     )))
