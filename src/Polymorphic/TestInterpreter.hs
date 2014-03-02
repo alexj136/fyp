@@ -7,13 +7,15 @@ import Interpreter
 -- Integer identity function
 iD  = Abs "x" TInt (Var "x")
 
-tests = TestList [ testIdentityFunction
-                 , testArithmeticExpression
-                 , testListHead
-                 , testListTail
-                 , testListHeadTail
-                 , testListTailTail
-                 ]
+tests = TestList
+    [ testIdentityFunction
+    , testArithmeticExpression
+    , testListHead
+    , testListTail
+    , testListHeadTail
+    , testListTailTail
+    , testFixedPoint
+    ]
 
 testIdentityFunction = TestLabel "Test of the identity function" (
     TestCase (assert (
@@ -90,4 +92,9 @@ testListHeadTail = TestLabel "Combined test of the list head and tail functions"
 testListTailTail = TestLabel "Test of the tail function applied twice" (
     TestCase (assert (
         apply (Operation Tail) (App (Operation Tail) (listify [Var "Hello", Var "Stuff", Var "Things"])) === listify [Var "Things"]
+    )))
+
+testFixedPoint = TestLabel "Test of the fixed-point combinator with a factorial function" (
+    TestCase (assert (
+        apply ((Operation Fix) (AbsInf "f" (AbsInf "x" ( App (App (App (AbsInf "p" (AbsInf "a" (AbsInf "b" (App (App (Var "p") (Var "a")) (Var "b"))))) (App (Operation IsZ) (Var "x"))) (Constant (IntVal 1))) (App (Var "f") (App (App (Operation Sub) (Var "x")) (Constant (IntVal 1)))))))) (Constant (IntVal 5)) === Constant (IntVal 120)
     )))

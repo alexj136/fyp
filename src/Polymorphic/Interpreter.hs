@@ -18,6 +18,9 @@ apply x y = reduceNorm (App x y)
 -- Performs at least one reduction step
 reduce :: TypedExp -> TypedExp
 reduce exp = case exp of
+    -- Conditional function
+    App () ->
+
     -- Constant operations
     App (App (Operation ot) m) n | isBinary ot -> case (ot, reduce m, reduce n) of
         (Add, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  ((+) x y)
@@ -61,6 +64,9 @@ reduce exp = case exp of
 
     App (Operation Tail) (App (App (Operation Cons) m) n) -> n
     App (Operation Tail) m ->  App (Operation Tail) (reduce m)
+
+    -- Fixed point combinator
+    App (Operation Fix) f  -> App f (App (Operation Fix) f)
 
     -- Abstractions
     Abs    v t m       -> Abs    v t (reduce m)

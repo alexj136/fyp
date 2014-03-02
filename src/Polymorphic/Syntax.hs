@@ -113,18 +113,24 @@ instance Ord Type where
 -- can be performed.
 data OpType
     -- Operations on Int & Bool primitives
-    = Add | Sub | Mul | Div | Mod       -- Int  -> Int  -> Int
-    | Lss | LsE | Equ | NEq | Gtr | GtE -- Int  -> Int  -> Bool
-    | And | Or  | Xor                   -- Bool -> Bool -> Bool
-    | Not                               -- Bool -> Bool
-    | IsZ                               -- Int  -> Bool
+    = Add | Sub | Mul | Div | Mod       -- : Int  -> Int  -> Int
+    | Lss | LsE | Equ | NEq | Gtr | GtE -- : Int  -> Int  -> Bool
+    | And | Or  | Xor                   -- : Bool -> Bool -> Bool
+    | Not                               -- : Bool -> Bool
+    | IsZ                               -- : Int  -> Bool
     
     -- List operations
-    | Empty     -- The empty list       : [a]
-    | Cons      -- List constructor     :  a  -> [a] -> [a]
-    | Null      -- Is-empty function    : [a] -> Bool
-    | Head      -- Head function        : [a] ->  a
-    | Tail      -- Tail function        : [a] -> [a]
+    | Empty     -- The empty list       : Va.[a]
+    | Cons      -- List constructor     : Va. a  -> [a] -> [a]
+    | Null      -- Is-empty function    : Va.[a] -> Bool
+    | Head      -- Head function        : Va.[a] ->  a
+    | Tail      -- Tail function        : Va.[a] -> [a]
+
+    -- Conditionals i.e. if-then-else
+    | Cond      -- : Va.Bool -> a -> a -> a
+
+    -- Fixed-point combinator
+    | Fix       -- : Va.(a -> a) -> a
     deriving Eq
 
 -- Tell if an operation type is binary. Will not need to change in
@@ -151,7 +157,7 @@ isBinary op = case op of
     
     _   -> False
 
--- Tell if an operation is unary. Just the negation of isBinary.
+-- Tell if an operation is unary
 isUnary :: OpType -> Bool
 isUnary op = case op of
     Not -> True

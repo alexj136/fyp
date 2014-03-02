@@ -222,6 +222,10 @@ typeOfOperation ot = case ot of
     Head  -> TQuant 0 (TFunc (TList (TVar 0)) (TVar 0))
     Tail  -> TQuant 0 (TFunc (TList (TVar 0)) (TList (TVar 0)))
 
+    Cond  -> TQuant 0 (TFunc (TBool) (TFunc (TVar 0) (TFunc (TVar 0) (TVar 0))))
+
+    Fix   -> TQuant 0 (TFunc (TFunc (TVar 0) (TVar 0)) (TVar 0))
+
 -- Remove all type quantifiers from the constraints & type returned by the
 -- constraint generation algorithm
 deQuantifyConstraintSet :: Int -> ConstraintSet -> (ConstraintSet, Int)
