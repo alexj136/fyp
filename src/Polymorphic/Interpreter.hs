@@ -19,7 +19,10 @@ apply x y = reduceNorm (App x y)
 reduce :: TypedExp -> TypedExp
 reduce exp = case exp of
     -- Conditional function
-    App () ->
+    App (App (App (Operation Cond) (Constant (BoolVal True ))) m) n -> m
+    App (App (App (Operation Cond) (Constant (BoolVal False))) m) n -> n
+    App (App (App (Operation Cond) guard) m) n ->
+                     App (App (App (Operation Cond) (reduce guard)) m) n
 
     -- Constant operations
     App (App (Operation ot) m) n | isBinary ot -> case (ot, reduce m, reduce n) of
@@ -39,6 +42,8 @@ reduce exp = case exp of
         (Xor, Constant (BoolVal x), Constant (BoolVal y)) -> constBool (xor x y)
         (And, Constant (BoolVal x), Constant (BoolVal y)) -> constBool (x && y)
         (Or , Constant (BoolVal x), Constant (BoolVal y)) -> constBool (x || y)
+
+        (op, m', n') -> App (App (Operation op) m') n'
       where
         constInt :: Int -> TypedExp
         constInt x = Constant (IntVal  x)
@@ -53,6 +58,8 @@ reduce exp = case exp of
     App (Operation ot) m | isUnary ot -> case (ot, reduce m) of
         (IsZ, Constant (IntVal  x)) -> Constant (BoolVal (x == 0))
         (Not, Constant (BoolVal x)) -> Constant (BoolVal (not x))
+
+        (op, m') -> App (Operation op) m'
 
     -- List operations
     App (Operation Null) m -> case reduce m of
@@ -73,7 +80,8 @@ reduce exp = case exp of
     AbsInf v   m       -> AbsInf v   (reduce m)
 
     -- Function application
-    App (Abs v t m) n  -> replace v (preventClashes m n) n
+    App (Abs    v t m) n  -> replace v (preventClashes m n) n
+    App (AbsInf v   m) n  -> replace v (preventClashes m n) n
 
     -- Other expressions
     App (Var      v) n -> App (Var      v) (reduce n)
@@ -105,6 +113,7 @@ replace varName bodyExp argExp = case bodyExp of
     App m n                   -> App (replaced m) (replaced n)
     Var v      | varName == v -> argExp
                | varName /= v -> Var v
+    _                         -> bodyExp
     where replaced subBodyExp = replace varName subBodyExp argExp
 
 -- The === operator checks if two expressions are α-equivalent, i.e. are they
