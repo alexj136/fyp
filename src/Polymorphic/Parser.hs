@@ -6,27 +6,37 @@ import Syntax
 
 {-- CONTEXT FREE GRAMMAR
 
-DECLS       := DECLS DECL
-            |  ε
-DECL        := FUNC_NAME ARGLIST = EXP
-ARGLIST     := ARGLIST ARG
-            |  ε
-EXP         := EXP EXP
-            |  ID
-            |  INT
-            |  BINARYOP
-            |  UNARYOP
-INT         := [1-9][0-9]*
-OPERATION   := +
-            |  -
-            |  *
-            |  div
-            |  mod
-            |  iszero
-            |  not
-FUNC_NAME,
-ID,
-ARG         := [a-z][a-zA-Z]*
+PROG ::= PROG TYDC
+       | PROG ID ARGS = EXP
+       | epsilon
+TYDC ::= ID : TY
+TY   ::= Int | Bool | Char
+       | [ TY ]
+       | { TY | TY }
+       | { TY & TY }
+       | TY -> TY
+       | ( TY )
+       | ID
+ARGS ::= ID ARGS
+       | epsilon
+EXP  ::= let ID = EXP in EXP
+       | LM ID . EXP
+       | EXP EXP
+       | ID
+       | if EXP then EXP else EXP
+       | *   | +  | -   | /   | %
+       | ==  | <= | >=  | /=  | <      | >
+       | and | or | not | xor | iszero
+       | [] | [ EXP ] | [ EXP , ... , EXP ]
+       | ( EXP )
+       | { _ , EXP } | { EXP , _ } | { EXP , EXP }
+       | INT
+LM   ::= λ | ^ | <backslash>
+ID   ::= [a-z][a-zA-Z]*
+INT  ::= 0 | [1-9][0-9]*
+BOOL ::= true | false
+CHAR ::= 'a' | 'b' | 'c' | ...
+STR  ::= "*"
 
 --}
 

@@ -183,13 +183,17 @@ instance Show OpType where
     show GtE = ">="
 
     show Not = "!"
-    show IsZ = "isZero"
+    show IsZ = "iszero"
 
     show Empty = "[]"
     show Cons  = ":"
     show Null  = "null"
     show Head  = "head"
     show Tail  = "tail"
+
+    show Fix   = "Y"
+
+    show Cond  = "cond"
 
 --------------------------------------------------------------------------------
 --                  FUNCTIONS TO GAIN INFORMATION ON TERMS

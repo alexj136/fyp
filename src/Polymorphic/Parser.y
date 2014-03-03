@@ -6,27 +6,37 @@ import Syntax
 
 {-- CONTEXT FREE GRAMMAR
 
-DECLS       := DECLS DECL
-            |  ε
-DECL        := FUNC_NAME ARGLIST = EXP
-ARGLIST     := ARGLIST ARG
-            |  ε
-EXP         := EXP EXP
-            |  ID
-            |  INT
-            |  BINARYOP
-            |  UNARYOP
-INT         := [1-9][0-9]*
-OPERATION   := +
-            |  -
-            |  *
-            |  div
-            |  mod
-            |  iszero
-            |  not
-FUNC_NAME,
-ID,
-ARG         := [a-z][a-zA-Z]*
+PROG ::= PROG TYDC
+       | PROG ID ARGS = EXP
+       | epsilon
+TYDC ::= ID : TY
+TY   ::= Int | Bool | Char
+       | [ TY ]
+       | { TY | TY }
+       | { TY & TY }
+       | TY -> TY
+       | ( TY )
+       | ID
+ARGS ::= ID ARGS
+       | epsilon
+EXP  ::= let ID = EXP in EXP
+       | LM ID . EXP
+       | EXP EXP
+       | ID
+       | if EXP then EXP else EXP
+       | *   | +  | -   | /   | %
+       | ==  | <= | >=  | /=  | <      | >
+       | and | or | not | xor | iszero
+       | [] | [ EXP ] | [ EXP , ... , EXP ]
+       | ( EXP )
+       | { _ , EXP } | { EXP , _ } | { EXP , EXP }
+       | INT
+LM   ::= λ | ^ | <backslash>
+ID   ::= [a-z][a-zA-Z]*
+INT  ::= 0 | [1-9][0-9]*
+BOOL ::= true | false
+CHAR ::= 'a' | 'b' | 'c' | ...
+STR  ::= "*"
 
 --}
 }
@@ -49,26 +59,28 @@ ARG         := [a-z][a-zA-Z]*
 %left app
 
 %token
+    lam     { TokenLambda  }
+    dot     { TokenDot     }
     identLC { TokenIdLC $$ }
     identUC { TokenIdUC $$ }
     openbr  { TokenOpenBr  }
     closbr  { TokenClosBr  }
     opensq  { TokenOpenSq  }
     clossq  { TokenClosSq  }
+    opencr  { TokenOpenCr  }
+    closcr  { TokenClosCr  }
     equals  { TokenEquals  }
     comma   { TokenComma   }
 
-    lam     { TokenLambda  }
-    dot     { TokenDot     }
-
-    int     { TokenInt  $$ }
-    bool    { TokenBool $$ }
-    
     add     { TokenAdd     }
     sub     { TokenSub     }
     mul     { TokenMul     }
     div     { TokenDiv     }
     mod     { TokenMod     }
+
+    int     { TokenInt  $$ }
+    bool    { TokenBool $$ }
+    
 
     let     { TokenLet     }
     in      { TokenIn      }
@@ -87,21 +99,33 @@ arglist : identLC arglist { $1 : $2 }
         | {- empty -}     { [] }
 
 exp :: { TypedExp }
-exp : exp exp             %prec app { App $1 $2             } 
-    | openbr exp closbr             { $2                    }
-    | lam identLC dot exp           { AbsInf $2 $4          }
-    | let identLC equals exp in exp { App (AbsInf $2 $6) $4 }
-    | identLC                       { Var $1                }
-    | int                           { Constant (IntVal $1)  }
-    | bool                          { Constant (BoolVal $1) }
-    | exp infixop exp               { App (App $2 $1) $3    }
+exp : let identLC equals exp in exp { App (AbsInf $2 $6) $4                     }
+    | lam identLC dot exp           { AbsInf $2 $4                              }
+    | exp exp             %prec app { App $1 $2                                 } 
+    | identLC                       { Var $1                                    }
+    | if exp then exp else exp      { App (App (App (Operation Cond) $2) $4) $6 }
+    | exp infixBinOp exp            { App (App $2 $1) $3                        }
+    | openbr exp closbr             { $2                                        }
+    | int                           { Constant (IntVal $1)                      }
+    | bool                          { Constant (BoolVal $1)                     }
 
-infixop :: { TypedExp }
-infixop : add { Operation Add }
-        | sub { Operation Sub }
-        | mul { Operation Mul }
-        | div { Operation Div }
-        | mod { Operation Mod }
+infixBinOp :: { TypedExp }
+infixBinOp : add { Operation Add }
+           | sub { Operation Sub }
+           | mul { Operation Mul }
+           | div { Operation Div }
+           | mod { Operation Mod }
+
+           | and { Operation And }
+           | or  { Operation Or  }
+           | xor { Operation Xor }
+
+           | lss { Operation Lss }
+           | lse { Operation LsE }
+           | equ { Operation Equ }
+           | neq { Operation NEq }
+           | gtr { Operation Gtr }
+           | gte { Operation GtE }
 {
 data Decl = Decl {    -- A standard function declaration
     name  :: String,  -- The name if the function

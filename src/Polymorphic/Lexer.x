@@ -12,71 +12,120 @@ $alnum = [$alpha $digit]
 
 tokens :-
     $white+                ;
-    "^"                    { \s -> TokenLambda }
-    "λ"                    { \s -> TokenLambda }
-    \\                     { \s -> TokenLambda }
-    \.                     { \s -> TokenDot    }
-    \(                     { \s -> TokenOpenBr }
-    \)                     { \s -> TokenClosBr }
-    \[                     { \s -> TokenOpenSq }
-    \]                     { \s -> TokenClosSq }
-    "="                    { \s -> TokenEquals }
-    \,                     { \s -> TokenComma  }
+    \#*\n                  ; -- Single line comments with '#'
+    "^"                    { \s -> TokenLambda              }
+    "λ"                    { \s -> TokenLambda              }
+    \\                     { \s -> TokenLambda              }
+    \.                     { \s -> TokenDot                 }
+    \(                     { \s -> TokenOpenBr              }
+    \)                     { \s -> TokenClosBr              }
+    \[                     { \s -> TokenOpenSq              }
+    \]                     { \s -> TokenClosSq              }
+    \{                     { \s -> TokenOpenCr              }
+    \}                     { \s -> TokenClosCr              }
+    "="                    { \s -> TokenEquals              }
+    \,                     { \s -> TokenComma               }
 
-    "+"                    { \s -> TokenAdd    }
-    "-"                    { \s -> TokenSub    }
-    "*"                    { \s -> TokenMul    }
-    "div"                  { \s -> TokenDiv    }
-    "mod"                  { \s -> TokenMod    }
+    "+"                    { \s -> TokenAdd                 }
+    "-"                    { \s -> TokenSub                 }
+    "*"                    { \s -> TokenMul                 }
+    "/"                    { \s -> TokenDiv                 }
+    "%"                    { \s -> TokenMod                 }
 
-    "let"                  { \s -> TokenLet    }
-    "in"                   { \s -> TokenIn     }
+    "<="                   { \s -> TokenLSEQ                }
+    "<"                    { \s -> TokenLESS                }
+    "=="                   { \s -> TokenEQEQ                }
+    "/="                   { \s -> TokenNOEQ                }
+    ">="                   { \s -> TokenGTEQ                }
+    ">"                    { \s -> TokenGRTR                }
+    
+    "and"                  { \s -> TokenAnd                 }
+    "or"                   { \s -> TokenOr                  }
+    "xor"                  { \s -> TokenXor                 }
+    "not"                  { \s -> TokenNot                 }
+    "iszero"               { \s -> TokenIsZero              }
+    "let"                  { \s -> TokenLet                 }
+    "in"                   { \s -> TokenIn                  }
+    "true"                 { \s -> TokenBool True           }
+    "false"                { \s -> TokenBool False          }
+    "if"                   { \s -> TokenIf                  }
+    "then"                 { \s -> TokenThen                }
+    "else"                 { \s -> TokenElse                }
 
-    "not"                  { \s -> TokenNot    }
-    "iszero"               { \s -> TokenIsZero }
+    "Int"                  { \s -> TokenTyInt               }
+    "Bool"                 { \s -> TokenTyBool              }
+    "Char"                 { \s -> TokenTyChar              }
+    "String"               { \s -> TokenTyStr               }
+    "|"                    { \s -> TokenTySum               }
+    "&"                    { \s -> TokenTyProd              }
+    "->"                   { \s -> TokenTyArrow             }
 
-    "True"                 { \s -> TokenBool True    }
-    "False"                { \s -> TokenBool False   }
-
-    [1-9][0-9]*            { \s -> TokenInt (read s) }
-    $lower [$alnum \_ \']* { \s -> TokenIdLC s       }
-    $upper [$alnum \_ \']* { \s -> TokenIdUC s       }
+    [1-9][0-9]*            { \s -> TokenInt (read s)        }
+    $lower [$alnum \_ \']* { \s -> TokenIdLC s              }
+    $upper [$alnum \_ \']* { \s -> TokenIdUC s              }
+    \"*\"                  { \s -> TokenStr (init (tail s)) }
 
 {
-data Token =
-
+data Token
     -- BASIC TOKENS
-      TokenIdLC String  -- Lower-case lead identifier (carries identifier text)
+    = TokenIdLC String  -- Lower-case lead identifier (carries identifier text)
     | TokenIdUC String  -- Upper-case lead identifier (carries identifier text)
     | TokenOpenBr       -- Open-bracket
     | TokenClosBr       -- Close-bracket
     | TokenOpenSq       -- Open square bracket
     | TokenClosSq       -- Close square bracket
+    | TokenOpenCr       -- Open curly bracket
+    | TokenClosCr       -- Close curly bracket
     | TokenEquals       -- Delimits declarations from function bodies
     | TokenComma        -- Commas - list delimiters
+    | TokenUndrSc       -- Underscore '_'
 
     -- LAMBDA SYNTAX
     | TokenLambda       -- Lambda abstractions
     | TokenDot          -- Delimits abstractions from funtion bodies
 
-    -- CONSTANTS
-    | TokenInt Int      -- Integer literals
-    | TokenBool Bool    -- Boolean literals
+    -- LITERALS
+    | TokenInt  Int
+    | TokenBool Bool
+    | TokenStr  String
 
-    -- BINARY OPERATORS
+    -- OPERATORS
     | TokenAdd          -- Addition operator
     | TokenSub          -- Subtraction operator
     | TokenMul          -- Multiplucation operator
     | TokenDiv          -- Integer division operator
     | TokenMod          -- Modulo operator
 
-    -- UNARY OPERATORS
-    | TokenNot          -- Logical not
+    | TokenEQEQ         -- '=='
+    | TokenLSEQ         -- '<='
+    | TokenLESS         -- '<'
+    | TokenGTEQ         -- '>='
+    | TokenGRTR         -- '>'
+    | TokenNOEQ         -- '/='
+
+    | TokenAnd          -- Boolean and
+    | TokenOr           -- Boolean or
+    | TokenNot          -- Boolean not
+    | TokenXor          -- Boolean xor
     | TokenIsZero       -- 'Is-zero' function token
 
     -- LET-IN BINDINGS
-    | TokenLet          -- let keyword
-    | TokenIn           -- in keyword
+    | TokenLet
+    | TokenIn
+
+    -- CONDITIONALS
+    | TokenIf
+    | TokenThen
+    | TokenElse
+
+    -- TYPE TOKENS
+    | TokenTyInt
+    | TokenTyBool
+    | TokenTyChar
+    | TokenTyStr
+    | TokenTySum        -- '|'
+    | TokenTyProd       -- '&'
+    | TokenTyArrow      -- '->'
 
     deriving (Show, Eq)
 
