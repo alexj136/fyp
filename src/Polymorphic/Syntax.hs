@@ -52,9 +52,11 @@ data Type
     | TBool
     | TChar
     | TList  Type
+    | TSum   Type Type
+    | TProd  Type Type
     | TFunc  Type Type
     | TVar   Int       -- Type variables are numbers, not strings
-    | TQuant Int Type  -- Type quantifier
+    | TQuant Int  Type  -- Type quantifier
     deriving Eq
 
 instance Show Type where
@@ -63,6 +65,8 @@ instance Show Type where
         TBool      -> "Bool"
         TChar      -> "Char"
         TList a    -> '[' : show a ++ "]"
+        TSum  a b  -> "{ " ++ show a ++ " | " ++ show b ++ " }"
+        TProd a b  -> "{ " ++ show a ++ " & " ++ show b ++ " }"
         TFunc a b  -> show a ++ " -> " ++ show b
         TVar varNo -> 'T' : show varNo
         TQuant i t -> 'V' : (show i) ++ '.' : (show t)
@@ -91,6 +95,23 @@ instance Ord Type where
         ( TList _     , TChar       ) -> False
         ( TList t1    , TList t2    ) -> t1 <= t2
         ( TList _     , _           ) -> True
+
+        -- Sums are greater than booleans, ints, chars and lists, but less than
+        -- everything else
+        ( TSum _ _    , TBool       ) -> False
+        ( TSum _ _    , TInt        ) -> False
+        ( TSum _ _    , TChar       ) -> False
+        ( TSum _ _    , TList _     ) -> False
+        ( TSum t1 t2  , TSum t3 t4  ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
+        ( TSum _ _    , _           ) -> True
+
+        -- Products are less than functions, type variables and quantifiers, but
+        -- greater than everything else
+        ( TProd t1 t2 , TProd t3 t4 ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
+        ( TProd _ _   , TFunc  _ _  ) -> True
+        ( TProd _ _   , TVar   _    ) -> True
+        ( TProd _ _   , TQuant _ _  ) -> True
+        ( TProd _ _   , _           ) -> False
 
         -- TFunc is only less than TVar and TQuant. The argument type determines
         -- which of two TFuncs are greater. If the argument types are equal,
@@ -131,6 +152,17 @@ data OpType
 
     -- Fixed-point combinator
     | Fix       -- : Va.(a -> a) -> a
+
+    -- Sum injection & removal operators
+    | InjL      -- : Va, b. a -> { a | b }
+    | InjR      -- : Va, b. b -> { a | b }
+    | RemL      -- : Va, b. { a | b } -> a
+    | RemR      -- : Va, b. { a | b } -> b
+
+    -- Product injection & removal
+    | Tuple     -- Va, b. a -> b -> { a & b }
+    | Fst       -- Va, b. { a & b } -> a
+    | Snd       -- Va, b. { a & b } -> b
     deriving Eq
 
 -- Tell if an operation type is binary. Will not need to change in
@@ -143,18 +175,18 @@ isBinary op = case op of
     Mul -> True
     Div -> True
     Mod -> True
-    
+
     And -> True
     Or  -> True
     Xor -> True
-    
+
     Lss -> True
     LsE -> True
     Equ -> True
     NEq -> True
     Gtr -> True
     GtE -> True
-    
+
     _   -> False
 
 -- Tell if an operation is unary
@@ -171,10 +203,6 @@ instance Show OpType where
     show Div = "/"
     show Mod = "%"
 
-    show And = "&"
-    show Or  = "|"
-    show Xor = "#"
-
     show Lss = "<"
     show LsE = "<="
     show Equ = "=="
@@ -182,7 +210,10 @@ instance Show OpType where
     show Gtr = ">"
     show GtE = ">="
 
-    show Not = "!"
+    show And = "and"
+    show Or  = "or"
+    show Xor = "xor"
+    show Not = "not"
     show IsZ = "iszero"
 
     show Empty = "[]"
@@ -194,6 +225,15 @@ instance Show OpType where
     show Fix   = "Y"
 
     show Cond  = "cond"
+
+    show InjL  = "injl"
+    show InjR  = "injr"
+    show RemL  = "reml"
+    show RemR  = "remr"
+
+    show Tuple = "tuple"
+    show Fst   = "fst"
+    show Snd   = "snd"
 
 --------------------------------------------------------------------------------
 --                  FUNCTIONS TO GAIN INFORMATION ON TERMS
@@ -260,6 +300,8 @@ tVarNames :: Type -> [Int]
 tVarNames (TQuant x t)  = x : tVarNames t
 tVarNames (TVar x)      = [x]
 tVarNames (TFunc t1 t2) = tVarNames t1 ++ tVarNames t2
+tVarNames (TProd t1 t2) = tVarNames t1 ++ tVarNames t2
+tVarNames (TSum  t1 t2) = tVarNames t1 ++ tVarNames t2
 tVarNames (TList t)     = tVarNames t
 tVarNames _             = []
 
@@ -270,6 +312,12 @@ renameType from to (TQuant x t)  =
     TQuant (if x == from then to else x) (renameType from to t)
 renameType from to (TVar x)      = TVar (if x == from then to else x)
 renameType from to (TFunc t1 t2) = TFunc renamedT1 renamedT2
+    where renamedT1 = renameType from to t1
+          renamedT2 = renameType from to t2
+renameType from to (TProd t1 t2) = TProd renamedT1 renamedT2
+    where renamedT1 = renameType from to t1
+          renamedT2 = renameType from to t2
+renameType from to (TSum t1 t2) = TSum renamedT1 renamedT2
     where renamedT1 = renameType from to t1
           renamedT2 = renameType from to t2
 renameType from to (TList t)     = TList (renameType from to t)

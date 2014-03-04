@@ -167,10 +167,11 @@ getConstraints i ctx exp = case exp of
         (constrN, tN, i'') = getConstraints i' ctx n
 
     -- Simple stuff
-    Constant (IntVal  _) -> (S.empty, TInt , i)
-    Constant (BoolVal _) -> (S.empty, TBool, i)
-    Constant (CharVal _) -> (S.empty, TChar, i)
-    Operation ot         -> (S.empty, typeOfOperation ot, i)
+    Constant (IntVal  _) -> (S.empty, TInt , i )
+    Constant (BoolVal _) -> (S.empty, TBool, i )
+    Constant (CharVal _) -> (S.empty, TChar, i )
+    Operation ot         -> (S.empty, opTy,  i')
+        where (opTy, i', _) = deQuantify (i + 1) M.empty (typeOfOperation ot)
 
   where
     -- Look up the type of a variable from a Context
@@ -225,6 +226,17 @@ typeOfOperation ot = case ot of
     Cond  -> TQuant 0 (TFunc (TBool) (TFunc (TVar 0) (TFunc (TVar 0) (TVar 0))))
 
     Fix   -> TQuant 0 (TFunc (TFunc (TVar 0) (TVar 0)) (TVar 0))
+
+    InjL  -> TQuant 0 (TQuant 1 (TFunc (TVar 0) (TSum (TVar 0) (TVar 1))))
+    InjR  -> TQuant 0 (TQuant 1 (TFunc (TVar 1) (TSum (TVar 0) (TVar 1))))
+    RemL  -> TQuant 0 (TQuant 1 (TFunc (TSum (TVar 0) (TVar 1)) (TVar 0)))
+    RemR  -> TQuant 0 (TQuant 1 (TFunc (TSum (TVar 0) (TVar 1)) (TVar 1)))
+
+    Tuple -> TQuant 0 (TQuant 1 (
+                 TFunc (TVar 0) (TFunc (TVar 1) (TProd (TVar 0) (TVar 1)))
+             ))
+    Fst   -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 0)))
+    Snd   -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 1)))
 
 -- Remove all type quantifiers from the constraints & type returned by the
 -- constraint generation algorithm

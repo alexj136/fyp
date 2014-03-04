@@ -62,7 +62,7 @@ reduce exp = case exp of
         (op, m') -> App (Operation op) m'
 
     -- List operations
-    App (Operation Null) m -> case reduce m of
+    App (Operation Null) m -> case reduceNorm m of
         Operation Empty -> Constant (BoolVal True)
         _               -> Constant (BoolVal False)
 
@@ -71,6 +71,19 @@ reduce exp = case exp of
 
     App (Operation Tail) (App (App (Operation Cons) m) n) -> n
     App (Operation Tail) m ->  App (Operation Tail) (reduce m)
+
+    App (Operation Cons) m -> App (Operation Cons) (reduce m)
+
+    -- Sum operations
+    App (Operation RemL) (App (Operation InjL) m) -> m
+    App (Operation RemR) (App (Operation InjR) m) -> m
+    App (Operation InjL) m -> App (Operation InjL) (reduce m)
+    App (Operation InjR) m -> App (Operation InjR) (reduce m)
+
+    -- Product operations
+    App (Operation Fst) (App (App (Operation Tuple) m) n) -> m
+    App (Operation Snd) (App (App (Operation Tuple) m) n) -> n
+    App (Operation Tuple) m -> App (Operation Tuple) (reduce m)
 
     -- Fixed point combinator
     App (Operation Fix) f  -> App f (App (Operation Fix) f)

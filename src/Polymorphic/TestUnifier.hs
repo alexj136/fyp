@@ -17,6 +17,7 @@ tests = TestList
     , testBigInfers
     , testSimpleDequantify
     , testBiggerDequantify
+    , testInfersList
     ]
 
 testInfers = TestLabel "Simple tests of type inference" (TestCase (
@@ -48,4 +49,10 @@ testBiggerDequantify = TestLabel "More complex test of the deQuantify function" 
         typeEquiv -- 0 -> V0.0 -> V0.0 equivalent to 2 -> 1 -> 0
             (deQuanType (TFunc (TVar 0) (TQuant 0 (TFunc (TVar 0) (TQuant 0 (TVar 0))))))
             (TFunc (TVar 2) (TFunc (TVar 1) (TVar 0)))
+    )))
+testInfersList = TestLabel "Test of type inference with a list" (TestCase (
+    assert (
+        typeEquiv
+            (fromJust (infer (App (App (Operation Cons) (Constant (IntVal 0))) (Operation Empty))))
+            (TList TInt)
     )))
