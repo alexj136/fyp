@@ -59,90 +59,140 @@ STR  ::= "*"
 %left app
 
 %token
-    lam     { TokenLambda  }
-    dot     { TokenDot     }
-    identLC { TokenIdLC $$ }
-    identUC { TokenIdUC $$ }
-    openbr  { TokenOpenBr  }
-    closbr  { TokenClosBr  }
-    opensq  { TokenOpenSq  }
-    clossq  { TokenClosSq  }
-    opencr  { TokenOpenCr  }
-    closcr  { TokenClosCr  }
-    equals  { TokenEquals  }
-    comma   { TokenComma   }
-
-    add     { TokenAdd     }
-    sub     { TokenSub     }
-    mul     { TokenMul     }
-    div     { TokenDiv     }
-    mod     { TokenMod     }
-
-    int     { TokenInt  $$ }
-    bool    { TokenBool $$ }
+    OpenBr  { TokenOpenBr  }
+    ClosBr  { TokenClosBr  }
+    OpenSq  { TokenOpenSq  }
+    ClosSq  { TokenClosSq  }
+    OpenCr  { TokenOpenCr  }
+    ClosCr  { TokenClosCr  }
+    Equals  { TokenEquals  }
+    Comma   { TokenComma   }
+    Colon   { TokenColon   }
+    UndrSc  { TokenUndrSc  }
     
+    Lambda  { TokenLambda  }
+    Dot     { TokenDot     }
 
-    let     { TokenLet     }
-    in      { TokenIn      }
+    Add     { TokenAdd     }
+    Sub     { TokenSub     }
+    Mul     { TokenMul     }
+    Div     { TokenDiv     }
+    Mod     { TokenMod     }
 
+    EqEq    { TokenEqEq    }
+    LsEq    { TokenLsEq    }
+    Less    { TokenLess    }
+    GtEq    { TokenGtEq    }
+    Grtr    { TokenGrtr    }
+    NoEq    { TokenNoEq    }
+
+    And     { TokenAnd     }
+    Or      { TokenOr      }
+    Not     { TokenNot     }
+    Xor     { TokenXor     }
+    IsZero  { TokenIsZero  }
+    
+    Let     { TokenLet     }
+    In      { TokenIn      }
+
+    If      { TokenIf      }
+    Then    { TokenThen    }
+    Else    { TokenElse    }
+
+    TyInt   { TokenTyInt   }
+    TyBool  { TokenTyBool  }
+    TyChar  { TokenTyChar  }
+    TyStr   { TokenTyStr   }
+    TySum   { TokenTySum   }
+    TyProd  { TokenTyProd  }
+    TyArrw  { TokenTyArrw  }
+
+    Int     { TokenInt  $$ }
+    Bool    { TokenBool $$ }
+    Str     { TokenStr  $$ }
+
+    IdLC    { TokenIdLC $$ }
+    IdUC    { TokenIdUC $$ }
 %%
 
-decls :: { [Decl] }
-decls : decl decls  { $1 : $2 }
-      | {- empty -} { [] }
+PROG :: { [Decl] }
+PROG : TYDEC IdLC ARGS Equals EXP PROG { (makeDecl $1 $2 $3 $5) : $6 }
+     | TYDEC IdLC ARGS Equals EXP      {  makeDecl $1 $2 $3 $5       }
 
-decl :: { Decl }
-decl : identLC arglist equals exp { makeDecl $1 $2 $4 }
+TYDEC :: { Maybe Type }
+TYDEC : IdLC Colon TY { Just $3 }
+      | {- empty -}   { Nothing }
 
-arglist :: { [String] }
-arglist : identLC arglist { $1 : $2 }
-        | {- empty -}     { [] }
+ARGS :: { [String] }
+ARGS : IdLC ARGS   { $1 : $2 }
+     | {- empty -} { []      }
 
-exp :: { TypedExp }
-exp : let identLC equals exp in exp { App (AbsInf $2 $6) $4                     }
-    | lam identLC dot exp           { AbsInf $2 $4                              }
-    | exp exp             %prec app { App $1 $2                                 } 
-    | identLC                       { Var $1                                    }
-    | if exp then exp else exp      { App (App (App (Operation Cond) $2) $4) $6 }
-    | exp infixBinOp exp            { App (App $2 $1) $3                        }
-    | openbr exp closbr             { $2                                        }
-    | int                           { Constant (IntVal $1)                      }
-    | bool                          { Constant (BoolVal $1)                     }
+TY :: { Type }
+TY : TyInt                      { TInt        }
+   | TyBool                     { TBool       }
+   | TyChar                     { TChar       }
+   | TyStr                      { TStr        }
+   | OpenSq TY ClosSq           { TList $2    }
+   | OpenCr TY TySum TY ClosCr  { TSum $2 $4  }
+   | OpenCr TY TyProd TY ClosCr { TProd $2 $4 }
+   | TY TyArrw TY               { TFunc $1 $3 }
+   | OpenBr TY ClosBr           { $2          }
+   | IdLC                       { TVar $1     }
 
-infixBinOp :: { TypedExp }
-infixBinOp : add { Operation Add }
-           | sub { Operation Sub }
-           | mul { Operation Mul }
-           | div { Operation Div }
-           | mod { Operation Mod }
+EXP :: { TypedExp }
+EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                     }
+    | Lambda IdLC Dot EXP            { AbsInf $2 $4                              }
+    | EXP EXP          %prec app     { App $1 $2                                 }
+    | IdLC                           { Var $1                                    }
+    | If EXP Then EXP Else EXP       { App (App (App (Operation Cond) $2) $4) $6 }
+    | EXP INFIXBINOP EXP             { App (App $2 $1) $3                        }
+    | IsZero                         { Operation IsZ                             }
+    | Not                            { Operation Not                             }
+    | LIST                           { $1                                        }
+    | OpenBr EXP ClosBr              { $2                                        }
+    | OpenCr EXP Comma UndrSc ClosCr { App (Operation InjL) $2                   }
+    | OpenCr UndrSc Comma EXP ClosCr { App (Operation InjR) $4                   }
+    | Int                            { Constant (IntVal $1)                      }
+    | Bool                           { Constant (BoolVal $1)                     }
+    {- TODO STRINGS -}
 
-           | and { Operation And }
-           | or  { Operation Or  }
-           | xor { Operation Xor }
+LIST :: { TypedExp }
+LIST : OpenSq ClosSq       { Operation Empty                  }
+     | OpenSq EXP LISTREST { App (App (Operation Cons) $2) $3 }
 
-           | lss { Operation Lss }
-           | lse { Operation LsE }
-           | equ { Operation Equ }
-           | neq { Operation NEq }
-           | gtr { Operation Gtr }
-           | gte { Operation GtE }
+LISTREST :: { TypedExp }
+LISTREST : Comma EXP LISTREST { App (App (Operation Cons) $2) $3 }
+         | ClosSq             { Operation Empty                  }
+
+INFIXBINOP :: { TypedExp }
+INFIXBINOP : Add { Operation Add }
+           | Sub { Operation Sub }
+           | Mul { Operation Mul }
+           | Div { Operation Div }
+           | Mod { Operation Mod }
+
+           | And { Operation And }
+           | Or  { Operation Or  }
+           | Xor { Operation Xor }
+
+           | Less { Operation Lss }
+           | LsEq { Operation LsE }
+           | EqEq { Operation Equ }
+           | NoEq { Operation NEq }
+           | Grtr { Operation Gtr }
+           | GtEq { Operation GtE }
 {
-data Decl = Decl {    -- A standard function declaration
-    name  :: String,  -- The name if the function
-    body  :: TypedExp -- The body of the function
-} | DeclWTy {         -- For use with given type declarations (not yet implemented)
-    name  :: String,
-    tyDec :: Type,    -- The user-specified type, which we will check
-    body  :: TypedExp
+-- A Decl object carries data that is to be converted into a function
+data Decl = Decl {      -- A standard function declaration.
+    tyDec :: Maybe Type -- The user-specified type, which we will check, but is
+                        -- not necessarily present.
+    name  :: String,    -- The name of the function.
+    body  :: TypedExp,  -- The body of the function.
 } deriving (Show, Eq)
 
-makeDecl :: String -> [String] -> TypedExp -> Decl
-makeDecl n []   x = Decl n x
-makeDecl n args x = makeDecl n (init args) (AbsInf (last args) x)
-
-makeDeclWTy :: Type -> String -> [String] -> TypedExp -> Decl
-makeDeclWTy t n []   x = DeclWTy n t x
-makeDeclWTy t n args x = makeDeclWTy t n (init args) (AbsInf (last args) x)
+makeDecl :: Maybe Type -> String -> [String] -> TypedExp -> Decl
+makeDecl t n []   x = Decl t n x
+makeDecl t n args x = makeDecl t n (init args) (AbsInf (last args) x)
 
 parseError :: [Token] -> a
 parseError token = error $ "Parse error on " ++ (show token)
