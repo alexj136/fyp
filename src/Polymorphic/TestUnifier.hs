@@ -18,6 +18,8 @@ tests = TestList
     , testSimpleDequantify
     , testBiggerDequantify
     , testInfersList
+    , testInfersBigList 
+    , testInfersBadList
     ]
 
 testInfers = TestLabel "Simple tests of type inference" (TestCase (
@@ -55,4 +57,16 @@ testInfersList = TestLabel "Test of type inference with a list" (TestCase (
         typeEquiv
             (fromJust (infer (App (App (Operation Cons) (Constant (IntVal 0))) (Operation Empty))))
             (TList TInt)
+    )))
+testInfersBigList = TestLabel "Test of type inference with a big list" (TestCase (
+    assert (
+        typeEquiv
+            (fromJust (infer (App (App (Operation Cons) (Constant (CharVal 'f'))) (App (App (Operation Cons) (Constant (CharVal 'a'))) (App (App (Operation Cons) (Constant (CharVal 'b'))) (Operation Empty))))))
+            (TList TChar)
+    )))
+testInfersBadList = TestLabel "Test of type inference with an incorrect list containing multiple types - should yield Nothing" (TestCase (
+    assert (
+        (==)
+            (infer (App (App (Operation Cons) (Constant (CharVal 'f'))) (App (App (Operation Cons) (Constant (IntVal 0))) (App (App (Operation Cons) (Constant (BoolVal True))) (Operation Empty)))))
+            Nothing
     )))

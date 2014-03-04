@@ -14,13 +14,10 @@ infer exp = case (inferWithConstraints exp) of
 
 inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
 inferWithConstraints exp = do
-    rewrite <- unify deQ'dConstraints
-    return (rewrite deQ'dType, constraints)
+    rewrite <- unify constraints
+    return (rewrite typeOfExp, constraints)
   where
     (constraints, typeOfExp, i) = getConstraints (maxTVarInExp exp + 1) M.empty exp
-    (deQ'dConstraints, i') = deQuantifyConstraintSet i constraints
-    (deQ'dType, _, _) = deQuantify i' M.empty typeOfExp
-
 
 --------------------------------------------------------------------------------
 --                                UNIFICATION
@@ -54,22 +51,39 @@ unify c | S.size c == 0 = Just (\t -> t)
         -- If the types are already equal, unify the rest of the set
         | t1 == t2 = unify rest
 
-        -- If t1 is a TVar, not occurring in t2, ...
+        -- If t1 is a TVar, not occurring in t2 (i.e. if the type is not
+        -- infinite), replace all occurences of t1 with t2 in the remaining
+        -- constraints, and try to unify those
         | isTVar t1 && (not $ occurs (numOfTVar t1) t2) = do
             unifyRest <- unify (constrSetMap (typeSubst (t1, t2)) rest)
             return $ unifyRest . typeSubst (t1, t2)
 
-        -- If t2 is a TVar, not occurring in t1, ...
+        -- If t2 is a TVar, not occurring in t1 (i.e. if the type is not
+        -- infinite), replace all occurences of t2 with t1 in the remaining
+        -- constraints, and try to unify those
         | isTVar t2 && (not $ occurs (numOfTVar t2) t1) = do
             unifyRest <- unify (constrSetMap (typeSubst (t2, t1)) rest)
             return $ unifyRest . typeSubst (t2, t1)
 
-        -- If both t1 and t2 are function types, set the argument-types and the
-        -- return-types of each type as equal in the constraint set, and unify
-        -- that constraint set
+        -- If both t1 and t2 are function types, try to unify the argument type
+        -- of t1 with the argument type of t2, and the return type of t1 with
+        -- the return type of t2
         | isTFunc t1 && isTFunc t2 =
             unify $ S.insert ( tFuncFrom t1 , tFuncFrom t2 )
                   $ S.insert ( tFuncTo   t1 , tFuncTo   t2 ) rest
+
+        -- If the constraints are both lists, try to unify their inner-types
+        | isTList t1 && isTList t2 =
+            unify $ S.insert ( tListOf t1 , tListOf t2 ) rest
+
+        -- Apply the same logic we applied for functions and lists, to sums and
+        -- products - try to match the inner-types.
+        | isTSum t1 && isTSum t2 =
+            unify $ S.insert ( tSumL t1 , tSumL t2 )
+                  $ S.insert ( tSumR t1 , tSumR t2 ) rest
+        | isTProd t1 && isTProd t2 =
+            unify $ S.insert ( tProdFst t1 , tProdFst t2 )
+                  $ S.insert ( tProdSnd t1 , tProdSnd t2 ) rest
 
         -- Otherwise, there are no rules we can apply, so fail
         | otherwise = Nothing
@@ -82,9 +96,11 @@ unify c | S.size c == 0 = Just (\t -> t)
     typeSubst :: Constraint -> Type -> Type
     typeSubst (TVar x, tArg) tBody = case tBody of
         TVar y | x == y -> tArg
-                | x /= y -> TVar y
+               | x /= y -> TVar y
         TFunc t1 t2     -> TFunc (typeSubst' t1) (typeSubst' t2)
         TList ty        -> TList (typeSubst' ty)
+        TSum  t1 t2     -> TSum  (typeSubst' t1) (typeSubst' t2)
+        TProd t1 t2     -> TProd (typeSubst' t1) (typeSubst' t2)
         basicType       -> basicType
         where typeSubst' = typeSubst (TVar x, tArg)
     typeSubst _ _ = error "typeSubst: only TVars can be substituted"
@@ -95,6 +111,8 @@ unify c | S.size c == 0 = Just (\t -> t)
     occurs x (TVar y)      = x == y
     occurs x (TFunc t1 t2) = occurs x t1 || occurs x t2
     occurs x (TList t)     = occurs x t
+    occurs x (TSum  t1 t2) = occurs x t1 || occurs x t2
+    occurs x (TProd t1 t2) = occurs x t1 || occurs x t2
     occurs _ _             = False
 
     -- Determine if a type is a type variable
@@ -105,7 +123,7 @@ unify c | S.size c == 0 = Just (\t -> t)
     -- Retrieve the type variable number from a type variable
     numOfTVar :: Type -> Int
     numOfTVar (TVar x) = x
-    numOfTVar _        = error "Cannot get name of non-TVar Type"
+    numOfTVar _        = error "numOfTVar: Cannot get name of non-TVar Type"
 
     -- Determine if a type is a function type
     isTFunc :: Type -> Bool
@@ -115,9 +133,47 @@ unify c | S.size c == 0 = Just (\t -> t)
     -- Retrieve the subtypes of function types
     tFuncFrom, tFuncTo :: Type -> Type
     tFuncFrom (TFunc x _) = x
-    tFuncFrom _           = error "Cannot get subtype of non-function type"
+    tFuncFrom _           = error ("tFuncFrom: Cannot get inner type of " ++
+                                   "non-function type")
     tFuncTo   (TFunc _ x) = x
-    tFuncTo   _           = error "Cannot get subtype of non-function type"
+    tFuncTo   _           = error ("tFuncTo: Cannot get inner type of " ++
+                                   "non-function type")
+
+    -- Determine if a type is a list type
+    isTList :: Type -> Bool
+    isTList (TList _) = True
+    isTList _         = False
+
+    -- Retrieve the inner type of a list type
+    tListOf :: Type -> Type
+    tListOf (TList x) = x
+    tListOf _         = error "tListOf: Cannot get inner type of non-list type"
+
+    -- Determine if a type is a sum type
+    isTSum :: Type -> Bool
+    isTSum (TSum _ _) = True
+    isTSum _          = False
+
+    -- Retrieve the inner types of sum types
+    tSumL, tSumR :: Type -> Type
+    tSumL (TSum x _) = x
+    tSumL _          = error "tSumL: Cannot get inner type of non-sum type"
+    tSumR (TSum _ x) = x
+    tSumR _          = error "tSumR: Cannot get inner type of non-sum type"
+
+    -- Determine if a type is a product type
+    isTProd :: Type -> Bool
+    isTProd (TProd _ _) = True
+    isTProd _           = False
+
+    -- Retrieve the inner types of product types
+    tProdFst, tProdSnd :: Type -> Type
+    tProdFst (TProd x _) = x
+    tProdFst _           = error ("tProdFst: Cannot get inner type of " ++
+                                  "non-product type")
+    tProdSnd (TProd _ x) = x
+    tProdSnd _           = error ("tProdSnd: Cannot get inner type of " ++
+                                  "non-product type")
 
 --------------------------------------------------------------------------------
 --                           CONSTRAINT GENERATION
@@ -130,8 +186,8 @@ type Context = M.Map Name Type
 -- Get the typing constraints from an expression, that are required for type
 -- unification. Prevents type variable name clashes by taking as a parameter the
 -- lowest number that is safe to use as a type variable, and returning in the
--- tuple the highest type variable that it consequently uses, so that subsequent
--- calls can avoid using the same names (names are integers)
+-- tuple the lowest type variable that it would be safe to introduce, so that
+-- subsequent calls can avoid using the same names (names are integers)
 getConstraints :: Int -> Context -> TypedExp -> (ConstraintSet, Type, Int)
 getConstraints i ctx exp = case exp of
 
@@ -170,8 +226,8 @@ getConstraints i ctx exp = case exp of
     Constant (IntVal  _) -> (S.empty, TInt , i )
     Constant (BoolVal _) -> (S.empty, TBool, i )
     Constant (CharVal _) -> (S.empty, TChar, i )
-    Operation ot         -> (S.empty, opTy,  i')
-        where (opTy, i', _) = deQuantify (i + 1) M.empty (typeOfOperation ot)
+    Operation ot         -> (S.empty, opTy , i')
+        where (opTy, i', _) = deQuantify i M.empty (typeOfOperation ot)
 
   where
     -- Look up the type of a variable from a Context
@@ -237,17 +293,6 @@ typeOfOperation ot = case ot of
              ))
     Fst   -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 0)))
     Snd   -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 1)))
-
--- Remove all type quantifiers from the constraints & type returned by the
--- constraint generation algorithm
-deQuantifyConstraintSet :: Int -> ConstraintSet -> (ConstraintSet, Int)
-deQuantifyConstraintSet i constr
-    | S.null constr = (constr, i)
-    | otherwise     = (S.insert (t1', t2') rest', i''')
-        where ((t1, t2), rest) = S.deleteFindMin constr
-              (t1', i' , _)    = deQuantify i  M.empty t1
-              (t2', i'', _)    = deQuantify i' M.empty t2
-              (rest', i''')    = deQuantifyConstraintSet i'' rest
 
 -- Remove type quantifiers from a type expression, replacing locally bound type
 -- variables with globally unique, usable ones. The Int paramerer is a lowest
