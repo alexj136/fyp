@@ -3,6 +3,7 @@
 module Syntax where
 
 import qualified Data.Set as S
+import qualified Data.Map as M
 
 --------------------------------------------------------------------------------
 --                         ESSENTIAL DATA DEFINITIONS
@@ -55,21 +56,26 @@ data Type
     | TSum   Type Type
     | TProd  Type Type
     | TFunc  Type Type
-    | TVar   Int       -- Type variables are numbers, not strings
-    | TQuant Int  Type  -- Type quantifier
+    | TVar   Int            -- Type variables are numbers, not strings
+    | TQuant Int  Type      -- Type quantifier
+    | ParserTVar  String    -- The parser will parse type variables as strings.
+                            -- These are to be replaced with integers by
+                            -- calling convertTVars before the expressions
+                            -- are used.
     deriving Eq
 
 instance Show Type where
     show t = case t of
-        TInt       -> "Int"
-        TBool      -> "Bool"
-        TChar      -> "Char"
-        TList a    -> '[' : show a ++ "]"
-        TSum  a b  -> "{ " ++ show a ++ " | " ++ show b ++ " }"
-        TProd a b  -> "{ " ++ show a ++ " & " ++ show b ++ " }"
-        TFunc a b  -> show a ++ " -> " ++ show b
-        TVar varNo -> 'T' : show varNo
-        TQuant i t -> 'V' : (show i) ++ '.' : (show t)
+        TInt         -> "Int"
+        TBool        -> "Bool"
+        TChar        -> "Char"
+        TList a      -> '[' : show a ++ "]"
+        TSum  a b    -> "{ " ++ show a ++ " | " ++ show b ++ " }"
+        TProd a b    -> "{ " ++ show a ++ " & " ++ show b ++ " }"
+        TFunc a b    -> show a ++ " -> " ++ show b
+        TVar varNo   -> 'T' : show varNo
+        TQuant i t   -> 'V' : (show i) ++ '.' : (show t)
+        ParserTVar _ -> error ("show Type: ParserTVar found")
 
 -- It is helpful to make Types orderable so that manipulating large sets of
 -- Types is faster
@@ -294,34 +300,69 @@ getTypesInExp exp         = concat (map getTypesInExp (subs exp))
 --                  FUNCTIONS TO GAIN INFORMATION ON TYPES
 --------------------------------------------------------------------------------
 
+-- Convert all ParserTVars into proper integer TVars. Returns a map from the
+-- integer type variables to the user's string type variables that can be used
+-- to print better error messages.
+convertTVars :: Type -> (M.Map String Int, Type)
+convertTVars ty = (m, newTy)
+  where
+    (_, m, newTy) = convertTVars' 0 M.empty ty
+    convertTVars' ::
+        Int -> M.Map String Int -> Type -> (Int, M.Map String Int, Type)
+    convertTVars' i m t = case t of
+        ParserTVar s -> case M.lookup s m of
+                            Nothing -> (i + 1, M.insert s i m, TVar i)
+                            Just j  -> (i    , m             , TVar j)
+
+        TFunc t1 t2  -> (i''  , m'', TFunc t1' t2')
+            where (i' , m' , t1') = convertTVars' i  m  t1
+                  (i'', m'', t2') = convertTVars' i' m' t2
+
+        TProd t1 t2  -> (i''  , m'', TProd t1' t2')
+            where (i' , m' , t1') = convertTVars' i  m  t1
+                  (i'', m'', t2') = convertTVars' i' m' t2
+
+        TSum  t1 t2  -> (i''  , m'', TSum  t1' t2')
+            where (i' , m' , t1') = convertTVars' i  m  t1
+                  (i'', m'', t2') = convertTVars' i' m' t2
+
+        TList t      -> (i'   , m' , TList t'     )
+            where (i' , m' , t' ) = convertTVars' i  m  t
+
+        TQuant _ _   -> error "convertTVars: TQuant found in parsed type"
+        TVar   _     -> error "convertTVars: Integer TVar found in parsed type"
+        other        -> (i, m, other)
+
 -- Get a list of all type variable names in a type. The order of the list
 -- the order in which those type variables appear in the type.
 tVarNames :: Type -> [Int]
-tVarNames (TQuant x t)  = x : tVarNames t
-tVarNames (TVar x)      = [x]
-tVarNames (TFunc t1 t2) = tVarNames t1 ++ tVarNames t2
-tVarNames (TProd t1 t2) = tVarNames t1 ++ tVarNames t2
-tVarNames (TSum  t1 t2) = tVarNames t1 ++ tVarNames t2
-tVarNames (TList t)     = tVarNames t
-tVarNames _             = []
+tVarNames (TQuant x t)   = x : tVarNames t
+tVarNames (TVar x)       = [x]
+tVarNames (TFunc t1 t2)  = tVarNames t1 ++ tVarNames t2
+tVarNames (TProd t1 t2)  = tVarNames t1 ++ tVarNames t2
+tVarNames (TSum  t1 t2)  = tVarNames t1 ++ tVarNames t2
+tVarNames (TList t)      = tVarNames t
+tVarNames (ParserTVar _) = error ("tVarNames: ParserTVar found")
+tVarNames _              = []
 
 -- Converts all occurences of a particular TVar name to a different name within
 -- a type
 renameType :: Int -> Int -> Type -> Type
-renameType from to (TQuant x t)  =
+renameType from to (TQuant x t)   =
     TQuant (if x == from then to else x) (renameType from to t)
-renameType from to (TVar x)      = TVar (if x == from then to else x)
-renameType from to (TFunc t1 t2) = TFunc renamedT1 renamedT2
+renameType from to (TVar x)       = TVar (if x == from then to else x)
+renameType from to (TFunc t1 t2)  = TFunc renamedT1 renamedT2
     where renamedT1 = renameType from to t1
           renamedT2 = renameType from to t2
-renameType from to (TProd t1 t2) = TProd renamedT1 renamedT2
+renameType from to (TProd t1 t2)  = TProd renamedT1 renamedT2
     where renamedT1 = renameType from to t1
           renamedT2 = renameType from to t2
-renameType from to (TSum t1 t2) = TSum renamedT1 renamedT2
+renameType from to (TSum t1 t2)   = TSum renamedT1 renamedT2
     where renamedT1 = renameType from to t1
           renamedT2 = renameType from to t2
-renameType from to (TList t)     = TList (renameType from to t)
-renameType _    _  other         = other
+renameType from to (TList t)      = TList (renameType from to t)
+renameType _    _  (ParserTVar _) = error ("renameType: ParserTVar found")
+renameType _    _  other          = other
 
 -- Rename all occurences of all the types in the given list to another type.
 -- The integer parameter is the first TVar name that will be used to replace old
