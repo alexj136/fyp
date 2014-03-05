@@ -41,83 +41,98 @@ STR  ::= "*"
 --}
 }
 
-%name parse
+%name parse     PROG
+%name parseExp  EXP
+%name parseType TY
+
 %tokentype { Token }
 %error { parseError }
 
-%left add
-%left sub
-%left mul
-%left div
-%left mod
+%left Add
+%left Sub
+%left Mul
+%left Div
+%left Mod
 
-%right equals lam dot let in int bool
-%left identLC
-%left closbr
-%right openbr
-%left exp
+%left EqEq
+%left LsEq
+%left Less
+%left GtEq
+%left Grtr
+%left NoEq
+
+%right Equals Lam Dot Let In Int Bool
+%left IdLC IdUC
+%left ClosBr ClosSq ClosCr
+%right OpenBr OpenSq OpenCr
+%left EXP
 %left app
 
 %token
-    OpenBr  { TokenOpenBr  }
-    ClosBr  { TokenClosBr  }
-    OpenSq  { TokenOpenSq  }
-    ClosSq  { TokenClosSq  }
-    OpenCr  { TokenOpenCr  }
-    ClosCr  { TokenClosCr  }
-    Equals  { TokenEquals  }
-    Comma   { TokenComma   }
-    Colon   { TokenColon   }
-    UndrSc  { TokenUndrSc  }
+    OpenBr  { TokenOpenBr p    }
+    ClosBr  { TokenClosBr p    }
+    OpenSq  { TokenOpenSq p    }
+    ClosSq  { TokenClosSq p    }
+    OpenCr  { TokenOpenCr p    }
+    ClosCr  { TokenClosCr p    }
+    Equals  { TokenEquals p    }
+    Comma   { TokenComma  p    }
+    Colon   { TokenColon  p    }
+    UndrSc  { TokenUndrSc p    }
     
-    Lambda  { TokenLambda  }
-    Dot     { TokenDot     }
+    Lambda  { TokenLambda p    }
+    Dot     { TokenDot    p    }
 
-    Add     { TokenAdd     }
-    Sub     { TokenSub     }
-    Mul     { TokenMul     }
-    Div     { TokenDiv     }
-    Mod     { TokenMod     }
+    Add     { TokenAdd    p    }
+    Sub     { TokenSub    p    }
+    Mul     { TokenMul    p    }
+    Div     { TokenDiv    p    }
+    Mod     { TokenMod    p    }
 
-    EqEq    { TokenEqEq    }
-    LsEq    { TokenLsEq    }
-    Less    { TokenLess    }
-    GtEq    { TokenGtEq    }
-    Grtr    { TokenGrtr    }
-    NoEq    { TokenNoEq    }
+    EqEq    { TokenEqEq   p    }
+    LsEq    { TokenLsEq   p    }
+    Less    { TokenLess   p    }
+    GtEq    { TokenGtEq   p    }
+    Grtr    { TokenGrtr   p    }
+    NoEq    { TokenNoEq   p    }
 
-    And     { TokenAnd     }
-    Or      { TokenOr      }
-    Not     { TokenNot     }
-    Xor     { TokenXor     }
-    IsZero  { TokenIsZero  }
+    And     { TokenAnd    p    }
+    Or      { TokenOr     p    }
+    Not     { TokenNot    p    }
+    Xor     { TokenXor    p    }
+    IsZero  { TokenIsZero p    }
     
-    Let     { TokenLet     }
-    In      { TokenIn      }
+    Let     { TokenLet    p    }
+    In      { TokenIn     p    }
 
-    If      { TokenIf      }
-    Then    { TokenThen    }
-    Else    { TokenElse    }
+    If      { TokenIf     p    }
+    Then    { TokenThen   p    }
+    Else    { TokenElse   p    }
 
-    TyInt   { TokenTyInt   }
-    TyBool  { TokenTyBool  }
-    TyChar  { TokenTyChar  }
-    TyStr   { TokenTyStr   }
-    TySum   { TokenTySum   }
-    TyProd  { TokenTyProd  }
-    TyArrw  { TokenTyArrw  }
+    RemL    { TokenRemL   p    }
+    RemR    { TokenRemR   p    }
+    Fst     { TokenFst    p    }
+    Snd     { TokenSnd    p    }
 
-    Int     { TokenInt  $$ }
-    Bool    { TokenBool $$ }
-    Str     { TokenStr  $$ }
+    TyInt   { TokenTyInt  p    }
+    TyBool  { TokenTyBool p    }
+    TyChar  { TokenTyChar p    }
+    TyStr   { TokenTyStr  p    }
+    TySum   { TokenTySum  p    }
+    TyProd  { TokenTyProd p    }
+    TyArrw  { TokenTyArrw p    }
 
-    IdLC    { TokenIdLC $$ }
-    IdUC    { TokenIdUC $$ }
+    Int     { TokenInt    p $$ }
+    Bool    { TokenBool   p $$ }
+    Str     { TokenStr    p $$ }
+
+    IdLC    { TokenIdLC   p $$ }
+    IdUC    { TokenIdUC   p $$ }
 %%
 
 PROG :: { [Decl] }
 PROG : TYDEC IdLC ARGS Equals EXP PROG { (makeDecl $1 $2 $3 $5) : $6 }
-     | TYDEC IdLC ARGS Equals EXP      {  makeDecl $1 $2 $3 $5       }
+     | TYDEC IdLC ARGS Equals EXP      {  makeDecl $1 $2 $3 $5  : [] }
 
 TYDEC :: { Maybe Type }
 TYDEC : IdLC Colon TY { Just $3 }
@@ -128,16 +143,16 @@ ARGS : IdLC ARGS   { $1 : $2 }
      | {- empty -} { []      }
 
 TY :: { Type }
-TY : TyInt                      { TInt        }
-   | TyBool                     { TBool       }
-   | TyChar                     { TChar       }
-   | TyStr                      { TStr        }
-   | OpenSq TY ClosSq           { TList $2    }
-   | OpenCr TY TySum TY ClosCr  { TSum $2 $4  }
-   | OpenCr TY TyProd TY ClosCr { TProd $2 $4 }
-   | TY TyArrw TY               { TFunc $1 $3 }
-   | OpenBr TY ClosBr           { $2          }
-   | IdLC                       { TVar $1     }
+TY : TyInt                      { TInt           }
+   | TyBool                     { TBool          }
+   | TyChar                     { TChar          }
+   | TyStr                      { TList TChar    }
+   | OpenSq TY ClosSq           { TList $2       }
+   | OpenCr TY TySum TY ClosCr  { TSum $2 $4     }
+   | OpenCr TY TyProd TY ClosCr { TProd $2 $4    }
+   | TY TyArrw TY               { TFunc $1 $3    }
+   | OpenBr TY ClosBr           { $2             }
+   | IdLC                       { TVar (read $1) }
 
 EXP :: { TypedExp }
 EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                     }
@@ -148,13 +163,18 @@ EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                    
     | EXP INFIXBINOP EXP             { App (App $2 $1) $3                        }
     | IsZero                         { Operation IsZ                             }
     | Not                            { Operation Not                             }
+    | RemL                           { Operation RemL                            }
+    | RemR                           { Operation RemR                            }
+    | Fst                            { Operation Fst                             }
+    | Snd                            { Operation Snd                             }
     | LIST                           { $1                                        }
     | OpenBr EXP ClosBr              { $2                                        }
     | OpenCr EXP Comma UndrSc ClosCr { App (Operation InjL) $2                   }
     | OpenCr UndrSc Comma EXP ClosCr { App (Operation InjR) $4                   }
+    | OpenCr EXP Comma EXP ClosCr    { App (App (Operation Tuple) $2) $4         }
     | Int                            { Constant (IntVal $1)                      }
     | Bool                           { Constant (BoolVal $1)                     }
-    {- TODO STRINGS -}
+    | Str                            { parseStr $1                               }
 
 LIST :: { TypedExp }
 LIST : OpenSq ClosSq       { Operation Empty                  }
@@ -183,17 +203,28 @@ INFIXBINOP : Add { Operation Add }
            | GtEq { Operation GtE }
 {
 -- A Decl object carries data that is to be converted into a function
-data Decl = Decl {      -- A standard function declaration.
-    tyDec :: Maybe Type -- The user-specified type, which we will check, but is
-                        -- not necessarily present.
-    name  :: String,    -- The name of the function.
-    body  :: TypedExp,  -- The body of the function.
-} deriving (Show, Eq)
+data Decl = Decl {          -- A standard function declaration.
+    tyDec :: Maybe Type,    -- The user-specified type, which we will check, but
+                            -- is not necessarily present.
+    name  :: String,        -- The name of the function.
+    body  :: TypedExp       -- The body of the function.
+} deriving Eq
+
+instance Show Decl where
+    show (Decl t n b) = show n ++ " : " ++ show t ++ "\n" ++
+                        show n ++ " = " ++ show b ++ "\n"
 
 makeDecl :: Maybe Type -> String -> [String] -> TypedExp -> Decl
 makeDecl t n []   x = Decl t n x
 makeDecl t n args x = makeDecl t n (init args) (AbsInf (last args) x)
 
+parseStr :: String -> TypedExp
+parseStr []     = Operation Empty
+parseStr (c:cs) =
+    App (App (Operation Cons) (Constant (CharVal c))) (parseStr cs)
+
 parseError :: [Token] -> a
-parseError token = error $ "Parse error on " ++ (show token)
+parseError []     = error "Reached end of file while parsing"
+parseError (t:ts) = error ("Parse error on line " ++ show (getY t) ++
+                           ", column " ++ show (getX t) ++ ".")
 }
