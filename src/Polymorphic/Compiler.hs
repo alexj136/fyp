@@ -21,11 +21,27 @@ putHeaderFooter code = concat
     , "typedef struct StackFrame StackFrame;"
     , "struct StackFrame {"
     , "    struct StackFrame *next;"
-    , "    void *data;"
+    , "    int data;"
     , "};"
 
+    -- Create a new empty stack
+    , "Stack *newStack() {"
+    , "    Stack *stk = safeAlloc(sizeof(Stack));"
+    , "    stk -> top = NULL;"
+    , "    return stk;"
+    , "}"
+
+    -- Create a new stack frame with some given data
+    , "StackFrame *newStackFrame(StackFrame *behindNew, int data) {"
+    , "    StackFrame *stkFm = safeAlloc(sizeof(StackFrame));"
+    , "    stkFm -> data = data;"
+    , "    return stkFm;"
+    , "}"
+
     , "int main() {"
-    , code
+    , "    Stack *compStack = newStack();"
+    , "    Stack *valStack  = newStack();"
+    ,      code
     , "}"
     ] 
 
