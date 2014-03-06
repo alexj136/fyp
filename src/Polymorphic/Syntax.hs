@@ -75,7 +75,7 @@ instance Show Type where
         TFunc a b    -> show a ++ " -> " ++ show b
         TVar varNo   -> 'T' : show varNo
         TQuant i t   -> 'V' : (show i) ++ '.' : (show t)
-        ParserTVar _ -> error ("show Type: ParserTVar found")
+        ParserTVar s -> "(ParserTVar: " ++ s ++ ")"
 
 -- It is helpful to make Types orderable so that manipulating large sets of
 -- Types is faster

@@ -48,23 +48,21 @@ STR  ::= "*"
 %tokentype { Token }
 %error { parseError }
 
-%left Add
-%left Sub
-%left Mul
-%left Div
-%left Mod
+%nonassoc ClosBr ClosSq ClosCr OpenBr OpenSq OpenCr
 
-%left EqEq
-%left LsEq
-%left Less
-%left GtEq
-%left Grtr
-%left NoEq
-
-%right Equals Lam Dot Let In Int Bool
+%right Equals Lam Dot Let In Int Bool TyArrw
 %left IdLC IdUC
-%left ClosBr ClosSq ClosCr
-%right OpenBr OpenSq OpenCr
+
+%right Or
+%right And
+%nonassoc EqEq LsEq Less GtEq Grtr NoEq
+
+%nonassoc Sub
+%right Add
+%nonassoc Mod
+%nonassoc Div
+%right Mul
+
 %left EXP
 %left app
 
@@ -143,16 +141,16 @@ ARGS : IdLC ARGS   { $1 : $2 }
      | {- empty -} { []      }
 
 TY :: { Type }
-TY : TyInt                      { TInt           }
-   | TyBool                     { TBool          }
-   | TyChar                     { TChar          }
-   | TyStr                      { TList TChar    }
-   | OpenSq TY ClosSq           { TList $2       }
-   | OpenCr TY TySum TY ClosCr  { TSum $2 $4     }
-   | OpenCr TY TyProd TY ClosCr { TProd $2 $4    }
-   | TY TyArrw TY               { TFunc $1 $3    }
-   | OpenBr TY ClosBr           { $2             }
-   | IdLC                       { TVar (read $1) }
+TY : TyInt                      { TInt          }
+   | TyBool                     { TBool         }
+   | TyChar                     { TChar         }
+   | TyStr                      { TList TChar   }
+   | OpenSq TY ClosSq           { TList $2      }
+   | OpenCr TY TySum TY ClosCr  { TSum $2 $4    }
+   | OpenCr TY TyProd TY ClosCr { TProd $2 $4   }
+   | TY TyArrw TY               { TFunc $1 $3   }
+   | OpenBr TY ClosBr           { $2            }
+   | IdLC                       { ParserTVar $1 }
 
 EXP :: { TypedExp }
 EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                     }

@@ -652,8 +652,6 @@ action_43 (13) = happyGoto action_45
 action_43 _ = happyFail
 
 action_44 (24) = happyShift action_20
-action_44 (37) = happyShift action_57
-action_44 (38) = happyShift action_58
 action_44 (39) = happyShift action_21
 action_44 (40) = happyShift action_59
 action_44 (41) = happyShift action_22
@@ -1051,10 +1049,18 @@ action_87 (11) = happyGoto action_16
 action_87 (13) = happyGoto action_45
 action_87 _ = happyFail
 
-action_88 (14) = happyShift action_17
-action_88 (16) = happyShift action_18
-action_88 (18) = happyShift action_19
 action_88 (24) = happyShift action_20
+action_88 (26) = happyShift action_46
+action_88 (27) = happyShift action_47
+action_88 (28) = happyShift action_48
+action_88 (29) = happyShift action_49
+action_88 (30) = happyShift action_50
+action_88 (31) = happyShift action_51
+action_88 (32) = happyShift action_52
+action_88 (33) = happyShift action_53
+action_88 (34) = happyShift action_54
+action_88 (35) = happyShift action_55
+action_88 (36) = happyShift action_56
 action_88 (37) = happyShift action_57
 action_88 (38) = happyShift action_58
 action_88 (39) = happyShift action_21
@@ -1384,10 +1390,18 @@ action_109 (11) = happyGoto action_16
 action_109 (13) = happyGoto action_45
 action_109 _ = happyReduce_23
 
-action_110 (14) = happyShift action_17
-action_110 (16) = happyShift action_18
-action_110 (18) = happyShift action_19
 action_110 (24) = happyShift action_20
+action_110 (26) = happyShift action_46
+action_110 (27) = happyShift action_47
+action_110 (28) = happyShift action_48
+action_110 (29) = happyShift action_49
+action_110 (30) = happyShift action_50
+action_110 (31) = happyShift action_51
+action_110 (32) = happyShift action_52
+action_110 (33) = happyShift action_53
+action_110 (34) = happyShift action_54
+action_110 (35) = happyShift action_55
+action_110 (36) = happyShift action_56
 action_110 (37) = happyShift action_57
 action_110 (38) = happyShift action_58
 action_110 (39) = happyShift action_21
@@ -1534,7 +1548,7 @@ happyReduction_17 _ _ _  = notHappyAtAll
 happyReduce_18 = happySpecReduce_1  9 happyReduction_18
 happyReduction_18 (HappyTerminal (TokenIdLC   p happy_var_1))
 	 =  HappyAbsSyn9
-		 (TVar (read happy_var_1)
+		 (ParserTVar happy_var_1
 	)
 happyReduction_18 _  = notHappyAtAll 
 
