@@ -7,12 +7,12 @@ import qualified Data.Set as S
 -- Do type inference on an expression - get the constraints & type, unify the
 -- constraints, and use the function returned by unify to rewrite the type
 -- without type variables
-infer :: TypedExp -> Maybe Type
+infer :: Term -> Maybe Type
 infer exp = case (inferWithConstraints exp) of
     Just (ty, _) -> Just ty
     Nothing      -> Nothing
 
-inferWithConstraints :: TypedExp -> Maybe (Type, ConstraintSet)
+inferWithConstraints :: Term -> Maybe (Type, ConstraintSet)
 inferWithConstraints exp = do
     rewrite <- unify constraints
     return (rewrite typeOfExp, constraints)
@@ -188,7 +188,7 @@ type Context = M.Map Name Type
 -- lowest number that is safe to use as a type variable, and returning in the
 -- tuple the lowest type variable that it would be safe to introduce, so that
 -- subsequent calls can avoid using the same names (names are integers)
-getConstraints :: Int -> Context -> TypedExp -> (ConstraintSet, Type, Int)
+getConstraints :: Int -> Context -> Term -> (ConstraintSet, Type, Int)
 getConstraints i ctx exp = case exp of
 
     -- Explicitly declared abstractions

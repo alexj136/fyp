@@ -9,7 +9,8 @@ import Syntax
 PROG ::= PROG TYDC
        | PROG ID ARGS = EXP
        | epsilon
-TYDC ::= ID : TY
+TYDC ::= TY :
+       | epsilon
 TY   ::= Int | Bool | Char
        | [ TY ]
        | { TY | TY }
@@ -128,12 +129,12 @@ STR  ::= "*"
     IdUC    { TokenIdUC   p $$ }
 %%
 
-PROG :: { [Decl] }
-PROG : TYDEC IdLC ARGS Equals EXP PROG { (makeDecl $1 $2 $3 $5) : $6 }
-     | TYDEC IdLC ARGS Equals EXP      {  makeDecl $1 $2 $3 $5  : [] }
+PROG :: { Prog }
+PROG : TYDEC IdLC ARGS Equals EXP PROG { addFunc $2 (makeFunc $1 $3 $5) $6 }
+     | TYDEC IdLC ARGS Equals EXP      { newProg $2 (makeFunc $1 $3 $5)    }
 
 TYDEC :: { Maybe Type }
-TYDEC : IdLC Colon TY { Just $3 }
+TYDEC : TY Colon { Just $1 }
       | {- empty -}   { Nothing }
 
 ARGS :: { [String] }
@@ -152,7 +153,7 @@ TY : TyInt                      { TInt          }
    | OpenBr TY ClosBr           { $2            }
    | IdLC                       { ParserTVar $1 }
 
-EXP :: { TypedExp }
+EXP :: { Term }
 EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                     }
     | Lambda IdLC Dot EXP            { AbsInf $2 $4                              }
     | EXP EXP          %prec app     { App $1 $2                                 }
@@ -174,15 +175,15 @@ EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                    
     | Bool                           { Constant (BoolVal $1)                     }
     | Str                            { parseStr $1                               }
 
-LIST :: { TypedExp }
+LIST :: { Term }
 LIST : OpenSq ClosSq       { Operation Empty                  }
      | OpenSq EXP LISTREST { App (App (Operation Cons) $2) $3 }
 
-LISTREST :: { TypedExp }
+LISTREST :: { Term }
 LISTREST : Comma EXP LISTREST { App (App (Operation Cons) $2) $3 }
          | ClosSq             { Operation Empty                  }
 
-INFIXBINOP :: { TypedExp }
+INFIXBINOP :: { Term }
 INFIXBINOP : Add { Operation Add }
            | Sub { Operation Sub }
            | Mul { Operation Mul }
@@ -200,23 +201,7 @@ INFIXBINOP : Add { Operation Add }
            | Grtr { Operation Gtr }
            | GtEq { Operation GtE }
 {
--- A Decl object carries data that is to be converted into a function
-data Decl = Decl {          -- A standard function declaration.
-    tyDec :: Maybe Type,    -- The user-specified type, which we will check, but
-                            -- is not necessarily present.
-    name  :: String,        -- The name of the function.
-    body  :: TypedExp       -- The body of the function.
-} deriving Eq
-
-instance Show Decl where
-    show (Decl t n b) = show n ++ " : " ++ show t ++ "\n" ++
-                        show n ++ " = " ++ show b ++ "\n"
-
-makeDecl :: Maybe Type -> String -> [String] -> TypedExp -> Decl
-makeDecl t n []   x = Decl t n x
-makeDecl t n args x = makeDecl t n (init args) (AbsInf (last args) x)
-
-parseStr :: String -> TypedExp
+parseStr :: String -> Term
 parseStr []     = Operation Empty
 parseStr (c:cs) =
     App (App (Operation Cons) (Constant (CharVal c))) (parseStr cs)

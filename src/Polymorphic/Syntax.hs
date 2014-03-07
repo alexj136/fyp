@@ -9,21 +9,58 @@ import qualified Data.Map as M
 --                         ESSENTIAL DATA DEFINITIONS
 --------------------------------------------------------------------------------
 
+------------------------------
+-- PROGRAM STRUCTURE DATATYPES
+------------------------------
+
 type Name = String
 
-data TypedExp
-    = Abs Name Type TypedExp -- Abstraction labelled with a type
-    | AbsInf Name TypedExp   -- Unlabelled Abs - type is inferred
-    | Var Name               -- Variable
-    | App TypedExp TypedExp  -- Function application
-    | Constant Value         -- Integer & boolean constants
-    | Operation OpType       -- Operators like +, - etc
+type Prog = M.Map Name Func
+
+data Func
+    = Func Type [Name] Term -- A Func has a list of argument names and a body.
+                            -- Its name is its key in the Prog map.
+    | FuncInf   [Name] Term -- FuncInfs do not carry types - they are inferred.
     deriving Eq
 
-instance Show TypedExp where
+instance Show Func where
+    show (Func ty args body) = " : " ++ show ty ++ " : " ++ show args ++
+                               " = " ++ show body
+    show (FuncInf args body) = ' ' : show args ++ " = " ++ show body
+
+-- Add a new function to a program - this will be repeatedly called by the
+-- parser when building a program. If more than one function is added with a
+-- specific name, an error is raised and the user is notified.
+addFunc :: Name -> Func -> Prog -> Prog
+addFunc n f pg | M.member n pg = error ("Multiple definitions of " ++ n)
+addFunc n f pg | otherwise     = M.insert n f pg
+
+-- Create a new program containing a single function
+newProg :: Name -> Func -> Prog
+newProg = M.singleton
+
+makeFunc :: Maybe Type -> [Name] -> Term -> Func
+makeFunc Nothing   args body = FuncInf args body
+makeFunc (Just ty) args body = Func ty args body
+
+------------------------------------
+-- EXPRESSIONS - THE 'Term' DATATYPE
+------------------------------------
+
+-- Terms are the expressions of the language - they comprise function bodies.
+data Term
+    = Abs    Name Type Term -- Abstraction labelled with a type
+    | AbsInf Name      Term -- Unlabelled Abs - type is inferred
+    | Var    Name           -- Variable
+    | App    Term Term      -- Function application
+    | Constant  Value       -- Integer & boolean constants
+    | Operation OpType      -- Operators like +, - etc
+    deriving Eq
+
+instance Show Term where
     show exp = case exp of
         -- First case just stops brackets from appearing around applications
-        -- that appear immidiately within an abstraction
+        -- that appear immediately within an abstraction
         Abs v t (App m n)  ->
             concat ['λ' : v, " : ", show t, '.' : show m, ' ' : show n]
         Abs v t x          -> concat ['λ' : v, " : ", show t, '.' : show x]
@@ -46,6 +83,10 @@ instance Show Value where
         BoolVal x -> show x
         IntVal  x -> show x
         CharVal x -> show x
+
+------------------------------
+-- TYPES - THE 'Type' DATATYPE
+------------------------------
 
 -- Type is a recursive data type used for representing the types of functions
 data Type
@@ -246,15 +287,15 @@ instance Show OpType where
 --------------------------------------------------------------------------------
 
 -- Returns a list of the subexpressions of the given tree node
-subs :: TypedExp -> [TypedExp]
+subs :: Term -> [Term]
 subs (Abs _ _ x)  = [x]
 subs (AbsInf _ x) = [x]
 subs (App x y)    = [x, y]
 subs _            = []
 
--- Creates a list of all name occurences in an TypedExp - If a name is used
--- twice, it will appear twice in the returned list, etc.
-names :: TypedExp -> [Name]
+-- Creates a list of all name occurrences in an Term - If a name is used twice,
+-- it will appear twice in the returned list, etc.
+names :: Term -> [Name]
 names (Abs n _ x)  = n : names x
 names (AbsInf n x) = n : names x
 names (Var n)      = [n]
@@ -262,19 +303,19 @@ names (Constant _) = []
 names exp          = concat (map names (subs exp))
 
 -- Returns true if there are any occurrences (free or bound) of the given string
--- as a name in the given TypedExp. Used by newName to generate names that are
--- not found in a given expression.
-nameIn :: Name -> TypedExp -> Bool
+-- as a name in the given Term. Used by newName to generate names that are not
+-- found in a given expression.
+nameIn :: Name -> Term -> Bool
 nameIn n (Abs n' _ x)  = (n == n') || nameIn n x
 nameIn n (AbsInf n' x) = (n == n') || nameIn n x
 nameIn n (Var n')      = n == n'
 nameIn _ (Constant _)  = False
 nameIn n exp           = any (nameIn n) (subs exp)
 
--- Creates a set of all free variables in a TypedExp, which can be used when
+-- Creates a set of all free variables in a Term, which can be used when
 -- reducing a function application, as it determines which names will need to be
 -- changed in order to prevent name clashes.
-freeVars :: TypedExp -> S.Set Name
+freeVars :: Term -> S.Set Name
 freeVars exp = case exp of
     Var x      -> S.singleton x
     Abs x _ m  -> S.delete x (freeVars m)
@@ -283,16 +324,16 @@ freeVars exp = case exp of
     _          -> S.unions $ map freeVars $ subs exp
 
 -- Composes S.toList with freeVars, yielding a list of the free names in a
--- TypedExp, as opposed to a Set
-freeNames :: TypedExp -> [Name]
+-- Term, as opposed to a Set
+freeNames :: Term -> [Name]
 freeNames = S.toList . freeVars
 
-maxTVarInExp :: TypedExp -> Int 
+maxTVarInExp :: Term -> Int 
 maxTVarInExp exp = maximum (0 : map maxTVar typesInExp)
     where typesInExp = getTypesInExp exp
 
 -- Get a list containing all types that occur within an expression
-getTypesInExp :: TypedExp -> [Type]
+getTypesInExp :: Term -> [Type]
 getTypesInExp (Abs _ t m) = t : getTypesInExp m
 getTypesInExp exp         = concat (map getTypesInExp (subs exp))
 
@@ -345,7 +386,7 @@ tVarNames (TList t)      = tVarNames t
 tVarNames (ParserTVar _) = error ("tVarNames: ParserTVar found")
 tVarNames _              = []
 
--- Converts all occurences of a particular TVar name to a different name within
+-- Converts all occurrences of a particular TVar name to a different name within
 -- a type
 renameType :: Int -> Int -> Type -> Type
 renameType from to (TQuant x t)   =
@@ -364,7 +405,7 @@ renameType from to (TList t)      = TList (renameType from to t)
 renameType _    _  (ParserTVar _) = error ("renameType: ParserTVar found")
 renameType _    _  other          = other
 
--- Rename all occurences of all the types in the given list to another type.
+-- Rename all occurrences of all the types in the given list to another type.
 -- The integer parameter is the first TVar name that will be used to replace old
 -- ones, and the next used will be its successor, etcetera.
 renameAllTypes :: Int -> [Int] -> Type -> Type

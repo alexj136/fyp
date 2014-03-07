@@ -45,7 +45,7 @@ putHeaderFooter code = concat
     , "}"
     ] 
 
-compileExp :: TypedExp -> String
+compileExp :: Term -> String
 compileExp exp = case exp of
     Constant (IntVal  x    ) -> "regAcc = " ++ show x ++ ";"
     Constant (BoolVal True ) -> "regAcc = 1;"

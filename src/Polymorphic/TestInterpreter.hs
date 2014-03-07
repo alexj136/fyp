@@ -63,14 +63,14 @@ testArithmeticExpression = TestLabel "Tests some arithmetic expressions" (
         realOp Mul = (*)
         realOp _   = error "Unsupported Operation"
 
-        constToInt :: TypedExp -> Int
+        constToInt :: Term -> Int
         constToInt (Constant (IntVal x)) = x
-        constToInt _ = error "Can't get Int from non-Constant-IntVal TypedExp"
+        constToInt _ = error "Can't get Int from non-Constant-IntVal Term"
 
 -- Convert a haskell list of expressions into a syntax-encoded list containing
 -- the same expressions. Makes unit tests of list functions a lot less verbose.
 -- TYPE SAFETY OF THE RESULTING ENCOCDED LISTS IS NOT CHECKED.
-listify :: [TypedExp] -> TypedExp
+listify :: [Term] -> Term
 listify []    = Operation Empty
 listify (h:t) = App (App (Operation Cons) (h)) (listify t)
 

@@ -12,11 +12,11 @@ import Unifier
 -- Finally carry out the substitution
 
 -- Function for convenience in the REPL, shorthand for: reduce (App x y)
-apply :: TypedExp -> TypedExp -> TypedExp
+apply :: Term -> Term -> Term
 apply x y = reduceNorm (App x y)
 
 -- Performs at least one reduction step
-reduce :: TypedExp -> TypedExp
+reduce :: Term -> Term
 reduce exp = case exp of
     -- Conditional function
     App (App (App (Operation Cond) (Constant (BoolVal True ))) m) n -> m
@@ -45,10 +45,10 @@ reduce exp = case exp of
 
         (op, m', n') -> App (App (Operation op) m') n'
       where
-        constInt :: Int -> TypedExp
+        constInt :: Int -> Term
         constInt x = Constant (IntVal  x)
 
-        constBool :: Bool -> TypedExp
+        constBool :: Bool -> Term
         constBool x = Constant (BoolVal x)
 
         xor :: Bool -> Bool -> Bool
@@ -104,20 +104,20 @@ reduce exp = case exp of
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
 -- normal form
-reduceNorm :: TypedExp -> TypedExp
+reduceNorm :: Term -> Term
 reduceNorm exp = if exp == reducedExp then exp else reduceNorm reducedExp
-    where reducedExp :: TypedExp
+    where reducedExp :: Term
           reducedExp = reduce exp
 
 -- Given two expressions, M and N, derive the expression M' where M' and M are
 -- α-equivalent, but the bound variable names in M have been changes such that
 -- they cannot possibly clash with names in N should N be applied to M
-preventClashes :: TypedExp -> TypedExp -> TypedExp
+preventClashes :: Term -> Term -> Term
 preventClashes x y = renameAll (freeNames y) x
 
 -- Function to replace one expression with another - implements function
 -- application with expressions. Assumes that there are no name clashes.
-replace :: Name -> TypedExp -> TypedExp -> TypedExp
+replace :: Name -> Term -> Term -> Term
 replace varName bodyExp argExp = case bodyExp of
     Abs v t m  | varName /= v -> Abs v t (replaced m)
                | varName == v -> Abs v t m
@@ -134,7 +134,7 @@ replace varName bodyExp argExp = case bodyExp of
 -- \x.x   === \y.y   -> True
 -- \xy.yx === \sz.zs -> True
 -- \ab.ac === \xy.yz -> False
-(===) :: TypedExp -> TypedExp -> Bool
+(===) :: Term -> Term -> Bool
 (===) x y = renamedX == renamedY
     where renamedX = renameAll allNames x
           renamedY = renameAll allNames y
@@ -171,10 +171,10 @@ newName set
 -- Rename every occurence in the given expression, of every name in the given
 -- list, such that no name clashes can occur if expressions containing names in
 -- the given list are substituted into the given expression.
-renameAll :: [Name] -> TypedExp -> TypedExp
+renameAll :: [Name] -> Term -> Term
 renameAll = rnmAll2 []
     where
-        rnmAll2 :: [Name] -> [Name] -> TypedExp -> TypedExp
+        rnmAll2 :: [Name] -> [Name] -> Term -> Term
         rnmAll2 done todo x = case todo of
             []  -> x
             h:t -> rnmAll2 (h:done) t (renameBound h fresh x)
@@ -190,7 +190,7 @@ renameAll = rnmAll2 []
 -- could potentially clash with a substituted expression. If we find the name
 -- before we find the binding, we don't need to do anything - the name is not
 -- bound at that point and therefore doesn't need renaming.
-renameBound :: Name -> Name -> TypedExp -> TypedExp
+renameBound :: Name -> Name -> Term -> Term
 renameBound from to exp          = case exp of
     Abs v t m  | v == from -> Abs to t (blindRename from to m)
                | otherwise -> Abs v  t (renamed m)
@@ -198,14 +198,14 @@ renameBound from to exp          = case exp of
                | otherwise -> AbsInf v  (renamed m)
     App m n                -> App (renamed m) (renamed n)
     _                      -> exp
-    where renamed :: TypedExp -> TypedExp
+    where renamed :: Term -> Term
           renamed = renameBound from to
 
 -- Renames every name with value 'from' to value 'to' in an expression, with no
 -- regard for clashes. It is assumed that this function will only be called on
 -- expressions where the potential for incorrectly renaming unbound names has
 -- been eliminated.
-blindRename :: Name -> Name -> TypedExp -> TypedExp
+blindRename :: Name -> Name -> Term -> Term
 blindRename from to exp = case exp of
     Abs v t m  | v == from -> Abs to t (renamed m)
                | otherwise -> Abs v  t (renamed m)
@@ -215,5 +215,5 @@ blindRename from to exp = case exp of
                | otherwise -> Var v
     App m n                -> App (renamed m) (renamed n)
     _                      -> exp
-    where renamed :: TypedExp -> TypedExp
+    where renamed :: Term -> Term
           renamed = blindRename from to
