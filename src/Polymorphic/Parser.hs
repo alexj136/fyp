@@ -1531,7 +1531,7 @@ happyReduction_3 ((HappyAbsSyn6  happy_var_6) `HappyStk`
 	(HappyAbsSyn7  happy_var_1) `HappyStk`
 	happyRest)
 	 = HappyAbsSyn6
-		 (addFunc happy_var_2 (makeFunc happy_var_1 happy_var_3 happy_var_5) happy_var_6
+		 (addFunc (makeFunc happy_var_1 happy_var_2 happy_var_3 happy_var_5) happy_var_6
 	) `HappyStk` happyRest
 
 happyReduce_4 = happyReduce 5 6 happyReduction_4
@@ -1542,7 +1542,7 @@ happyReduction_4 ((HappyAbsSyn10  happy_var_5) `HappyStk`
 	(HappyAbsSyn7  happy_var_1) `HappyStk`
 	happyRest)
 	 = HappyAbsSyn6
-		 (newProg happy_var_2 (makeFunc happy_var_1 happy_var_3 happy_var_5)
+		 (newProg (makeFunc happy_var_1 happy_var_2 happy_var_3 happy_var_5)
 	) `HappyStk` happyRest
 
 happyReduce_5 = happySpecReduce_2  7 happyReduction_5

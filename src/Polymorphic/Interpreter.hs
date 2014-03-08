@@ -11,21 +11,24 @@ import Unifier
 --     call renameBound newName functionBody to do the replacement
 -- Finally carry out the substitution
 
--- Function for convenience in the REPL, shorthand for: reduce (App x y)
+-- Function for convenience in the REPL, shorthand for: reduce nilProg (App x y)
 apply :: Term -> Term -> Term
-apply x y = reduceNorm (App x y)
+apply x y = reduceNorm nilProg (App x y)
 
 -- Performs at least one reduction step
-reduce :: Term -> Term
-reduce exp = case exp of
+reduce :: Prog -> Term -> Term
+reduce prog exp = let reduce' = reduce prog in case exp of
+    -- Supercombinators
+    App (Var func) m | hasFunc prog func && numArgs (getFunc prog func) == 1 -> replace firstArgOfFunc (preventClashes (getBody (getFunc prog func)) m) m
+
     -- Conditional function
     App (App (App (Operation Cond) (Constant (BoolVal True ))) m) n -> m
     App (App (App (Operation Cond) (Constant (BoolVal False))) m) n -> n
     App (App (App (Operation Cond) guard) m) n ->
-                     App (App (App (Operation Cond) (reduce guard)) m) n
+                     App (App (App (Operation Cond) (reduce' guard)) m) n
 
     -- Constant operations
-    App (App (Operation ot) m) n | isBinary ot -> case (ot, reduce m, reduce n) of
+    App (App (Operation ot) m) n | isBinary ot -> case (ot, reduce' m, reduce' n) of
         (Add, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  ((+) x y)
         (Sub, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  ((-) x y)
         (Mul, Constant (IntVal  x), Constant (IntVal  y)) -> constInt  ((*) x y)
@@ -55,59 +58,60 @@ reduce exp = case exp of
         xor True  b = not b
         xor False b = b
 
-    App (Operation ot) m | isUnary ot -> case (ot, reduce m) of
+    App (Operation ot) m | isUnary ot -> case (ot, reduce' m) of
         (IsZ, Constant (IntVal  x)) -> Constant (BoolVal (x == 0))
         (Not, Constant (BoolVal x)) -> Constant (BoolVal (not x))
 
         (op, m') -> App (Operation op) m'
 
     -- List operations
-    App (Operation Null) m -> case reduceNorm m of
+    App (Operation Null) m -> case reduceNorm (Prog prog) m of
         Operation Empty -> Constant (BoolVal True)
         _               -> Constant (BoolVal False)
 
     App (Operation Head) (App (App (Operation Cons) m) n) -> m
-    App (Operation Head) m ->  App (Operation Head) (reduce m)
+    App (Operation Head) m ->  App (Operation Head) (reduce' m)
 
     App (Operation Tail) (App (App (Operation Cons) m) n) -> n
-    App (Operation Tail) m ->  App (Operation Tail) (reduce m)
+    App (Operation Tail) m ->  App (Operation Tail) (reduce' m)
 
-    App (Operation Cons) m -> App (Operation Cons) (reduce m)
+    App (Operation Cons) m -> App (Operation Cons) (reduce' m)
 
     -- Sum operations
     App (Operation RemL) (App (Operation InjL) m) -> m
     App (Operation RemR) (App (Operation InjR) m) -> m
-    App (Operation InjL) m -> App (Operation InjL) (reduce m)
-    App (Operation InjR) m -> App (Operation InjR) (reduce m)
+    App (Operation InjL) m -> App (Operation InjL) (reduce' m)
+    App (Operation InjR) m -> App (Operation InjR) (reduce' m)
 
     -- Product operations
     App (Operation Fst) (App (App (Operation Tuple) m) n) -> m
     App (Operation Snd) (App (App (Operation Tuple) m) n) -> n
-    App (Operation Tuple) m -> App (Operation Tuple) (reduce m)
+    App (Operation Tuple) m -> App (Operation Tuple) (reduce' m)
 
     -- Fixed point combinator
     App (Operation Fix) f  -> App f (App (Operation Fix) f)
 
     -- Abstractions
-    Abs    v t m       -> Abs    v t (reduce m)
-    AbsInf v   m       -> AbsInf v   (reduce m)
+    Abs    v t m       -> Abs    v t (reduce' m)
+    AbsInf v   m       -> AbsInf v   (reduce' m)
 
     -- Function application
     App (Abs    v t m) n  -> replace v (preventClashes m n) n
     App (AbsInf v   m) n  -> replace v (preventClashes m n) n
 
     -- Other expressions
-    App (Var      v) n -> App (Var      v) (reduce n)
-    App (Constant c) n -> App (Constant c) (reduce n)
-    App m            n -> App (reduce m)   n
+    App (Var      v) n -> App (Var      v) (reduce' n)
+    App (Constant c) n -> App (Constant c) (reduce' n)
+    App m            n -> App (reduce' m)   n
     _                  -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
 -- normal form
-reduceNorm :: Term -> Term
-reduceNorm exp = if exp == reducedExp then exp else reduceNorm reducedExp
-    where reducedExp :: Term
-          reducedExp = reduce exp
+reduceNorm :: Prog -> Term -> Term
+reduceNorm prog exp
+    | exp == reducedExp = exp
+    | otherwise         = reduceNorm prog reducedExp
+    where reducedExp = reduce prog exp :: Term
 
 -- Given two expressions, M and N, derive the expression M' where M' and M are
 -- α-equivalent, but the bound variable names in M have been changes such that

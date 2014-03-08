@@ -19,7 +19,7 @@ tests = TestList
 
 testIdentityFunction = TestLabel "Test of the identity function" (
     TestCase (assert (
-        reduceNorm (App iD (Var "Hello!")) === Var "Hello!"
+        apply iD (Var "Hello!") === Var "Hello!"
     )))
 
 {--
@@ -31,7 +31,7 @@ testIdentityFunction = TestLabel "Test of the identity function" (
 testArithmeticExpression = TestLabel "Tests some arithmetic expressions" (
     TestCase (assert $ and
         [
-            constToInt (reduceNorm
+            constToInt (reduceNorm nilProg
                 (App (App (Operation op1)
                     (App (App (Operation op2)
                         (Constant (IntVal w)))

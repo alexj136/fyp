@@ -130,8 +130,8 @@ STR  ::= "*"
 %%
 
 PROG :: { Prog }
-PROG : TYDEC IdLC ARGS Equals EXP PROG { addFunc $2 (makeFunc $1 $3 $5) $6 }
-     | TYDEC IdLC ARGS Equals EXP      { newProg $2 (makeFunc $1 $3 $5)    }
+PROG : TYDEC IdLC ARGS Equals EXP PROG { addFunc (makeFunc $1 $2 $3 $5) $6 }
+     | TYDEC IdLC ARGS Equals EXP      { newProg (makeFunc $1 $2 $3 $5)    }
 
 TYDEC :: { Maybe Type }
 TYDEC : TY Colon { Just $1 }

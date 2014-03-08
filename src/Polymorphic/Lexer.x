@@ -12,8 +12,8 @@ $alnum = [$alpha $digit]
 
 tokens :-
     $white+                ;
-    \#*\n                  ; -- Single line comments with '#'
-    \#\#*\#\#              ; -- Multi-line comments with '##'
+    \#.*\n                 ; -- Single line comments with '#'
+    \#\#(.|\n)*\#\#        ; -- Multi-line comments with '##'
 
     \(                     { \p s -> TokenOpenBr (pos p)                 }
     \)                     { \p s -> TokenClosBr (pos p)                 }

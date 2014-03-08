@@ -6,46 +6,90 @@ import qualified Data.Set as S
 import qualified Data.Map as M
 
 --------------------------------------------------------------------------------
---                         ESSENTIAL DATA DEFINITIONS
+--                            PROGRAMS & FUNCTIONS
 --------------------------------------------------------------------------------
 
-------------------------------
--- PROGRAM STRUCTURE DATATYPES
-------------------------------
+-- Programs are represented with the 'Prog' datatype, which is a wrapper around
+-- a map (Data.Map) from function names to functions. This allows the
+-- interpreter to easily retrieve them as required.
 
 type Name = String
 
-type Prog = M.Map Name Func
+data Prog = Prog (M.Map Name Func)
+    deriving (Eq, Ord)
 
-data Func
-    = Func Type [Name] Term -- A Func has a list of argument names and a body.
-                            -- Its name is its key in the Prog map.
-    | FuncInf   [Name] Term -- FuncInfs do not carry types - they are inferred.
-    deriving Eq
+instance Show Prog where
+    show (Prog p)
+        | M.null p  = ""
+        | otherwise =
+            let ((_, f), rest) = M.deleteFindMin p in
+                show f ++ "\n\n" ++ show (Prog rest)
 
-instance Show Func where
-    show (Func ty args body) = " : " ++ show ty ++ " : " ++ show args ++
-                               " = " ++ show body
-    show (FuncInf args body) = ' ' : show args ++ " = " ++ show body
+-- Create a new program containing a single function
+newProg :: Func -> Prog
+newProg f = Prog (M.singleton (getName f) f)
+
+-- The empty program
+nilProg :: Prog
+nilProg = Prog M.empty
+
+-- Determine if a Prog contains a Func of a particular name
+hasFunc :: Prog -> Name -> Bool
+hasFunc (Prog p) nm = M.member nm p
+
+getFunc :: Prog -> Name -> Func
+getFunc (Prog p) nm = case M.lookup nm p of
+    Just f  -> f
+    Nothing -> error ("No definition for '" ++ nm ++ "' found")
 
 -- Add a new function to a program - this will be repeatedly called by the
 -- parser when building a program. If more than one function is added with a
 -- specific name, an error is raised and the user is notified.
-addFunc :: Name -> Func -> Prog -> Prog
-addFunc n f pg | M.member n pg = error ("Multiple definitions of " ++ n)
-addFunc n f pg | otherwise     = M.insert n f pg
+addFunc :: Func -> Prog -> Prog
+addFunc f (Prog p)
+    | hasFunc (Prog p) nm = error ("Multiple definitions of " ++ nm)
+    | otherwise           = Prog (M.insert nm f p)
+    where nm = getName f
 
--- Create a new program containing a single function
-newProg :: Name -> Func -> Prog
-newProg = M.singleton
+data Func
+    = Func Type Name [Name] Term
+    | FuncInf   Name [Name] Term
+    deriving (Eq, Ord)
 
-makeFunc :: Maybe Type -> [Name] -> Term -> Func
-makeFunc Nothing   args body = FuncInf args body
-makeFunc (Just ty) args body = Func ty args body
+-- Get the name of a function
+getName :: Func -> Name
+getName (Func  _ n _ _) = n
+getName (FuncInf n _ _) = n
 
-------------------------------------
--- EXPRESSIONS - THE 'Term' DATATYPE
-------------------------------------
+-- Get the body of a function
+getBody :: Func -> Term
+getBody (Func  _ _ _ b) = b
+getBody (FuncInf _ _ b) = b
+
+-- Get the number of arguments of a function
+numArgs :: Func -> Int
+numArgs (Func  _ _ a _) = length a
+numArgs (FuncInf _ a _) = length a
+
+instance Show Func where
+    show (Func ty nm args body) = show ty ++ " :\n" ++ nm ++ showArgs args ++
+                                  " = " ++ show body
+    show (FuncInf nm args body) = nm ++ showArgs args ++ " = " ++ show body
+
+-- Stringify a list of argument names
+showArgs :: [Name] -> String
+showArgs []     = "" 
+showArgs (x:xs) = ' ' : x ++ showArgs xs
+
+-- Make a new function from its components, taking a Maybe Type to determine if
+-- a Func or a FuncInf should be used
+makeFunc :: Maybe Type -> Name -> [Name] -> Term -> Func
+makeFunc Nothing   nm args body = FuncInf nm args body
+makeFunc (Just ty) nm args body = Func ty nm args body
+
+--------------------------------------------------------------------------------
+--                    EXPRESSIONS - THE 'Term' DATATYPE
+--------------------------------------------------------------------------------
 
 -- Terms are the expressions of the language - they comprise function bodies.
 data Term
@@ -55,127 +99,33 @@ data Term
     | App    Term Term      -- Function application
     | Constant  Value       -- Integer & boolean constants
     | Operation OpType      -- Operators like +, - etc
-    deriving Eq
+    deriving (Eq, Ord)
 
 instance Show Term where
     show exp = case exp of
-        -- First case just stops brackets from appearing around applications
-        -- that appear immediately within an abstraction
-        Abs v t (App m n)  ->
-            concat ['λ' : v, " : ", show t, '.' : show m, ' ' : show n]
-        Abs v t x          -> concat ['λ' : v, " : ", show t, '.' : show x]
-        AbsInf v (App m n) -> concat ['λ' : v, " . ", show m, ' ' : show n]
-        AbsInf v x         -> concat ['λ' : v, " . ", show x]
-        Var v              -> v
-        App m n            -> '(':show m ++ ' ':show n ++ ")"
-        Constant v         -> show v
-        Operation ot       -> show ot
+        -- Extra rule to capture the left-associativity of function application
+        -- throught bracketing
+        App m (App n o) -> show m ++ " (" ++ show n ++ ' ' : show o ++ ")"
+
+        App m n         -> show m ++ ' ' : show n
+        Abs v t x       -> concat ['λ' : v, " : ", show t, '.' : show x]
+        AbsInf v x      -> concat ['λ' : v, " . ", show x]
+        Var v           -> v
+        Constant v      -> show v
+        Operation ot    -> show ot
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
 data Value = BoolVal Bool
            | IntVal  Int
            | CharVal Char
-    deriving Eq
+    deriving (Eq, Ord)
 
 instance Show Value where
     show val = case val of
         BoolVal x -> show x
         IntVal  x -> show x
         CharVal x -> show x
-
-------------------------------
--- TYPES - THE 'Type' DATATYPE
-------------------------------
-
--- Type is a recursive data type used for representing the types of functions
-data Type
-    = TInt
-    | TBool
-    | TChar
-    | TList  Type
-    | TSum   Type Type
-    | TProd  Type Type
-    | TFunc  Type Type
-    | TVar   Int            -- Type variables are numbers, not strings
-    | TQuant Int  Type      -- Type quantifier
-    | ParserTVar  String    -- The parser will parse type variables as strings.
-                            -- These are to be replaced with integers by
-                            -- calling convertTVars before the expressions
-                            -- are used.
-    deriving Eq
-
-instance Show Type where
-    show t = case t of
-        TInt         -> "Int"
-        TBool        -> "Bool"
-        TChar        -> "Char"
-        TList a      -> '[' : show a ++ "]"
-        TSum  a b    -> "{ " ++ show a ++ " | " ++ show b ++ " }"
-        TProd a b    -> "{ " ++ show a ++ " & " ++ show b ++ " }"
-        TFunc a b    -> show a ++ " -> " ++ show b
-        TVar varNo   -> 'T' : show varNo
-        TQuant i t   -> 'V' : (show i) ++ '.' : (show t)
-        ParserTVar s -> "(ParserTVar: " ++ s ++ ")"
-
--- It is helpful to make Types orderable so that manipulating large sets of
--- Types is faster
-instance Ord Type where
-    (<=) a b = case ( a , b ) of
-        -- Every type is greater than Bool
-        ( TBool       , _           ) -> True
-
-        -- Only Bool is less than Int
-        ( TInt        , TBool       ) -> False
-        ( TInt        , _           ) -> True
-
-        -- Bool and Int are less than Char
-        ( TChar       , TBool       ) -> False
-        ( TChar       , TInt        ) -> False
-        ( TChar       , _           ) -> True
-
-        -- Lists are greater than Bool, Int & Char, but less than everything
-        -- else. List A is less than or equal to List B if A is less than or
-        -- equal to List B.
-        ( TList _     , TBool       ) -> False
-        ( TList _     , TInt        ) -> False
-        ( TList _     , TChar       ) -> False
-        ( TList t1    , TList t2    ) -> t1 <= t2
-        ( TList _     , _           ) -> True
-
-        -- Sums are greater than booleans, ints, chars and lists, but less than
-        -- everything else
-        ( TSum _ _    , TBool       ) -> False
-        ( TSum _ _    , TInt        ) -> False
-        ( TSum _ _    , TChar       ) -> False
-        ( TSum _ _    , TList _     ) -> False
-        ( TSum t1 t2  , TSum t3 t4  ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
-        ( TSum _ _    , _           ) -> True
-
-        -- Products are less than functions, type variables and quantifiers, but
-        -- greater than everything else
-        ( TProd t1 t2 , TProd t3 t4 ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
-        ( TProd _ _   , TFunc  _ _  ) -> True
-        ( TProd _ _   , TVar   _    ) -> True
-        ( TProd _ _   , TQuant _ _  ) -> True
-        ( TProd _ _   , _           ) -> False
-
-        -- TFunc is only less than TVar and TQuant. The argument type determines
-        -- which of two TFuncs are greater. If the argument types are equal,
-        -- then the return type determines the greater one.
-        ( TFunc t1 t2 , TFunc t3 t4 ) -> if t1 == t3 then t2 <= t4 else t1 <= t3
-        ( TFunc _ _   , TVar _      ) -> True
-        ( TFunc _ _   , TQuant _ _  ) -> True
-        ( TFunc _ _   , _           ) -> False
-
-        -- TVars are greater than everything but TQuants
-        ( TVar v1     , TVar v2     ) -> v1 <= v2
-        ( TVar _      , TQuant _ _  ) -> True
-        ( TVar _      , _           ) -> False
-
-        -- Type quantifiers are greater than everything. The bound variable
-        -- takes precedence over the body.
-        ( TQuant x t1 , TQuant y t2 ) -> if x == y then t1 <= t2 else x <= y
 
 -- The Op data type represents the possible kinds of arithmetic operation that
 -- can be performed.
@@ -210,7 +160,7 @@ data OpType
     | Tuple     -- Va, b. a -> b -> { a & b }
     | Fst       -- Va, b. { a & b } -> a
     | Snd       -- Va, b. { a & b } -> b
-    deriving Eq
+    deriving (Eq, Ord)
 
 -- Tell if an operation type is binary. Will not need to change in
 -- implementation as long as operations with more than two arguments are
@@ -244,46 +194,58 @@ isUnary op = case op of
     _   -> False
 
 instance Show OpType where
-    show Add = "+"
-    show Sub = "-"
-    show Mul = "*"
-    show Div = "/"
-    show Mod = "%"
-
-    show Lss = "<"
-    show LsE = "<="
-    show Equ = "=="
-    show NEq = "/="
-    show Gtr = ">"
-    show GtE = ">="
-
-    show And = "and"
-    show Or  = "or"
-    show Xor = "xor"
-    show Not = "not"
-    show IsZ = "iszero"
-
-    show Empty = "[]"
-    show Cons  = ":"
-    show Null  = "null"
-    show Head  = "head"
-    show Tail  = "tail"
-
-    show Fix   = "Y"
-
-    show Cond  = "cond"
-
-    show InjL  = "injl"
-    show InjR  = "injr"
-    show RemL  = "reml"
-    show RemR  = "remr"
-
-    show Tuple = "tuple"
-    show Fst   = "fst"
-    show Snd   = "snd"
+    show ot = case ot of
+        { Add   -> "+"    ; Sub  -> "-"    ; Mul  -> "*"    ; Div   -> "/"
+        ; Mod   -> "%"    ; Lss  -> "<"    ; LsE  -> "<="   ; Equ   -> "=="
+        ; NEq   -> "/="   ; Gtr  -> ">"    ; GtE  -> ">="   ; And   -> "and"
+        ; Or    -> "or"   ; Xor  -> "xor"  ; Not  -> "not"  ; IsZ   -> "iszero"
+        ; Empty -> "[]"   ; Cons -> ":"    ; Null -> "null" ; Head  -> "head"
+        ; Tail  -> "tail" ; Fix  -> "Y"    ; Cond -> "cond" ; InjL  -> "injl"
+        ; InjR  -> "injr" ; RemL -> "reml" ; RemR -> "remr" ; Tuple -> "tuple"
+        ; Fst   -> "fst"  ; Snd  -> "snd"  }
 
 --------------------------------------------------------------------------------
---                  FUNCTIONS TO GAIN INFORMATION ON TERMS
+--                                   TYPES
+--------------------------------------------------------------------------------
+
+-- Type is a recursive data type used for representing the types of functions
+data Type
+    = TInt
+    | TBool
+    | TChar
+    | TList  Type
+    | TSum   Type Type
+    | TProd  Type Type
+    | TFunc  Type Type
+    | TVar   Int            -- Type variables are numbers, not strings
+    | TQuant Int  Type      -- Type quantifier
+    | ParserTVar  String    -- The parser will parse type variables as strings.
+                            -- These are to be replaced with integers by
+                            -- calling convertTVars before the expressions
+                            -- are used.
+    deriving (Eq, Ord)
+
+instance Show Type where
+    show t = case t of
+        -- Extra rule to capture the right-associativity of the function type
+        -- arrow throught bracketing
+        TFunc (TFunc a b) c ->
+            '(' : show a ++ " -> " ++ show b ++ ") -> " ++ show c
+
+        TInt         -> "Int"
+        TBool        -> "Bool"
+        TChar        -> "Char"
+        TFunc a b    -> show a ++ " -> " ++ show b
+        TList a      -> '[' : show a ++ "]"
+        TSum  a b    -> "{ " ++ show a ++ " | " ++ show b ++ " }"
+        TProd a b    -> "{ " ++ show a ++ " & " ++ show b ++ " }"
+        TVar varNo   -> 'T' : show varNo
+        TQuant i t   -> 'V' : (show i) ++ '.' : (show t)
+        ParserTVar s -> "(ParserTVar: " ++ s ++ ")"
+
+
+--------------------------------------------------------------------------------
+--                            FUNCTIONS OVER TERMS
 --------------------------------------------------------------------------------
 
 -- Returns a list of the subexpressions of the given tree node
@@ -338,7 +300,7 @@ getTypesInExp (Abs _ t m) = t : getTypesInExp m
 getTypesInExp exp         = concat (map getTypesInExp (subs exp))
 
 --------------------------------------------------------------------------------
---                  FUNCTIONS TO GAIN INFORMATION ON TYPES
+--                            FUNCTIONS OVER TYPES
 --------------------------------------------------------------------------------
 
 -- Convert all ParserTVars into proper integer TVars. Returns a map from the
