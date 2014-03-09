@@ -18,8 +18,10 @@ apply x y = reduceNorm nilProg (App x y)
 -- Performs at least one reduction step
 reduce :: Prog -> Term -> Term
 reduce prog exp = let reduce' = reduce prog in case exp of
-    -- Supercombinators
-    App (Var func) m | hasFunc prog func && numArgs (getFunc prog func) == 1 -> replace firstArgOfFunc (preventClashes (getBody (getFunc prog func)) m) m
+
+    -- Supercombinators - convert to normal abstraction and handle as normal in
+    -- next reduction step
+    Var f | hasFunc prog f -> toLambdas (getFunc prog f)
 
     -- Conditional function
     App (App (App (Operation Cond) (Constant (BoolVal True ))) m) n -> m
@@ -65,7 +67,7 @@ reduce prog exp = let reduce' = reduce prog in case exp of
         (op, m') -> App (Operation op) m'
 
     -- List operations
-    App (Operation Null) m -> case reduceNorm (Prog prog) m of
+    App (Operation Null) m -> case reduceNorm prog m of
         Operation Empty -> Constant (BoolVal True)
         _               -> Constant (BoolVal False)
 

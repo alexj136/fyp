@@ -87,6 +87,23 @@ makeFunc :: Maybe Type -> Name -> [Name] -> Term -> Func
 makeFunc Nothing   nm args body = FuncInf nm args body
 makeFunc (Just ty) nm args body = Func ty nm args body
 
+-- Convert functions with many arguments to pure lambda expressions by
+-- replacing arguments with abstractions inside the function body. This is
+-- required for interpretation, but is not desirable when compiling.
+toLambdas :: Func -> Term
+toLambdas f
+    | numArgs f == 0 = getBody f
+    | numArgs f == 1 = case f of
+        Func ty nm args body ->
+            toLambdas (Func ty nm (init args) (Abs    (last args) ty body))
+        FuncInf nm args body ->
+            toLambdas (FuncInf nm (init args) (AbsInf (last args)    body))
+    | otherwise = case f of
+        Func ty nm args body ->
+            toLambdas (Func ty nm (init args) (AbsInf (last args)    body))
+        FuncInf nm args body ->
+            toLambdas (FuncInf nm (init args) (AbsInf (last args)    body))
+
 --------------------------------------------------------------------------------
 --                    EXPRESSIONS - THE 'Term' DATATYPE
 --------------------------------------------------------------------------------
