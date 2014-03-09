@@ -15,6 +15,7 @@ tests = TestList
     , testListHeadTail
     , testListTailTail
     , testFixedPoint
+    , testSupercombinator 
     ]
 
 testIdentityFunction = TestLabel "Test of the identity function" (
@@ -97,4 +98,9 @@ testListTailTail = TestLabel "Test of the tail function applied twice" (
 testFixedPoint = TestLabel "Test of the fixed-point combinator with a factorial function" (
     TestCase (assert (
         apply (App (Operation Fix) (AbsInf "f" (AbsInf "x" (App (App (App (Operation Cond) (App (Operation IsZ) (Var "x"))) (Constant (IntVal 1))) (App (App (Operation Mul) (Var "x")) (App (Var "f") (App (App (Operation Sub) (Var "x")) (Constant (IntVal 1))))))))) (Constant (IntVal 5)) === Constant (IntVal 120)
+    )))
+testSupercombinator = TestLabel "Test of recursion with a supercombinator" (
+    TestCase (assert (
+       let prog = newProg (FuncInf "factorial" ["x"] (App (App (App (Operation Cond) (App (Operation IsZ) (Var "x"))) (Constant (IntVal 1))) (App (App (Operation Mul) (Var "x")) (App (Var "factorial") (App (App (Operation Sub) (Var "x")) (Constant (IntVal 1))))))) in
+            reduceNorm prog (App (Var "factorial") (Constant (IntVal 5))) === Constant (IntVal 120)
     )))

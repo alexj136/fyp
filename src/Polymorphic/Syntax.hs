@@ -92,17 +92,14 @@ makeFunc (Just ty) nm args body = Func ty nm args body
 -- required for interpretation, but is not desirable when compiling.
 toLambdas :: Func -> Term
 toLambdas f
-    | numArgs f == 0 = getBody f
-    | numArgs f == 1 = case f of
-        Func ty nm args body ->
-            toLambdas (Func ty nm (init args) (Abs    (last args) ty body))
-        FuncInf nm args body ->
-            toLambdas (FuncInf nm (init args) (AbsInf (last args)    body))
+    | numArgs f == 0 = case f of
+        Func ty nm args body -> App (Operation Fix) (Abs nm ty body)
+        FuncInf nm args body -> App (Operation Fix) (AbsInf nm body)
     | otherwise = case f of
         Func ty nm args body ->
-            toLambdas (Func ty nm (init args) (AbsInf (last args)    body))
+            toLambdas (Func ty nm (init args) (AbsInf (last args) body))
         FuncInf nm args body ->
-            toLambdas (FuncInf nm (init args) (AbsInf (last args)    body))
+            toLambdas (FuncInf nm (init args) (AbsInf (last args) body))
 
 --------------------------------------------------------------------------------
 --                    EXPRESSIONS - THE 'Term' DATATYPE

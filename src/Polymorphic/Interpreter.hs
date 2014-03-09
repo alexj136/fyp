@@ -19,10 +19,6 @@ apply x y = reduceNorm nilProg (App x y)
 reduce :: Prog -> Term -> Term
 reduce prog exp = let reduce' = reduce prog in case exp of
 
-    -- Supercombinators - convert to normal abstraction and handle as normal in
-    -- next reduction step
-    Var f | hasFunc prog f -> toLambdas (getFunc prog f)
-
     -- Conditional function
     App (App (App (Operation Cond) (Constant (BoolVal True ))) m) n -> m
     App (App (App (Operation Cond) (Constant (BoolVal False))) m) n -> n
@@ -91,20 +87,26 @@ reduce prog exp = let reduce' = reduce prog in case exp of
     App (Operation Tuple) m -> App (Operation Tuple) (reduce' m)
 
     -- Fixed point combinator
-    App (Operation Fix) f  -> App f (App (Operation Fix) f)
+    App (Operation Fix) f -> App f (App (Operation Fix) f)
 
     -- Abstractions
-    Abs    v t m       -> Abs    v t (reduce' m)
-    AbsInf v   m       -> AbsInf v   (reduce' m)
+    Abs    v t m -> Abs    v t (reduce' m)
+    AbsInf v   m -> AbsInf v   (reduce' m)
 
     -- Function application
-    App (Abs    v t m) n  -> replace v (preventClashes m n) n
-    App (AbsInf v   m) n  -> replace v (preventClashes m n) n
+    App (Abs    v t m) n -> replace v (preventClashes m n) n
+    App (AbsInf v   m) n -> replace v (preventClashes m n) n
+
+    -- Variables on the left of an application - if the variable is a
+    -- supercombinator, convert it to normal abstraction and handle as normal in
+    -- the next reduction step. Otherwise, just reduce the thing on the right
+    App (Var v) m | hasFunc prog v -> App (toLambdas (getFunc prog v)) m
+                  | otherwise      -> App (Var v) (reduce' m)
 
     -- Other expressions
-    App (Var      v) n -> App (Var      v) (reduce' n)
     App (Constant c) n -> App (Constant c) (reduce' n)
-    App m            n -> App (reduce' m)   n
+    App m            n -> App (reduce' m) n
+
     _                  -> exp
 
 -- Keep reducing an expression until it stops changing i.e. until it reaches
