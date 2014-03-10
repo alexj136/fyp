@@ -16,6 +16,8 @@ tests = TestList
     , testListTailTail
     , testFixedPoint
     , testSupercombinator 
+    , testMultipleSupercombinators
+    , testMutualRecursion
     ]
 
 testIdentityFunction = TestLabel "Test of the identity function" (
@@ -101,6 +103,41 @@ testFixedPoint = TestLabel "Test of the fixed-point combinator with a factorial 
     )))
 testSupercombinator = TestLabel "Test of recursion with a supercombinator" (
     TestCase (assert (
-       let prog = newProg (FuncInf "factorial" ["x"] (App (App (App (Operation Cond) (App (Operation IsZ) (Var "x"))) (Constant (IntVal 1))) (App (App (Operation Mul) (Var "x")) (App (Var "factorial") (App (App (Operation Sub) (Var "x")) (Constant (IntVal 1))))))) in
-            reduceNorm prog (App (Var "factorial") (Constant (IntVal 5))) === Constant (IntVal 120)
+       let prog = newProg (
+            FuncInf "factorial" ["x"] (
+                App (App (App (Operation Cond) (App (Operation IsZ) (Var "x")))
+                    (Constant (IntVal 1)))
+                    (App (App (Operation Mul)
+                        (Var "x"))
+                        (App (Var "factorial")
+                            (App (App (Operation Sub)
+                                (Var "x"))
+                                (Constant (IntVal 1)))))))
+        in reduceNorm prog (App (Var "factorial") (Constant (IntVal 5))) === Constant (IntVal 120)
+    )))
+
+testMultipleSupercombinators = TestLabel "Test of a program with multiple supercombinators" (
+    TestCase (assert (
+        let prog =
+                addFunc (FuncInf "sub1" ["x"] (App (App (Operation Sub) (Var "x")) (Constant (IntVal 1)))) (
+                    addFunc (FuncInf "sub2" ["x"] (App (Var "sub1") (App (Var "sub1") (Var "x")))) (
+                        newProg (FuncInf "sub4" ["x"] (App (Var "sub2") (App (Var "sub2") (Var "x"))))
+                    )
+                )
+        in reduceNorm prog (App (Var "sub4") (Constant (IntVal 5))) === Constant (IntVal 1)
+    )))
+
+testMutualRecursion = TestLabel "Test of simple mutually recursive functions" (
+    TestCase (assert (
+        let prog =
+                addFunc (FuncInf "f" ["x"] (
+                    App (App (App (Operation Cond) (App (Operation IsZ) (Var "x")))
+                        (Constant (IntVal 0)))
+                        (App (Var "g") (App (App (Operation Sub) (Var "x")) (Constant (IntVal 1)))))) (
+                    newProg (FuncInf "g" ["x"] (
+                        App (App (App (Operation Cond) (App (Operation IsZ) (Var "x")))
+                            (Constant (IntVal 0)))
+                            (App (Var "f") (App (App (Operation Sub) (Var "x")) (Constant (IntVal 1))))))
+                )
+        in reduceNorm prog (App (Var "f") (Constant (IntVal 10))) === Constant (IntVal 0)
     )))
