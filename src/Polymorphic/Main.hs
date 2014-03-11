@@ -27,7 +27,7 @@ main = do
             argsToProg  = Func (TList (TList TChar))
                             "args" [] (parseArgs (tail args))
             prog        = addFunc argsToProg (P.parse tokens)
-            unifyRes    = infer prog
+            unifyRes    = infer (allToLambdas prog)
             hasMain     = hasFunc prog "main"
             in
                 putStrLn $
@@ -35,5 +35,7 @@ main = do
                         "Type check failure"
                     else if not hasMain then
                         "No main function found"
+                    else if numArgs (getFunc prog "main") /= 0 then
+                        "main function must take exactly 0 arguments"
                     else
                         show (reduce prog (Var "main"))

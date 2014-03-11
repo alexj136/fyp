@@ -17,7 +17,8 @@ inferWithConstraints exp = do
     rewrite <- unify constraints
     return (rewrite typeOfExp, constraints)
   where
-    (constraints, typeOfExp, i) = getConstraints (maxTVarInExp exp + 1) M.empty exp
+    (constraints, typeOfExp, i) =
+        getConstraints (maxTVarInExp exp + 1) M.empty exp
 
 --------------------------------------------------------------------------------
 --                                UNIFICATION

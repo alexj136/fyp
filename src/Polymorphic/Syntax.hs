@@ -33,6 +33,9 @@ newProg f = Prog (M.singleton (getName f) f)
 nilProg :: Prog
 nilProg = Prog M.empty
 
+-- Get the size of a Prog
+progSize (Prog pg) = M.size pg
+
 -- Determine if a Prog contains a Func of a particular name
 hasFunc :: Prog -> Name -> Bool
 hasFunc (Prog p) nm = M.member nm p
@@ -87,6 +90,19 @@ makeFunc :: Maybe Type -> Name -> [Name] -> Term -> Func
 makeFunc Nothing   nm args body = FuncInf nm args body
 makeFunc (Just ty) nm args body = Func ty nm args body
 
+-- Determine if a Func has a type label or not (i.e. if its constructor is Func
+-- as opposed to FuncInf)
+hasTypeLabel :: Func -> Bool
+hasTypeLabel (Func  _ _ _ _) = True
+hasTypeLabel (FuncInf _ _ _) = False
+
+-- Get the type label from a labelled function. If the given function is
+-- unlabelled, then raise an error.
+getTypeLabel :: Func -> Type
+getTypeLabel (Func ty _ _ _) = ty
+getTypeLabel _               = error ("getTypeLabel: tried to get type " ++
+                                      "label of unlabelled function")
+
 -- Convert functions with many arguments to pure lambda expressions by
 -- replacing arguments with abstractions inside the function body. This is
 -- required for interpretation, but is not desirable when compiling.
@@ -100,6 +116,70 @@ toLambdas f
             toLambdas (Func ty nm (init args) (AbsInf (last args) body))
         FuncInf nm args body ->
             toLambdas (FuncInf nm (init args) (AbsInf (last args) body))
+
+-- Convert an entire program into a single lambda term that can be given to the
+-- unification algorithm. This will convert something that looks like:
+--      f x = 2 * x
+--      g y = y + f y
+--      main = g (g y)
+--  into something that looks like:
+--      let f x = 2 * x   in
+--      let g y = y + f x in
+--          g (g y)
+--  which is syntactic sugar for:
+--      (^f . (^g . (g (g y)) ^y . (f y))) (^x . (2 * x))
+allToLambdas :: Prog -> Term
+allToLambdas pg
+    -- If a program has no functions, we can't convert it to a lambda term
+    | nilProg == pg = error "allToLambdas: Empty program"
+
+    -- If a program has no main function, we don't know which function should be
+    -- the 'body' of our converted term, so fail
+    | not (hasFunc pg "main") = error "allToLambdas: No main function found"
+
+    -- If a program has a main function, but that function takes arguments, then
+    -- fail, because our convention is that the main function takes no
+    -- arguments.
+    | numArgs (getFunc pg "main") /= 0 =
+        error "allToLambdas: main function must take exactly 0 arguments"
+
+    -- If a program has a main function, and that is the only function, and that
+    -- function takes zero arguments (as per our convention for the main
+    -- function), just return the body of that function
+    | progSize pg == 1 && numArgs (getFunc pg "main") == 0 =
+        getBody (getFunc pg "main")
+
+    -- If we passed all above tests, we have a valid main function, plus some
+    -- other function(s). Take one of the non-main functions, and incorporate it
+    -- into the body of the main function, removing it from the map of
+    -- functions. Then recurse.
+    | progSize pg > 1 =
+        let Prog pgMap = pg
+            nxtFunc =
+                if (fst (M.elemAt 0 pgMap) == "main") then
+                    snd (M.elemAt 1 pgMap)
+                else
+                    snd (M.elemAt 0 pgMap)
+            oldMain = getFunc pg "main"
+            newMain =
+                if hasTypeLabel oldMain then
+                    Func (getTypeLabel oldMain) "main" []
+                        (App
+                            (Abs (getName nxtFunc) (getTypeLabel nxtFunc)
+                                (getBody oldMain)
+                            )
+                            (toLambdas nxtFunc)
+                        )
+                else
+                    FuncInf "main" []
+                        (App
+                            (AbsInf (getName nxtFunc) (getBody oldMain))
+                            (toLambdas nxtFunc)
+                        )
+        in
+            allToLambdas (
+                Prog (M.insert "main" newMain (M.delete (getName nxtFunc) pgMap))
+            )
 
 --------------------------------------------------------------------------------
 --                    EXPRESSIONS - THE 'Term' DATATYPE
