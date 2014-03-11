@@ -111,22 +111,55 @@ data Term
     | AbsInf Name      Term -- Unlabelled Abs - type is inferred
     | Var    Name           -- Variable
     | App    Term Term      -- Function application
-    | Constant  Value       -- Integer & boolean constants
+    | Constant  Value       -- Integer & boolean constantserm
     | Operation OpType      -- Operators like +, - etc
     deriving (Eq, Ord)
 
 instance Show Term where
     show exp = case exp of
+        -- Show strings in "the traditional way". Will fail if the list contains
+        -- anything other than characters, however this will never be the case
+        -- for an expression that passes type-checking.
+        App (App (Operation Cons) (Constant (CharVal c))) chars ->
+            showAsString exp
+
+        -- Show lists in [the, traditional, way]
+        App (App (Operation Cons) elem) rest -> showAsList exp
+
         -- Extra rule to capture the left-associativity of function application
         -- throught bracketing
         App m (App n o) -> show m ++ " (" ++ show n ++ ' ' : show o ++ ")"
 
         App m n         -> show m ++ ' ' : show n
-        Abs v t x       -> concat ['λ' : v, " : ", show t, '.' : show x]
-        AbsInf v x      -> concat ['λ' : v, " . ", show x]
+        Abs v t x       -> concat ['\\' : v, " : ", show t, '.' : show x]
+        AbsInf v x      -> concat ['\\' : v, " . ", show x]
         Var v           -> v
         Constant v      -> show v
         Operation ot    -> show ot
+
+-- Get a nice representation of an encoded character string - will fail for
+-- expressions that are not proper strings (i.e. that do not yeild 'TList TChar'
+-- in a type check.
+showAsString :: Term -> String
+showAsString str = show (toHaskellString str)
+  where
+    toHaskellString :: Term -> String
+    toHaskellString (App (App (Operation Cons) (Constant (CharVal c))) rest) =
+        c : toHaskellString rest
+    toHaskellString (Operation Empty) = ""
+    toHaskellString _                 =
+        error "Tried to show an ill-typed string"
+
+-- Get a nice representation of an encoded list
+showAsList :: Term -> String
+showAsList str = show (toHaskellList str)
+  where
+    toHaskellList :: Term -> [Term]
+    toHaskellList (App (App (Operation Cons) exp) rest) =
+        exp : toHaskellList rest
+    toHaskellList (Operation Empty) = []
+    toHaskellList _                 =
+        error "Tried to show an ill-typed list"
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.

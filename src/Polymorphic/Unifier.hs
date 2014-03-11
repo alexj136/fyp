@@ -205,15 +205,7 @@ getConstraints i ctx exp = case exp of
 
     -- Variables
     Var v -> (S.empty, typeFromContext ctx v, i)
-{--
-    Not needed - type quantifiers used instead
-    -- List constructor
-    App (App (Operation Cons) m) n -> (constr', tN, i'')
-      where
-        constr' = S.unions [constrM, constrN, S.singleton (tN, TList tM)]
-        (constrM, tM, i' ) = getConstraints i  ctx m
-        (constrN, tN, i'') = getConstraints i' ctx n
---}
+
     -- Function application
     App m n -> (constr', tX, i'' + 1)
       where
@@ -248,7 +240,6 @@ constr ( M N )
     let tB = newTypeVar() in
     ( tB, cM U cN U ( tM = tN -> tB ) )
 --}
-
 
 -- Lookup the types of the various binary and unary operations
 typeOfOperation :: OpType -> Type

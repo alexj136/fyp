@@ -90,8 +90,9 @@ reduce prog exp = let reduce' = reduce prog in case exp of
     App (Operation Fix) f -> App f (App (Operation Fix) f)
 
     -- Abstractions
-    Abs    v t m -> Abs    v t (reduce' m)
-    AbsInf v   m -> AbsInf v   (reduce' m)
+    -- Uncomment to disable weak-head normal form
+    --Abs    v t m -> Abs    v t (reduce' m)
+    --AbsInf v   m -> AbsInf v   (reduce' m)
 
     -- Function application
     App (Abs    v t m) n -> replace v (preventClashes m n) n
@@ -99,9 +100,14 @@ reduce prog exp = let reduce' = reduce prog in case exp of
 
     -- Variables on the left of an application - if the variable is a
     -- supercombinator, convert it to normal abstraction and handle as normal in
-    -- the next reduction step. Otherwise, just reduce the thing on the right
+    -- the next reduction step. Otherwise, just reduce the thing on the right.
+    -- We pattern match for a supercombinator as the left-hand argument to an
+    -- application above a supercombinator on its own in order achieve
+    -- call-by-name semantics for supercombinators.
     App (Var v) m | hasFunc prog v -> App (toLambdas (getFunc prog v)) m
                   | otherwise      -> App (Var v) (reduce' m)
+    Var v | hasFunc prog v -> toLambdas (getFunc prog v)
+          | otherwise      -> Var v
 
     -- Other expressions
     App (Constant c) n -> App (Constant c) (reduce' n)
