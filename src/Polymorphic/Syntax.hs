@@ -424,7 +424,9 @@ getTypesInExp :: Term -> [Type]
 getTypesInExp (Abs _ t m) = t : getTypesInExp m
 getTypesInExp exp         = concat (map getTypesInExp (subs exp))
 
---convertTVarsTerm :: Term -> Term
+convertTVarsTerm :: (M.Map String Int, Term) -> (M.Map String Int, Term)
+convertTVarsTerm (m, exp) = case exp of
+    Abs x t m ->
 
 --------------------------------------------------------------------------------
 --                            FUNCTIONS OVER TYPES

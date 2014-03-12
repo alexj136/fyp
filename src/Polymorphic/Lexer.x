@@ -76,7 +76,7 @@ tokens :-
     0|[1-9][0-9]*          { \p s -> TokenInt    (pos p) (read s)        }
     "true"                 { \p s -> TokenBool   (pos p) True            }
     "false"                { \p s -> TokenBool   (pos p) False           }
-    \"*\"                  { \p s -> TokenStr    (pos p) (init (tail s)) }
+    \".*\"                 { \p s -> TokenStr    (pos p) (init (tail s)) }
 
     $lower [$alnum \_ \']* { \p s -> TokenIdLC   (pos p) s               }
     $upper [$alnum \_ \']* { \p s -> TokenIdUC   (pos p) s               }

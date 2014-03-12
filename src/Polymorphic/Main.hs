@@ -26,7 +26,8 @@ main = do
         let tokens     = scan progStr
             argsToProg = Func (TList (TList TChar))
                            "args" [] (parseArgs (tail args))
-            prog       = addFunc argsToProg (P.parse tokens)
+            progPTVars = addFunc argsToProg (P.parse tokens)
+            prog       = convertAllTVars progPTVars -- Convert string TVars into integer TVars
             unifyRes   = infer (allToLambdas prog)
             hasMain    = hasFunc prog "main"
             in
