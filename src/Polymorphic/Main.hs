@@ -23,12 +23,12 @@ main = do
 
     else do
         progStr <- readFile (head args)
-        let tokens      = scan progStr
-            argsToProg  = Func (TList (TList TChar))
-                            "args" [] (parseArgs (tail args))
-            prog        = addFunc argsToProg (P.parse tokens)
-            unifyRes    = infer (allToLambdas prog)
-            hasMain     = hasFunc prog "main"
+        let tokens     = scan progStr
+            argsToProg = Func (TList (TList TChar))
+                           "args" [] (parseArgs (tail args))
+            prog       = addFunc argsToProg (P.parse tokens)
+            unifyRes   = infer (allToLambdas prog)
+            hasMain    = hasFunc prog "main"
             in
                 putStrLn $
                     if unifyRes == Nothing then
@@ -38,4 +38,5 @@ main = do
                     else if numArgs (getFunc prog "main") /= 0 then
                         "main function must take exactly 0 arguments"
                     else
-                        show (reduce prog (Var "main"))
+                        show (reduceNorm prog (Var "main"))
+                        --show (reduceNorm nilProg (allToLambdas prog))

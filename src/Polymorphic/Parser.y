@@ -112,6 +112,9 @@ STR  ::= "*"
     RemR    { TokenRemR   p    }
     Fst     { TokenFst    p    }
     Snd     { TokenSnd    p    }
+    Head    { TokenHead   p    }
+    Tail    { TokenTail   p    }
+    Null    { TokenNull   p    }
 
     TyInt   { TokenTyInt  p    }
     TyBool  { TokenTyBool p    }
@@ -166,6 +169,9 @@ EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                    
     | RemR                           { Operation RemR                            }
     | Fst                            { Operation Fst                             }
     | Snd                            { Operation Snd                             }
+    | Head                           { Operation Head                            }
+    | Tail                           { Operation Tail                            }
+    | Null                           { Operation Null                            }
     | LIST                           { $1                                        }
     | OpenBr EXP ClosBr              { $2                                        }
     | OpenCr EXP Comma UndrSc ClosCr { App (Operation InjL) $2                   }

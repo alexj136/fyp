@@ -107,15 +107,13 @@ getTypeLabel _               = error ("getTypeLabel: tried to get type " ++
 -- replacing arguments with abstractions inside the function body. This is
 -- required for interpretation, but is not desirable when compiling.
 toLambdas :: Func -> Term
-toLambdas f
-    | numArgs f == 0 = case f of
-        Func ty nm args body -> App (Operation Fix) (Abs nm ty body)
-        FuncInf nm args body -> App (Operation Fix) (AbsInf nm body)
-    | otherwise = case f of
-        Func ty nm args body ->
-            toLambdas (Func ty nm (init args) (AbsInf (last args) body))
-        FuncInf nm args body ->
-            toLambdas (FuncInf nm (init args) (AbsInf (last args) body))
+toLambdas f = case f of
+    Func ty nm []   body -> App (Operation Fix) (Abs nm ty body)
+    FuncInf nm []   body -> App (Operation Fix) (AbsInf nm body)
+    Func ty nm args body ->
+        toLambdas (Func ty nm (init args) (AbsInf (last args) body))
+    FuncInf nm args body ->
+        toLambdas (FuncInf nm (init args) (AbsInf (last args) body))
 
 -- Convert an entire program into a single lambda term that can be given to the
 -- unification algorithm. This will convert something that looks like:
@@ -425,6 +423,8 @@ maxTVarInExp exp = maximum (0 : map maxTVar typesInExp)
 getTypesInExp :: Term -> [Type]
 getTypesInExp (Abs _ t m) = t : getTypesInExp m
 getTypesInExp exp         = concat (map getTypesInExp (subs exp))
+
+--convertTVarsTerm :: Term -> Term
 
 --------------------------------------------------------------------------------
 --                            FUNCTIONS OVER TYPES

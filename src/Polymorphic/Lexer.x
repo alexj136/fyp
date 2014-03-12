@@ -61,6 +61,9 @@ tokens :-
     "remr"                 { \p s -> TokenRemR   (pos p)                 }
     "snd"                  { \p s -> TokenFst    (pos p)                 }
     "fst"                  { \p s -> TokenSnd    (pos p)                 }
+    "head"                 { \p s -> TokenHead   (pos p)                 }
+    "tail"                 { \p s -> TokenTail   (pos p)                 }
+    "null"                 { \p s -> TokenNull   (pos p)                 }
 
     "Int"                  { \p s -> TokenTyInt  (pos p)                 }
     "Bool"                 { \p s -> TokenTyBool (pos p)                 }
@@ -126,11 +129,14 @@ data Token
     | TokenThen   (Int, Int)
     | TokenElse   (Int, Int)
 
-    -- TUPLE & SUM TOKENS
+    -- LIST/TUPLE/SUM TOKENS
     | TokenRemL   (Int, Int)    -- Sum remove-left
     | TokenRemR   (Int, Int)    -- Sum remove-right
     | TokenFst    (Int, Int)    -- Product first
     | TokenSnd    (Int, Int)    -- Product second
+    | TokenHead   (Int, Int)    -- List head function
+    | TokenTail   (Int, Int)    -- List tail function
+    | TokenNull   (Int, Int)    -- List null 'is-empty' function
 
     -- TYPE TOKENS
     | TokenTyInt  (Int, Int)
@@ -199,6 +205,9 @@ getY t = case t of
     TokenRemR   (y, _)   -> y
     TokenFst    (y, _)   -> y
     TokenSnd    (y, _)   -> y
+    TokenHead   (y, _)   -> y
+    TokenTail   (y, _)   -> y
+    TokenNull   (y, _)   -> y
 
     TokenTyInt  (y, _)   -> y
     TokenTyBool (y, _)   -> y
@@ -261,6 +270,9 @@ getX t = case t of
     TokenRemR   (_, x)   -> x
     TokenFst    (_, x)   -> x
     TokenSnd    (_, x)   -> x
+    TokenHead   (_, x)   -> x
+    TokenTail   (_, x)   -> x
+    TokenNull   (_, x)   -> x
 
     TokenTyInt  (_, x)   -> x
     TokenTyBool (_, x)   -> x
