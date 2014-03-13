@@ -23,13 +23,28 @@ main = do
 
     else do
         progStr <- readFile (head args)
-        let tokens     = scan progStr
+        let
+            -- Tokenise the program
+            tokens     = scan progStr
+
+            -- Convert the command line arguments to hand to the program
             argsToProg = Func (TList (TList TChar))
                            "args" [] (parseArgs (tail args))
+
+            -- Parse the program and include the command line arguments in the
+            -- resulting program, which will contain ParserTVars
             progPTVars = addFunc argsToProg (P.parse tokens)
-            prog       = convertAllTVars progPTVars -- Convert string TVars into integer TVars
+
+            -- Convert ParserTVars into integer TVars
+            prog       = convertTVarsProg progPTVars
+
+            -- Type check the program
             unifyRes   = infer (allToLambdas prog)
+
+            -- Verify that the program has a main function
             hasMain    = hasFunc prog "main"
+
+            -- Evaluate the program and print the result
             in
                 putStrLn $
                     if unifyRes == Nothing then
@@ -40,4 +55,3 @@ main = do
                         "main function must take exactly 0 arguments"
                     else
                         show (reduceNorm prog (Var "main"))
-                        --show (reduceNorm nilProg (allToLambdas prog))
