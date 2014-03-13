@@ -33,6 +33,16 @@ newProg f = Prog (M.singleton (getName f) f)
 nilProg :: Prog
 nilProg = Prog M.empty
 
+-- Convert a list of functions into a Prog object
+progFromList :: [Func] -> Prog
+progFromList funcs = progFromListAcc funcs M.empty
+  where
+    progFromListAcc []     pgMap = Prog pgMap
+    progFromListAcc (f:fs) pgMap = case M.lookup (getName f) pgMap of
+        Nothing -> progFromListAcc fs (M.insert (getName f) f pgMap)
+        Just _  -> error ("progFromList: Multiple definitions of " ++
+                        (getName f))
+
 -- Get the size of a Prog
 progSize (Prog pg) = M.size pg
 
@@ -43,14 +53,14 @@ hasFunc (Prog p) nm = M.member nm p
 getFunc :: Prog -> Name -> Func
 getFunc (Prog p) nm = case M.lookup nm p of
     Just f  -> f
-    Nothing -> error ("No definition for '" ++ nm ++ "' found")
+    Nothing -> error ("getFunc: No definition for '" ++ nm ++ "' found")
 
 -- Add a new function to a program - this will be repeatedly called by the
 -- parser when building a program. If more than one function is added with a
 -- specific name, an error is raised and the user is notified.
 addFunc :: Func -> Prog -> Prog
 addFunc f (Prog p)
-    | hasFunc (Prog p) nm = error ("Multiple definitions of " ++ nm)
+    | hasFunc (Prog p) nm = error ("addFunc: Multiple definitions of " ++ nm)
     | otherwise           = Prog (M.insert nm f p)
     where nm = getName f
 
@@ -153,62 +163,30 @@ allToLambdas pg
     -- functions. Then recurse.
     | progSize pg > 1 =
         let Prog pgMap = pg
+            oldMain = getFunc pg "main"
             nxtFunc =
                 if (fst (M.elemAt 0 pgMap) == "main") then
                     snd (M.elemAt 1 pgMap)
                 else
                     snd (M.elemAt 0 pgMap)
-            oldMain = getFunc pg "main"
+            absOfNxtFunc = 
+                if hasTypeLabel nxtFunc then
+                    (Abs (getName nxtFunc) (getTypeLabel nxtFunc)
+                        (getBody oldMain)
+                    )
+                else
+                    (AbsInf (getName nxtFunc) (getBody oldMain))
             newMain =
                 if hasTypeLabel oldMain then
                     Func (getTypeLabel oldMain) "main" []
-                        (App
-                            (Abs (getName nxtFunc) (getTypeLabel nxtFunc)
-                                (getBody oldMain)
-                            )
-                            (toLambdas nxtFunc)
-                        )
+                        (App absOfNxtFunc (toLambdas nxtFunc))
                 else
                     FuncInf "main" []
-                        (App
-                            (AbsInf (getName nxtFunc) (getBody oldMain))
-                            (toLambdas nxtFunc)
-                        )
+                        (App absOfNxtFunc (toLambdas nxtFunc))
         in
             allToLambdas (Prog (
                 M.insert "main" newMain (M.delete (getName nxtFunc) pgMap)
             ))
-
--- Convert all ParserTVars in a function into integer TVars. A fresh map object
--- is used for each function, but fresh TVar numbers are not which has the
--- effect of making the user's TVars unique to each function.
-convertTVarsProg :: Prog -> Prog
-convertTVarsProg (Prog pgMap) = Prog (snd (convertTVarsFuncMap (0, pgMap)))
-  where
-    convertTVarsFuncMap :: (Int, M.Map Name Func) -> (Int, M.Map Name Func)
-    convertTVarsFuncMap (i, pgMap)
-        | M.null pgMap = (i, pgMap)
-        | otherwise    =
-            let ((_ ,f), fs ) = M.deleteFindMin pgMap
-                (i' , _, f' ) = convertTVarsFunc (i, M.empty, f)
-                (i'',    fs') = convertTVarsFuncMap (i', fs)
-            in
-                (i'', M.union (M.singleton (getName f') f') fs')
-
--- Convert all ParserTVars in a function into integer TVars. The intege
--- parameter is the next type variable name to use, and the map stores the
--- existing equivalences between string type variables and integer type
--- variables.
-convertTVarsFunc ::
-    (Int, M.Map String Int, Func) -> (Int, M.Map String Int, Func)
-convertTVarsFunc (i, m, f) = case f of
-
-    Func ty nm args bdy -> (i'', m'', Func ty' nm args bdy')
-        where (i' , m' , ty' ) = convertTVarsType (i , m , ty )
-              (i'', m'', bdy') = convertTVarsTerm (i', m', bdy)
-
-    FuncInf nm args bdy -> (i' , m' , FuncInf  nm args bdy')
-        where (i' , m' , bdy') = convertTVarsTerm (i , m , bdy)
 
 --------------------------------------------------------------------------------
 --                    EXPRESSIONS - THE 'Term' DATATYPE
@@ -235,9 +213,13 @@ instance Show Term where
         -- Show lists in [the, traditional, way]
         App (App (Operation Cons) elem) rest -> showAsList exp
 
+        -- Prevent bracketing around lists
+        App m (App (App n o) p) | n == Operation Cons ->
+            show m ++ ' ' : show (App (App n o) p)
+
         -- Extra rule to capture the left-associativity of function application
         -- throught bracketing
-        App m (App n o) -> show m ++ " (" ++ show n ++ ' ' : show o ++ ")"
+        App m (App n o) -> show m ++ " (" ++ show (App n o) ++ ")"
 
         App m n         -> show m ++ ' ' : show n
         Abs v t x       -> concat ['\\' : v, " : ", show t, '.' : show x]
@@ -455,27 +437,6 @@ getTypesInExp :: Term -> [Type]
 getTypesInExp (Abs _ t m) = t : getTypesInExp m
 getTypesInExp exp         = concat (map getTypesInExp (subs exp))
 
--- Convert every ParserTVar that appears in a Term into a usable integer TVar.
--- The integer parameter is the next type variable name to use, and the map
--- stores the existing equivalences between string type variables and integer
--- type variables.
-convertTVarsTerm ::
-    (Int, M.Map String Int, Term) -> (Int, M.Map String Int, Term)
-convertTVarsTerm (i, map, exp) = case exp of
-
-    Abs x t m  -> (i'', map'', Abs x t' m')
-         where (i' , map' , m') = convertTVarsTerm (i , map , m)
-               (i'', map'', t') = convertTVarsType (i', map', t)
-
-    AbsInf x m -> (i' , map' , AbsInf x m')
-         where (i' , map' , m') = convertTVarsTerm (i , map , m)
-
-    App m n    -> (i'', map'', App m' n')
-         where (i' , map' , m') = convertTVarsTerm (i , map , m)
-               (i'', map'', n') = convertTVarsTerm (i', map', n)
-
-    _ -> (i, map, exp)
-
 --------------------------------------------------------------------------------
 --                            FUNCTIONS OVER TYPES
 --------------------------------------------------------------------------------
@@ -533,33 +494,3 @@ typeEquiv t1 t2 =
         next = 1 + max (maxTVar t1) (maxTVar t2)
         namesT1 = tVarNames t1
         namesT2 = tVarNames t2
-
--- Convert all ParserTVars into proper integer TVars. Returns a map from the
--- integer type variables to the user's string type variables that can be used
--- to print better error messages.
-convertTVarsType ::
-    (Int, M.Map String Int, Type) -> (Int, M.Map String Int, Type)
-convertTVarsType (i, m, t) = case t of
-
-    ParserTVar s -> case M.lookup s m of
-                        Nothing -> (i + 1, M.insert s i m, TVar i)
-                        Just j  -> (i    , m             , TVar j)
-
-    TFunc t1 t2  -> (i''  , m'', TFunc t1' t2')
-        where (i' , m' , t1') = convertTVarsType (i , m , t1)
-              (i'', m'', t2') = convertTVarsType (i', m', t2)
-
-    TProd t1 t2  -> (i''  , m'', TProd t1' t2')
-        where (i' , m' , t1') = convertTVarsType (i , m , t1)
-              (i'', m'', t2') = convertTVarsType (i', m', t2)
-
-    TSum  t1 t2  -> (i''  , m'', TSum  t1' t2')
-        where (i' , m' , t1') = convertTVarsType (i , m , t1)
-              (i'', m'', t2') = convertTVarsType (i', m', t2)
-
-    TList t      -> (i'   , m' , TList t'     )
-        where (i' , m' , t' ) = convertTVarsType (i , m , t )
-
-    TQuant _ _   -> error "convertTVars: TQuant found in parsed type"
-    TVar   _     -> error "convertTVars: Integer TVar found in parsed type"
-    other        -> (i, m, other)

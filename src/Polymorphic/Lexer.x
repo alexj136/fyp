@@ -26,6 +26,10 @@ tokens :-
     ":"                    { \p s -> TokenColon  (pos p)                 }
     "_"                    { \p s -> TokenUndrSc (pos p)                 }
 
+    "alias"                { \p s -> TokenAlias  (pos p)                 }
+    "def"                  { \p s -> TokenDef    (pos p)                 }
+    "type"                 { \p s -> TokenType   (pos p)                 }
+
     "^"                    { \p s -> TokenLambda (pos p)                 }
     "λ"                    { \p s -> TokenLambda (pos p)                 }
     \\                     { \p s -> TokenLambda (pos p)                 }
@@ -95,6 +99,11 @@ data Token
     | TokenColon  (Int, Int)    -- Colons to separate function names from their
                                 -- types
     | TokenUndrSc (Int, Int)    -- Underscore '_'
+
+    -- PROGRAM STRUCTURE
+    | TokenAlias  (Int, Int)    -- Type aliases
+    | TokenDef    (Int, Int)    -- Function definitions
+    | TokenType   (Int, Int)    -- Function Type declarations
 
     -- LAMBDA SYNTAX
     | TokenLambda (Int, Int)    -- Lambda abstractions

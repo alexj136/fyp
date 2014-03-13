@@ -6,16 +6,17 @@ import qualified Data.Set as S
 
 -- Do type inference on an expression - get the constraints & type, unify the
 -- constraints, and use the function returned by unify to rewrite the type
--- without type variables
-infer :: Term -> Maybe Type
-infer exp = case (inferWithConstraints exp) of
+-- without type variables. The ConstraintSet parameter is the set of initial
+-- constraints i.e. the user's type aliases
+infer :: ConstraintSet -> Term -> Maybe Type
+infer aliases exp = case (inferWithConstraints aliases exp) of
     Just (ty, _) -> Just ty
     Nothing      -> Nothing
 
-inferWithConstraints :: Term -> Maybe (Type, ConstraintSet)
-inferWithConstraints exp = do
-    rewrite <- unify constraints
-    return (rewrite typeOfExp, constraints)
+inferWithConstraints :: ConstraintSet -> Term -> Maybe (Type, ConstraintSet)
+inferWithConstraints aliases exp = do
+    rewrite <- unify (S.union aliases constraints)
+    return (rewrite typeOfExp, S.union aliases constraints)
   where
     (constraints, typeOfExp, i) =
         getConstraints (maxTVarInExp exp + 1) M.empty exp
@@ -228,7 +229,8 @@ getConstraints i ctx exp = case exp of
     typeFromContext ctx n = case M.lookup n ctx of
         Just t  -> t
         Nothing ->
-            error ("No binding for variable '" ++ n ++ "' in context query")
+            error ("getConstraints: No binding for variable '" ++ n ++
+                   "' in context query")
 
     -- Add the given binding to a Context
     addToContext :: Name -> Type -> Context -> Context

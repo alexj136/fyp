@@ -3,13 +3,13 @@ module Parser where
 
 import Lexer
 import Syntax
+import PostParsing
 
 {-- CONTEXT FREE GRAMMAR
 
-PROG ::= PROG TYDC
-       | PROG ID ARGS = EXP
-       | epsilon
-TYDC ::= TY :
+PROG ::= alias ID = TY
+       | type ID = TY
+       | def ID ARGS = EXP
        | epsilon
 TY   ::= Int | Bool | Char
        | [ TY ]
@@ -37,23 +37,26 @@ ID   ::= [a-z][a-zA-Z]*
 INT  ::= 0 | [1-9][0-9]*
 BOOL ::= true | false
 CHAR ::= 'a' | 'b' | 'c' | ...
-STR  ::= "*"
+STR  ::= ".*"
 
 --}
 }
 
-%name parse     PROG
+%name parse     PARSERESULT
 %name parseExp  EXP
 %name parseType TY
 
 %tokentype { Token }
 %error { parseError }
 
+%nonassoc TyInt TyBool TyChar TyStr TySum TyProd
+%nonassoc IsZero Not RemL RemR Fst Snd Head Tail Null
 %nonassoc ClosBr ClosSq ClosCr OpenBr OpenSq OpenCr
 
-%right Equals Lam Dot Let In Int Bool TyArrw
-%left IdLC IdUC
+%nonassoc Lam Dot Let Equals In If Then Else Int Bool Str
+%nonassoc IdLC IdUC
 
+%right Xor
 %right Or
 %right And
 %nonassoc EqEq LsEq Less GtEq Grtr NoEq
@@ -64,7 +67,8 @@ STR  ::= "*"
 %nonassoc Div
 %right Mul
 
-%left EXP
+%right TyArrw
+
 %left app
 
 %token
@@ -78,6 +82,10 @@ STR  ::= "*"
     Comma   { TokenComma  p    }
     Colon   { TokenColon  p    }
     UndrSc  { TokenUndrSc p    }
+
+    Alias   { TokenAlias  p    }
+    Def     { TokenDef    p    }
+    Type    { TokenType   p    }
     
     Lambda  { TokenLambda p    }
     Dot     { TokenDot    p    }
@@ -132,17 +140,19 @@ STR  ::= "*"
     IdUC    { TokenIdUC   p $$ }
 %%
 
-PROG :: { Prog }
-PROG : TYDEC IdLC ARGS Equals EXP PROG { addFunc (makeFunc $1 $2 $3 $5) $6 }
-     | TYDEC IdLC ARGS Equals EXP      { newProg (makeFunc $1 $2 $3 $5)    }
-
-TYDEC :: { Maybe Type }
-TYDEC : TY Colon { Just $1 }
-      | {- empty -}   { Nothing }
+PARSERESULT :: { ParseResult }
+PARSERESULT : Alias IdLC Equals TY     PARSERESULT { addAlias  (ParserTVar $2, $4) $5 }
+            | Type IdLC Equals TY      PARSERESULT { addTyDec  ($2,            $4) $5 }
+            | Def IdLC ARGS Equals EXP PARSERESULT { addFuncPR (makeFunc $2 $3 $5) $6 }
+            | {- empty -}                          { emptyPR                          }
 
 ARGS :: { [String] }
 ARGS : IdLC ARGS   { $1 : $2 }
      | {- empty -} { []      }
+
+TYDEC :: { Maybe Type }
+TYDEC : TY Colon    { Just $1 }
+      | {- empty -} { Nothing }
 
 TY :: { Type }
 TY : TyInt                      { TInt          }
@@ -159,7 +169,7 @@ TY : TyInt                      { TInt          }
 EXP :: { Term }
 EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                     }
     | Lambda IdLC Dot EXP            { AbsInf $2 $4                              }
-    | EXP EXP          %prec app     { App $1 $2                                 }
+    | EXP EXP              %prec app { App $1 $2                                 }
     | IdLC                           { Var $1                                    }
     | If EXP Then EXP Else EXP       { App (App (App (Operation Cond) $2) $4) $6 }
     | EXP INFIXBINOP EXP             { App (App $2 $1) $3                        }

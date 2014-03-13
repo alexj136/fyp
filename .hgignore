@@ -1,6 +1,9 @@
+src/Polymorphic/Main
 syntax: glob
 *.aux
 *.log
 *.pdf
 *.png
 *.swp
+*.o
+*.hi
