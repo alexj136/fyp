@@ -8,16 +8,19 @@ import qualified Data.Set as S
 -- constraints, and use the function returned by unify to rewrite the type
 -- without type variables. The ConstraintSet parameter is the set of initial
 -- constraints i.e. the user's type aliases
-infer :: ConstraintSet -> Term -> Maybe Type
-infer aliases exp = case (inferWithConstraints aliases exp) of
+infer :: Term -> Maybe Type
+infer exp = case (inferFull S.empty exp) of
     Just (ty, _) -> Just ty
     Nothing      -> Nothing
 
-inferWithConstraints :: ConstraintSet -> Term -> Maybe (Type, ConstraintSet)
-inferWithConstraints aliases exp = do
-    rewrite <- unify (S.union aliases constraints)
-    return (rewrite typeOfExp, S.union aliases constraints)
+-- Infer the type of a term, with type aliases. Both the term & aliases should
+-- not contain ParserTVars. Return the constraint set with the inferred type.
+inferFull :: ConstraintSet -> Term -> Maybe (Type, ConstraintSet)
+inferFull aliases exp = do
+    rewrite <- unify allConstraints
+    return (rewrite typeOfExp, allConstraints)
   where
+    allConstraints = S.union aliases constraints
     (constraints, typeOfExp, i) =
         getConstraints (maxTVarInExp exp + 1) M.empty exp
 
@@ -49,6 +52,11 @@ newConstrSet t1 t2 = S.singleton (t1, t2)
 -- expression, and replace all the type variables with concrete types.
 unify :: ConstraintSet -> Maybe (Type -> Type)
 unify c | S.size c == 0 = Just (\t -> t)
+
+        -- Check that we don't have ParserTVars - these should have been removed
+        -- before being passed to the unifier
+        | isParserTVar t1 || isParserTVar t2 = error ("unify: ParserTVars " ++
+            "present in constraint set")
 
         -- If the types are already equal, unify the rest of the set
         | t1 == t2 = unify rest
@@ -121,6 +129,12 @@ unify c | S.size c == 0 = Just (\t -> t)
     isTVar :: Type -> Bool
     isTVar (TVar _) = True
     isTVar _        = False
+
+    -- Determine if a type is a ParserTVar - if it is, we've encountered an
+    -- error
+    isParserTVar :: Type -> Bool
+    isParserTVar (ParserTVar _) = True
+    isParserTVar _              = False
 
     -- Retrieve the type variable number from a type variable
     numOfTVar :: Type -> Int

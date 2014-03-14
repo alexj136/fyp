@@ -16,6 +16,15 @@ type TyDec = (Name, Type)
 -- of functions, a list of type declarations, and a list of type aliases.
 data ParseResult = ParseResult (M.Map Name Func) [TyDec] [Alias]
 
+instance Show ParseResult where
+    show (ParseResult pgMap tyDecs ((t1, t2):aliases)) =
+        ("alias " ++ show t1 ++ " = " ++ show t2 ++ "\n" ++ 
+        show (ParseResult pgMap tyDecs aliases))
+    show (ParseResult pgMap ((nm, ty):tyDecs) []) =
+        ("type " ++ nm ++ " = " ++ show ty ++ "\n" ++ 
+        show (ParseResult pgMap tyDecs []))
+    show (ParseResult pgMap [] []) = show (Prog pgMap)
+
 -- An empty ParseResult used as the 'base case' for recursion in the parser
 emptyPR :: ParseResult
 emptyPR = ParseResult M.empty [] []
@@ -38,30 +47,38 @@ addAlias (ParseResult pgMap ts as) a = ParseResult pgMap ts (a:as)
 -- definitions, returning a Prog object and a set of aliases, ready for the
 -- latter stages of the pipeline.
 combineTyDecs:: ParseResult -> (Prog, S.Set Alias)
-combineTyDecs (ParseResult pgMap [] as)             =
-    (Prog pgMap, S.fromList as)
-combineTyDecs (ParseResult pgMap (tyDec:tyDecs) as) =
-    case M.lookup (fst tyDec) pgMap of
-        Nothing -> error ("Type declaration '" ++ (fst tyDec) ++
-                          "' has no matching function")
-        Just f  -> 
-            case f of
-                Func _ nm _ _ -> error ("Multiple type declarations for '" ++
-                                       (fst tyDec) ++ "'")
-                FuncInf nm args bdy ->
-                    combineTyDecs (ParseResult
-                        (M.insert nm (Func (snd tyDec) nm args bdy) pgMap)
-                        tyDecs
-                        as
-                    )
+combineTyDecs (ParseResult pgMap [] aliases)                =
+    (Prog pgMap, S.fromList aliases)
+combineTyDecs (ParseResult pgMap ((nm, ty):tyDecs) aliases) =
+    case M.lookup nm pgMap of
+        Nothing ->
+            error ("Type declaration '" ++ nm ++ "' has no matching function")
+        Just f  ->
+            combineTyDecs (ParseResult
+                (M.insert nm (addTypeLabel f ty) pgMap) tyDecs aliases
+            )
+
+-- Convert the ParserTVars in the set of aliases into proper integer TVars.
+convertTVarsAliases :: (Int, M.Map String Int, S.Set (Type, Type)) ->
+    (Int, M.Map String Int, S.Set (Type, Type))
+convertTVarsAliases (i, m, aliases)
+    | S.null aliases = (i, m, aliases)
+    | otherwise      =
+        let ((t1, t2), rest) = S.deleteFindMin aliases
+            (i'  , m'  , t1'  ) = convertTVarsType (i , m , t1)
+            (i'' , m'' , t2'  ) = convertTVarsType (i', m', t2)
+            (i''', m''', rest') = (convertTVarsAliases (i'', m'', rest))
+        in
+            (i''', m''', (S.union (S.singleton (t1', t2')) rest'))
 
 -- Convert all ParserTVars in a function into integer TVars. A fresh map object
 -- is used for each function, but fresh TVar numbers are not which has the
 -- effect of making the user's TVars unique to each function.
-convertTVarsProg :: Prog -> Prog
-convertTVarsProg (Prog pgMap) = Prog pgMap'
+convertTVarsProg ::
+    (Int, M.Map String Int, Prog) -> (Int, M.Map String Int, Prog)
+convertTVarsProg (i, m, Prog pgMap) = (i', m', Prog pgMap')
   where
-    (_, _, pgMap') = (convertTVarsFuncMap (0, M.empty, pgMap))
+    (i', m', pgMap') = (convertTVarsFuncMap (i, m, pgMap))
 
     convertTVarsFuncMap ::
         (Int, M.Map String Int, M.Map Name Func) ->

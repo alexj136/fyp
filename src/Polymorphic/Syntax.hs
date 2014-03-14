@@ -96,15 +96,21 @@ showArgs (x:xs) = ' ' : x ++ showArgs xs
 
 -- Make a new function from its components, taking a Maybe Type to determine if
 -- a Func or a FuncInf should be used
-makeFunc :: Maybe Type -> Name -> [Name] -> Term -> Func
-makeFunc Nothing   nm args body = FuncInf nm args body
-makeFunc (Just ty) nm args body = Func ty nm args body
+makeFunc :: Name -> [Name] -> Term -> Func
+makeFunc nm args body = FuncInf nm args body
 
 -- Determine if a Func has a type label or not (i.e. if its constructor is Func
 -- as opposed to FuncInf)
 hasTypeLabel :: Func -> Bool
 hasTypeLabel (Func  _ _ _ _) = True
 hasTypeLabel (FuncInf _ _ _) = False
+
+-- Add a type label to an unlabelled function. If the function already has a
+-- label, raise an error.
+addTypeLabel :: Func -> Type -> Func
+addTypeLabel (FuncInf nm args bdy) ty = Func ty nm args bdy
+addTypeLabel (Func _  nm _    _  ) _  = error ("addTypeLabel: Multiple type" ++
+    " declarations for function: " ++ nm)
 
 -- Get the type label from a labelled function. If the given function is
 -- unlabelled, then raise an error.
@@ -377,9 +383,9 @@ instance Show Type where
         TList a      -> '[' : show a ++ "]"
         TSum  a b    -> "{ " ++ show a ++ " | " ++ show b ++ " }"
         TProd a b    -> "{ " ++ show a ++ " & " ++ show b ++ " }"
-        TVar varNo   -> 'T' : show varNo
+        TVar varNo   -> "_T" ++ show varNo ++ "_"
         TQuant i t   -> 'V' : (show i) ++ '.' : (show t)
-        ParserTVar s -> "(ParserTVar: " ++ s ++ ")"
+        ParserTVar s -> s
 
 
 --------------------------------------------------------------------------------

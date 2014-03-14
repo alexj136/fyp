@@ -2,11 +2,13 @@ module Main where
 
 import Lexer
 import qualified Parser as P
+import PostParsing
 import Syntax
 import Unifier
 import Interpreter
 
 import System.Environment (getArgs)
+import qualified Data.Map as M
 
 -- Convert the command line arguments from a haskell list of strings into an
 -- equivalent Term for use by the interpreted program
@@ -23,7 +25,6 @@ main = do
 
     else do
         progStr <- readFile (head args)
-        (putStrLn . show . P.parse . scan) progStr
         let
             -- Tokenise the program
             tokens = scan progStr
@@ -41,10 +42,15 @@ main = do
 
             -- Convert ParserTVars into integer TVars and add the command-line
             -- arguments to to the program
-            prog = addFunc argsToProg (convertTVarsProg progPTVars)
+            (i, m, prog) = convertTVarsProg (0, M.empty, progPTVars)
+            
+            -- Convert the ParserTVars in the aliases
+            (_, _, convertedAliases) = convertTVarsAliases (i, m, aliases)
+
+            progWithArgs = addFunc argsToProg prog
 
             -- Type check the program
-            unifyRes = infer aliases (allToLambdas prog)
+            unifyRes = inferFull convertedAliases (allToLambdas progWithArgs)
 
             -- Verify that the program has a main function
             hasMain = hasFunc prog "main"

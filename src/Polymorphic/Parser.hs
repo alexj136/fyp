@@ -1464,7 +1464,7 @@ happyReduction_3 ((HappyAbsSyn6  happy_var_5) `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn6
-		 (addAlias  (ParserTVar happy_var_2, happy_var_4) happy_var_5
+		 (addAlias happy_var_5 (ParserTVar happy_var_2, happy_var_4)
 	) `HappyStk` happyRest
 
 happyReduce_4 = happyReduce 5 6 happyReduction_4
@@ -1475,7 +1475,7 @@ happyReduction_4 ((HappyAbsSyn6  happy_var_5) `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn6
-		 (addTyDec  (happy_var_2,            happy_var_4) happy_var_5
+		 (addTyDec happy_var_5 (happy_var_2, happy_var_4)
 	) `HappyStk` happyRest
 
 happyReduce_5 = happyReduce 6 6 happyReduction_5
@@ -1487,7 +1487,7 @@ happyReduction_5 ((HappyAbsSyn6  happy_var_6) `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn6
-		 (addFuncPR (makeFunc happy_var_2 happy_var_3 happy_var_5) happy_var_6
+		 (addFuncPR happy_var_6 (FuncInf happy_var_2 happy_var_3 happy_var_5)
 	) `HappyStk` happyRest
 
 happyReduce_6 = happySpecReduce_0  6 happyReduction_6

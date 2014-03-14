@@ -141,10 +141,10 @@ STR  ::= ".*"
 %%
 
 PARSERESULT :: { ParseResult }
-PARSERESULT : Alias IdLC Equals TY     PARSERESULT { addAlias  (ParserTVar $2, $4) $5 }
-            | Type IdLC Equals TY      PARSERESULT { addTyDec  ($2,            $4) $5 }
-            | Def IdLC ARGS Equals EXP PARSERESULT { addFuncPR (makeFunc $2 $3 $5) $6 }
-            | {- empty -}                          { emptyPR                          }
+PARSERESULT : Alias IdLC Equals TY     PARSERESULT { addAlias $5 (ParserTVar $2, $4) }
+            | Type IdLC Equals TY      PARSERESULT { addTyDec $5 ($2, $4)            }
+            | Def IdLC ARGS Equals EXP PARSERESULT { addFuncPR $6 (FuncInf $2 $3 $5) }
+            | {- empty -}                          { emptyPR                         }
 
 ARGS :: { [String] }
 ARGS : IdLC ARGS   { $1 : $2 }
