@@ -213,15 +213,15 @@ instance Show Term where
         -- Show strings in "the traditional way". Will fail if the list contains
         -- anything other than characters, however this will never be the case
         -- for an expression that passes type-checking.
-        App (App (Operation Cons) (Constant (CharVal c))) chars ->
-            showAsString exp
+        --App (App (Operation Cons) (Constant (CharVal c))) chars ->
+            --showAsString exp
 
         -- Show lists in [the, traditional, way]
-        App (App (Operation Cons) elem) rest -> showAsList exp
+        --App (App (Operation Cons) elem) rest -> showAsList exp
 
         -- Prevent bracketing around lists
-        App m (App (App n o) p) | n == Operation Cons ->
-            show m ++ ' ' : show (App (App n o) p)
+        --App m (App (App n o) p) | n == Operation Cons ->
+            --show m ++ ' ' : show (App (App n o) p)
 
         -- Extra rule to capture the left-associativity of function application
         -- throught bracketing
@@ -237,7 +237,7 @@ instance Show Term where
 -- Get a nice representation of an encoded character string - will fail for
 -- expressions that are not proper strings (i.e. that do not yeild 'TList TChar'
 -- in a type check.
-showAsString :: Term -> String
+{--showAsString :: Term -> String
 showAsString str = show (toHaskellString str)
   where
     toHaskellString :: Term -> String
@@ -256,7 +256,7 @@ showAsList str = show (toHaskellList str)
         exp : toHaskellList rest
     toHaskellList (Operation Empty) = []
     toHaskellList _                 =
-        error "Tried to show an ill-typed list"
+        error "Tried to show an ill-typed list"--}
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.

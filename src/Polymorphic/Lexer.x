@@ -23,7 +23,6 @@ tokens :-
     \}                     { \p s -> TokenClosCr (pos p)                 }
     "="                    { \p s -> TokenEquals (pos p)                 }
     \,                     { \p s -> TokenComma  (pos p)                 }
-    ":"                    { \p s -> TokenColon  (pos p)                 }
     "_"                    { \p s -> TokenUndrSc (pos p)                 }
 
     "alias"                { \p s -> TokenAlias  (pos p)                 }
@@ -68,6 +67,7 @@ tokens :-
     "head"                 { \p s -> TokenHead   (pos p)                 }
     "tail"                 { \p s -> TokenTail   (pos p)                 }
     "null"                 { \p s -> TokenNull   (pos p)                 }
+    ":"                    { \p s -> TokenCons   (pos p)                 }
 
     "Int"                  { \p s -> TokenTyInt  (pos p)                 }
     "Bool"                 { \p s -> TokenTyBool (pos p)                 }
@@ -96,8 +96,6 @@ data Token
     | TokenClosCr (Int, Int)    -- Close curly bracket
     | TokenEquals (Int, Int)    -- Delimits declarations from function bodies
     | TokenComma  (Int, Int)    -- Commas - list delimiters
-    | TokenColon  (Int, Int)    -- Colons to separate function names from their
-                                -- types
     | TokenUndrSc (Int, Int)    -- Underscore '_'
 
     -- PROGRAM STRUCTURE
@@ -146,6 +144,7 @@ data Token
     | TokenHead   (Int, Int)    -- List head function
     | TokenTail   (Int, Int)    -- List tail function
     | TokenNull   (Int, Int)    -- List null 'is-empty' function
+    | TokenCons   (Int, Int)    -- List constructor ':' - a -> [a] -> [a]
 
     -- TYPE TOKENS
     | TokenTyInt  (Int, Int)
@@ -178,7 +177,6 @@ getY t = case t of
     TokenClosCr (y, _)   -> y
     TokenEquals (y, _)   -> y
     TokenComma  (y, _)   -> y
-    TokenColon  (y, _)   -> y
     TokenUndrSc (y, _)   -> y
 
     TokenLambda (y, _)   -> y
@@ -217,6 +215,7 @@ getY t = case t of
     TokenHead   (y, _)   -> y
     TokenTail   (y, _)   -> y
     TokenNull   (y, _)   -> y
+    TokenCons   (y, _)   -> y
 
     TokenTyInt  (y, _)   -> y
     TokenTyBool (y, _)   -> y
@@ -243,7 +242,6 @@ getX t = case t of
     TokenClosCr (_, x)   -> x
     TokenEquals (_, x)   -> x
     TokenComma  (_, x)   -> x
-    TokenColon  (_, x)   -> x
     TokenUndrSc (_, x)   -> x
 
     TokenLambda (_, x)   -> x
@@ -282,6 +280,7 @@ getX t = case t of
     TokenHead   (_, x)   -> x
     TokenTail   (_, x)   -> x
     TokenNull   (_, x)   -> x
+    TokenCons   (_, x)   -> x
 
     TokenTyInt  (_, x)   -> x
     TokenTyBool (_, x)   -> x

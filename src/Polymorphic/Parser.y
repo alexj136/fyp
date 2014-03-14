@@ -67,7 +67,7 @@ STR  ::= ".*"
 %nonassoc Div
 %right Mul
 
-%right TyArrw
+%right TyArrw Cons
 
 %left app
 
@@ -80,7 +80,6 @@ STR  ::= ".*"
     ClosCr  { TokenClosCr p    }
     Equals  { TokenEquals p    }
     Comma   { TokenComma  p    }
-    Colon   { TokenColon  p    }
     UndrSc  { TokenUndrSc p    }
 
     Alias   { TokenAlias  p    }
@@ -123,6 +122,7 @@ STR  ::= ".*"
     Head    { TokenHead   p    }
     Tail    { TokenTail   p    }
     Null    { TokenNull   p    }
+    Cons    { TokenCons   p    }
 
     TyInt   { TokenTyInt  p    }
     TyBool  { TokenTyBool p    }
@@ -141,7 +141,7 @@ STR  ::= ".*"
 %%
 
 PARSERESULT :: { ParseResult }
-PARSERESULT : Alias IdLC Equals TY     PARSERESULT { addAlias $5 (ParserTVar $2, $4) }
+PARSERESULT : Alias ID Equals TY       PARSERESULT { addAlias $5 (ParserTVar $2, $4) }
             | Type IdLC Equals TY      PARSERESULT { addTyDec $5 ($2, $4)            }
             | Def IdLC ARGS Equals EXP PARSERESULT { addFuncPR $6 (FuncInf $2 $3 $5) }
             | {- empty -}                          { emptyPR                         }
@@ -149,10 +149,6 @@ PARSERESULT : Alias IdLC Equals TY     PARSERESULT { addAlias $5 (ParserTVar $2,
 ARGS :: { [String] }
 ARGS : IdLC ARGS   { $1 : $2 }
      | {- empty -} { []      }
-
-TYDEC :: { Maybe Type }
-TYDEC : TY Colon    { Just $1 }
-      | {- empty -} { Nothing }
 
 TY :: { Type }
 TY : TyInt                      { TInt          }
@@ -164,7 +160,7 @@ TY : TyInt                      { TInt          }
    | OpenCr TY TyProd TY ClosCr { TProd $2 $4   }
    | TY TyArrw TY               { TFunc $1 $3   }
    | OpenBr TY ClosBr           { $2            }
-   | IdLC                       { ParserTVar $1 }
+   | ID                         { ParserTVar $1 }
 
 EXP :: { Term }
 EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                     }
@@ -216,6 +212,12 @@ INFIXBINOP : Add { Operation Add }
            | NoEq { Operation NEq }
            | Grtr { Operation Gtr }
            | GtEq { Operation GtE }
+
+           | Cons { Operation Cons }
+
+ID :: { String }
+ID : IdLC { $1 }
+   | IdUC { $1 }
 {
 parseStr :: String -> Term
 parseStr []     = Operation Empty

@@ -323,3 +323,10 @@ deQuantify i m t = case t of
     TVar x     -> case M.lookup x m of
                   Just x' -> ( TVar x' , i , m )
                   Nothing -> ( TVar x  , i , m )
+    TSum  a b  -> ( TSum   a' b' , i'' , m'' )
+        where ( a' , i'  , m'  ) = deQuantify i  m  a
+              ( b' , i'' , m'' ) = deQuantify i' m' b
+    TProd a b  -> ( TProd  a' b' , i'' , m'' )
+        where ( a' , i'  , m'  ) = deQuantify i  m  a
+              ( b' , i'' , m'' ) = deQuantify i' m' b
+    ParserTVar _ -> error "deQuantify: ParserTVar found"

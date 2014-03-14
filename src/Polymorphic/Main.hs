@@ -25,6 +25,7 @@ main = do
 
     else do
         progStr <- readFile (head args)
+        putStrLn (show (P.parse (scan progStr)))
         let
             -- Tokenise the program
             tokens = scan progStr
@@ -43,7 +44,7 @@ main = do
             -- Convert ParserTVars into integer TVars and add the command-line
             -- arguments to to the program
             (i, m, prog) = convertTVarsProg (0, M.empty, progPTVars)
-            
+
             -- Convert the ParserTVars in the aliases
             (_, _, convertedAliases) = convertTVarsAliases (i, m, aliases)
 
