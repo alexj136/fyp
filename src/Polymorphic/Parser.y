@@ -163,29 +163,29 @@ TY : TyInt                      { TInt          }
    | ID                         { ParserTVar $1 }
 
 EXP :: { Term }
-EXP : Let IdLC Equals EXP In EXP     { App (AbsInf $2 $6) $4                     }
-    | Lambda IdLC Dot EXP            { AbsInf $2 $4                              }
-    | EXP EXP              %prec app { App $1 $2                                 }
-    | IdLC                           { Var $1                                    }
-    | If EXP Then EXP Else EXP       { App (App (App (Operation Cond) $2) $4) $6 }
-    | EXP INFIXBINOP EXP             { App (App $2 $1) $3                        }
-    | IsZero                         { Operation IsZ                             }
-    | Not                            { Operation Not                             }
-    | RemL                           { Operation RemL                            }
-    | RemR                           { Operation RemR                            }
-    | Fst                            { Operation Fst                             }
-    | Snd                            { Operation Snd                             }
-    | Head                           { Operation Head                            }
-    | Tail                           { Operation Tail                            }
-    | Null                           { Operation Null                            }
-    | LIST                           { $1                                        }
-    | OpenBr EXP ClosBr              { $2                                        }
-    | OpenCr EXP Comma UndrSc ClosCr { App (Operation InjL) $2                   }
-    | OpenCr UndrSc Comma EXP ClosCr { App (Operation InjR) $4                   }
-    | OpenCr EXP Comma EXP ClosCr    { App (App (Operation Tuple) $2) $4         }
-    | Int                            { Constant (IntVal $1)                      }
-    | Bool                           { Constant (BoolVal $1)                     }
-    | Str                            { parseStr $1                               }
+EXP : Let IdLC ARGS Equals EXP In EXP { App (AbsInf $2 $7) (toLambdas (FuncInf $2 $3 $5)) }
+    | Lambda IdLC Dot EXP             { AbsInf $2 $4                              }
+    | EXP EXP              %prec app  { App $1 $2                                 }
+    | IdLC                            { Var $1                                    }
+    | If EXP Then EXP Else EXP        { App (App (App (Operation Cond) $2) $4) $6 }
+    | EXP INFIXBINOP EXP              { App (App $2 $1) $3                        }
+    | IsZero                          { Operation IsZ                             }
+    | Not                             { Operation Not                             }
+    | RemL                            { Operation RemL                            }
+    | RemR                            { Operation RemR                            }
+    | Fst                             { Operation Fst                             }
+    | Snd                             { Operation Snd                             }
+    | Head                            { Operation Head                            }
+    | Tail                            { Operation Tail                            }
+    | Null                            { Operation Null                            }
+    | LIST                            { $1                                        }
+    | OpenBr EXP ClosBr               { $2                                        }
+    | OpenCr EXP Comma UndrSc ClosCr  { App (Operation InjL) $2                   }
+    | OpenCr UndrSc Comma EXP ClosCr  { App (Operation InjR) $4                   }
+    | OpenCr EXP Comma EXP ClosCr     { App (App (Operation Tuple) $2) $4         }
+    | Int                             { Constant (IntVal $1)                      }
+    | Bool                            { Constant (BoolVal $1)                     }
+    | Str                             { parseStr $1                               }
 
 LIST :: { Term }
 LIST : OpenSq ClosSq       { Operation Empty                  }

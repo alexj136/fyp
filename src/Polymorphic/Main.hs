@@ -54,7 +54,7 @@ main = do
             unifyRes = inferFull convertedAliases (allToLambdas progWithArgs)
 
             -- Verify that the program has a main function
-            hasMain = hasFunc prog "main"
+            hasMain = hasFunc progWithArgs "main"
 
             -- Evaluate the program and print the result
             in
@@ -66,4 +66,4 @@ main = do
                     else if numArgs (getFunc prog "main") /= 0 then
                         "main function must take exactly 0 arguments"
                     else
-                        show (reduceNorm prog (Var "main"))
+                        show (reduceNorm progWithArgs (Var "main"))

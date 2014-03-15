@@ -111,7 +111,7 @@ reduce prog exp = let reduce' = reduce prog in case exp of
 
     -- Other expressions
     App (Constant c) n -> App (Constant c) (reduce' n)
-    App m            n -> App (reduce' m) n
+    App m            n -> App (reduce' m) (reduce' n)
 
     _                  -> exp
 

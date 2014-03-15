@@ -210,18 +210,23 @@ data Term
 
 instance Show Term where
     show exp = case exp of
-        -- Show strings in "the traditional way". Will fail if the list contains
-        -- anything other than characters, however this will never be the case
-        -- for an expression that passes type-checking.
-        --App (App (Operation Cons) (Constant (CharVal c))) chars ->
-            --showAsString exp
+        -- Show strings in "the traditional way". May fail if the list contains
+        -- anything other than characters i.e. has not been completely reduced,
+        -- in which case the default representation is used.
+        App (App (Operation Cons) (Constant (CharVal c))) chars ->
+            case showAsString exp of
+                Just s  -> s
+                Nothing -> show c ++ " : " ++ show chars
 
-        -- Show lists in [the, traditional, way]
-        --App (App (Operation Cons) elem) rest -> showAsList exp
+        -- Show lists in [the, traditional, way] if possible, as with strings.
+        App (App (Operation Cons) elem) rest ->
+            case showAsList exp of
+                Just s  -> s
+                Nothing -> show elem ++ " : " ++ show rest
 
         -- Prevent bracketing around lists
-        --App m (App (App n o) p) | n == Operation Cons ->
-            --show m ++ ' ' : show (App (App n o) p)
+        App m (App (App n o) p) | n == Operation Cons ->
+            show m ++ ' ' : show (App (App n o) p)
 
         -- Extra rule to capture the left-associativity of function application
         -- throught bracketing
@@ -234,29 +239,37 @@ instance Show Term where
         Constant v      -> show v
         Operation ot    -> show ot
 
--- Get a nice representation of an encoded character string - will fail for
--- expressions that are not proper strings (i.e. that do not yeild 'TList TChar'
--- in a type check.
-{--showAsString :: Term -> String
-showAsString str = show (toHaskellString str)
+-- Try to get a nice representation of an encoded character string - may fail
+-- for expressions that have not bee completely reduced, in which case Nothing
+-- is returned, so that the caller can use a default representation.
+showAsString :: Term -> Maybe String
+showAsString str = case toHaskellString str of
+    Just s  -> Just (show s)
+    Nothing -> Nothing
   where
-    toHaskellString :: Term -> String
+    toHaskellString :: Term -> Maybe String
     toHaskellString (App (App (Operation Cons) (Constant (CharVal c))) rest) =
-        c : toHaskellString rest
-    toHaskellString (Operation Empty) = ""
-    toHaskellString _                 =
-        error "Tried to show an ill-typed string"
+        case toHaskellString rest of
+            Just s  -> Just (c : s)
+            Nothing -> Nothing
+    toHaskellString (Operation Empty) = Just ""
+    toHaskellString _                 = Nothing
 
--- Get a nice representation of an encoded list
-showAsList :: Term -> String
-showAsList str = show (toHaskellList str)
+-- Get a nice representation of an encoded list - may fail for an undreduced
+-- expression, in which case return Nothing, so that the caller can use a
+-- default representation.
+showAsList :: Term -> Maybe String
+showAsList lst = case toHaskellList lst of
+    Just l  -> Just (show l)
+    Nothing -> Nothing
   where
-    toHaskellList :: Term -> [Term]
+    toHaskellList :: Term -> Maybe [Term]
     toHaskellList (App (App (Operation Cons) exp) rest) =
-        exp : toHaskellList rest
-    toHaskellList (Operation Empty) = []
-    toHaskellList _                 =
-        error "Tried to show an ill-typed list"--}
+        case toHaskellList rest of
+            Just lst -> Just (exp : lst)
+            Nothing  -> Nothing
+    toHaskellList (Operation Empty) = Just []
+    toHaskellList _                 = Nothing
 
 -- Value represents a constant value. The possible constant values can be
 -- integers, floats, chars and booleans.
