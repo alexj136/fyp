@@ -25,7 +25,7 @@ main = do
 
     else do
         progStr <- readFile (head args)
-        putStrLn (show (P.parse (scan progStr)))
+        putStr (show (P.parse (scan progStr)))
         let
             -- Tokenise the program
             tokens = scan progStr
@@ -46,12 +46,16 @@ main = do
             (i, m, prog) = convertTVarsProg (0, M.empty, progPTVars)
 
             -- Convert the ParserTVars in the aliases
-            (_, _, convertedAliases) = convertTVarsAliases (i, m, aliases)
+            (i', _, convertedAliases) = convertTVarsAliases (i, m, aliases)
 
             progWithArgs = addFunc argsToProg prog
 
             -- Type check the program
-            unifyRes = inferFull convertedAliases (allToLambdas progWithArgs)
+            unifyRes =
+                inferFull
+                    convertedAliases
+                    (snd (contextProg i' progWithArgs))
+                    (allToLambdas progWithArgs)
 
             -- Verify that the program has a main function
             hasMain = hasFunc progWithArgs "main"

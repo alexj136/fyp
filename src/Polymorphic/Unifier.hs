@@ -9,20 +9,20 @@ import qualified Data.Set as S
 -- without type variables. The ConstraintSet parameter is the set of initial
 -- constraints i.e. the user's type aliases
 infer :: Term -> Maybe Type
-infer exp = case (inferFull S.empty exp) of
+infer exp = case (inferFull S.empty M.empty exp) of
     Just (ty, _) -> Just ty
     Nothing      -> Nothing
 
 -- Infer the type of a term, with type aliases. Both the term & aliases should
 -- not contain ParserTVars. Return the constraint set with the inferred type.
-inferFull :: ConstraintSet -> Term -> Maybe (Type, ConstraintSet)
-inferFull aliases exp = do
+inferFull :: ConstraintSet -> Context -> Term -> Maybe (Type, ConstraintSet)
+inferFull aliases initialCtx exp = do
     rewrite <- unify allConstraints
     return (rewrite typeOfExp, allConstraints)
   where
     allConstraints = S.union aliases constraints
     (constraints, typeOfExp, i) =
-        getConstraints (maxTVarInExp exp + 1) M.empty exp
+        getConstraints (maxTVarInExp exp + 1) initialCtx exp
 
 --------------------------------------------------------------------------------
 --                                UNIFICATION
@@ -199,6 +199,38 @@ unify c | S.size c == 0 = Just (\t -> t)
 -- variable names to their types
 type Context = M.Map Name Type
 
+-- Look up the type of a variable from a Context
+typeFromContext :: Context -> Name -> Type
+typeFromContext ctx n = case M.lookup n ctx of
+    Just t  -> t
+    Nothing ->
+        error ("getConstraints: No binding for variable '" ++ n ++
+                "' in context query")
+
+-- Add the given binding to a Context
+addToContext :: Name -> Type -> Context -> Context
+addToContext = M.insert
+
+-- An initial context to provide to getConstraints when typing a Prog object -
+-- this allows mutually recursive functions to be typeable. The Int parameter
+-- works in the same way as with many functions that deal with type variables.
+-- It represents the next available type variable number that can be used to
+-- introduce a new type variable. When used, it must be incremented for the next
+-- place in which it will be used. As such it must be returned, not just passed
+-- down to recursive calls.
+contextProg :: Int -> Prog -> (Int, Context)
+contextProg i (Prog pgMap)
+    | M.null pgMap = (i, M.empty)
+    | otherwise    =
+        let ((_, f), rest) = M.deleteFindMin pgMap in
+            case f of
+                Func ty nm _ _ -> (i', ctxAll)
+                    where (i', ctxRest) = contextProg i (Prog rest)
+                          ctxAll = addToContext nm ty ctxRest
+                FuncInf nm _ _ -> (i' + 1, ctxAll)
+                    where (i', ctxRest) = contextProg i (Prog rest)
+                          ctxAll = addToContext nm (TVar i') ctxRest
+
 -- Get the typing constraints from an expression, that are required for type
 -- unification. Prevents type variable name clashes by taking as a parameter the
 -- lowest number that is safe to use as a type variable, and returning in the
@@ -236,27 +268,6 @@ getConstraints i ctx exp = case exp of
     Constant (CharVal _) -> (S.empty, TChar, i )
     Operation ot         -> (S.empty, opTy , i')
         where (opTy, i', _) = deQuantify i M.empty (typeOfOperation ot)
-
-  where
-    -- Look up the type of a variable from a Context
-    typeFromContext :: Context -> Name -> Type
-    typeFromContext ctx n = case M.lookup n ctx of
-        Just t  -> t
-        Nothing ->
-            error ("getConstraints: No binding for variable '" ++ n ++
-                   "' in context query")
-
-    -- Add the given binding to a Context
-    addToContext :: Name -> Type -> Context -> Context
-    addToContext = M.insert
-
-{-- Constraint generation algorithm (application case):
-constr ( M N )
-    let ( tM, cM ) = constr ( M ) in
-    let ( tN, cN ) = constr ( N ) in
-    let tB = newTypeVar() in
-    ( tB, cM U cN U ( tM = tN -> tB ) )
---}
 
 -- Lookup the types of the various binary and unary operations
 typeOfOperation :: OpType -> Type
