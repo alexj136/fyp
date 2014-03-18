@@ -154,17 +154,6 @@ replace varName bodyExp argExp = case bodyExp of
           renamedY = renameAll allNames y
           allNames = Set.toList $ Set.fromList $ names x ++ names y
 
-{-- PREVIOUS IMPLEMENTATION - Closer to the definition of α-equivalence, but
-    suffers from the name clash problem.
-(===) (Constant x)        (Constant y)         = x == y
-(===) (Var n)             (Var n')             = n == n'
-(===) (Abs n x)           (Abs n' y)           = x === renamedY
-    where renamedY = renameAll
-(===) (App x y)           (App a b)            = x === a && y === b
-(===) (Arithmetic x op y) (Arithmetic a op' b) = x === a && op == op' && y === b
-(===) _                   _                    = False
---}
-
 -- Returns a string which does not exist within a given set of names. Begins by
 -- choosing the name "x", and if that already exists in the given set, add a
 -- prime (') character to it. Keep adding prime characters until we have a name
