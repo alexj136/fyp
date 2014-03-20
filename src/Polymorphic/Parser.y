@@ -7,8 +7,7 @@ import PostParsing
 
 {-- CONTEXT FREE GRAMMAR
 
-PROG ::= alias ID = TY
-       | type ID = TY
+PROG ::= type ID = TY
        | def ID ARGS = EXP
        | epsilon
 TY   ::= Int | Bool | Char
@@ -82,7 +81,6 @@ STR  ::= ".*"
     Comma   { TokenComma  p    }
     UndrSc  { TokenUndrSc p    }
 
-    Alias   { TokenAlias  p    }
     Def     { TokenDef    p    }
     Type    { TokenType   p    }
     
@@ -141,8 +139,7 @@ STR  ::= ".*"
 %%
 
 PARSERESULT :: { ParseResult }
-PARSERESULT : Alias ID Equals TY       PARSERESULT { addAlias $5 (ParserTVar $2, $4) }
-            | Type IdLC Equals TY      PARSERESULT { addTyDec $5 ($2, $4)            }
+PARSERESULT : Type IdLC Equals TY      PARSERESULT { addTyDec $5 ($2, $4)            }
             | Def IdLC ARGS Equals EXP PARSERESULT { addFuncPR $6 (FuncInf $2 $3 $5) }
             | {- empty -}                          { emptyPR                         }
 

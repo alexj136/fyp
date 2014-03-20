@@ -1,0 +1,41 @@
+type charToInt = Char -> Int
+def charToInt c =
+    if c == (head "1") then 1 else
+    (if c == (head "2") then 2 else
+    (if c == (head "3") then 3 else
+    (if c == (head "4") then 4 else
+    (if c == (head "5") then 5 else
+    (if c == (head "6") then 6 else
+    (if c == (head "7") then 7 else
+    (if c == (head "8") then 8 else
+    (if c == (head "9") then 9 else 0))))))))
+
+type pow = Int -> Int -> Int
+def pow x y =
+    let powAcc acc x y =
+        if y < 1 then
+            acc
+        else
+            (powAcc (acc * x) x (y - 1))
+    in
+    (powAcc 1 x y)
+
+type len = [a] -> Int
+def len lst =
+    let lenAcc acc lst =
+        if null lst then
+            acc
+        else
+            (lenAcc (acc + 1) (tail lst))
+    in
+    (lenAcc 0 lst)
+
+type parseInt = String -> Int
+def parseInt str =
+    let pInt tot pw s =
+        if s == [] then
+            tot
+        else
+            (pInt (tot + ((charToInt (head s)) * (pow 10 pw))) (pw - 1) (tail s))
+    in
+    (pInt 0 ((len str) - 1) str)

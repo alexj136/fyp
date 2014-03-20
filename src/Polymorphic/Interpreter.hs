@@ -35,7 +35,6 @@ reduce prog exp = let reduce' = reduce prog in case exp of
 
         (Lss, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x <  y)
         (LsE, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x <= y)
-        (Equ, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x == y)
         (NEq, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x /= y)
         (Gtr, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x >  y)
         (GtE, Constant (IntVal  x), Constant (IntVal  y)) -> constBool (x >= y)
@@ -43,6 +42,9 @@ reduce prog exp = let reduce' = reduce prog in case exp of
         (Xor, Constant (BoolVal x), Constant (BoolVal y)) -> constBool (xor x y)
         (And, Constant (BoolVal x), Constant (BoolVal y)) -> constBool (x && y)
         (Or , Constant (BoolVal x), Constant (BoolVal y)) -> constBool (x || y)
+
+        (Equ, exp1, exp2) -> -- Equality handled differently - it is polymorphic
+            constBool ((reduceNorm prog exp1) == (reduceNorm prog exp2))
 
         (op, m', n') -> App (App (Operation op) m') n'
       where

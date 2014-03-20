@@ -7,69 +7,45 @@ import Syntax
 import qualified Data.Set as S
 import qualified Data.Map as M
 
--- An alias is really the same thing as a Constraint - see the Unifier module
-type Alias = (Type, Type)
-
 type TyDec = (Name, Type)
 
 -- The ParseResult type is the return type for the parser - it contains a list
 -- of functions, a list of type declarations, and a list of type aliases.
-data ParseResult = ParseResult (M.Map Name Func) [TyDec] [Alias]
+data ParseResult = ParseResult (M.Map Name Func) [TyDec]
 
 instance Show ParseResult where
-    show (ParseResult pgMap tyDecs ((t1, t2):aliases)) =
-        ("alias " ++ show t1 ++ " = " ++ show t2 ++ "\n" ++ 
-        show (ParseResult pgMap tyDecs aliases))
-    show (ParseResult pgMap ((nm, ty):tyDecs) []) =
+    show (ParseResult pgMap ((nm, ty):tyDecs)) =
         ("type " ++ nm ++ " = " ++ show ty ++ "\n" ++ 
-        show (ParseResult pgMap tyDecs []))
-    show (ParseResult pgMap [] []) = show (Prog pgMap)
+        show (ParseResult pgMap tyDecs))
+    show (ParseResult pgMap []) = show (Prog pgMap)
 
 -- An empty ParseResult used as the 'base case' for recursion in the parser
 emptyPR :: ParseResult
-emptyPR = ParseResult M.empty [] []
+emptyPR = ParseResult M.empty []
 
 -- Add a new function to a ParseResult
 addFuncPR :: ParseResult -> Func -> ParseResult
-addFuncPR (ParseResult pgMap ts as) f = case M.lookup (getName f) pgMap of
-    Nothing -> ParseResult (M.insert (getName f) f pgMap) ts as
+addFuncPR (ParseResult pgMap ts) f = case M.lookup (getName f) pgMap of
+    Nothing -> ParseResult (M.insert (getName f) f pgMap) ts
     Just _  -> error ("Multiple definitions of function '" ++ getName f ++ "'")
 
 -- Add a new type declaration to a ParseResult
 addTyDec :: ParseResult -> TyDec -> ParseResult
-addTyDec (ParseResult pgMap ts as) t = ParseResult pgMap (t:ts) as
-
--- Add a new type alias to a ParseResult
-addAlias :: ParseResult -> Alias -> ParseResult
-addAlias (ParseResult pgMap ts as) a = ParseResult pgMap ts (a:as)
+addTyDec (ParseResult pgMap ts) t = ParseResult pgMap (t:ts)
 
 -- Combine all TyDec objects in the ParseResult with their accompanying function
 -- definitions, returning a Prog object and a set of aliases, ready for the
 -- latter stages of the pipeline.
-combineTyDecs:: ParseResult -> (Prog, S.Set Alias)
-combineTyDecs (ParseResult pgMap [] aliases)                =
-    (Prog pgMap, S.fromList aliases)
-combineTyDecs (ParseResult pgMap ((nm, ty):tyDecs) aliases) =
+combineTyDecs:: ParseResult -> Prog
+combineTyDecs (ParseResult pgMap [])                = Prog pgMap
+combineTyDecs (ParseResult pgMap ((nm, ty):tyDecs)) =
     case M.lookup nm pgMap of
         Nothing ->
             error ("Type declaration '" ++ nm ++ "' has no matching function")
         Just f  ->
             combineTyDecs (ParseResult
-                (M.insert nm (addTypeLabel f ty) pgMap) tyDecs aliases
+                (M.insert nm (addTypeLabel f ty) pgMap) tyDecs
             )
-
--- Convert the ParserTVars in the set of aliases into proper integer TVars.
-convertTVarsAliases :: (Int, M.Map String Int, S.Set (Type, Type)) ->
-    (Int, M.Map String Int, S.Set (Type, Type))
-convertTVarsAliases (i, m, aliases)
-    | S.null aliases = (i, m, aliases)
-    | otherwise      =
-        let ((t1, t2), rest) = S.deleteFindMin aliases
-            (i'  , m'  , t1'  ) = convertTVarsType (i , m , t1)
-            (i'' , m'' , t2'  ) = convertTVarsType (i', m', t2)
-            (i''', m''', rest') = (convertTVarsAliases (i'', m'', rest))
-        in
-            (i''', m''', (S.union (S.singleton (t1', t2')) rest'))
 
 -- Convert all ParserTVars in a function into integer TVars. A fresh map object
 -- is used for each function, but fresh TVar numbers are not which has the

@@ -25,10 +25,10 @@ main = do
 
     else do
         progStr <- readFile (head args)
-        putStr (show (P.parse (scan progStr)))
+        prelude <- readFile "prelude"
         let
-            -- Tokenise the program
-            tokens = scan progStr
+            -- Tokenise the program, add the prelude code
+            tokens = scan progStr ++ scan prelude
 
             -- Convert the command line arguments to hand to the program
             argsToProg = Func (TList (TList TChar))
@@ -39,22 +39,19 @@ main = do
             parseRes = P.parse tokens
 
             -- Obtain a Prog containing ParserTVars, and the type aliases
-            (progPTVars, aliases) = combineTyDecs parseRes
+            progPTVars = combineTyDecs parseRes
 
             -- Convert ParserTVars into integer TVars and add the command-line
             -- arguments to to the program
-            (i, m, prog) = convertTVarsProg (0, M.empty, progPTVars)
+            (i, _, prog) = convertTVarsProg (0, M.empty, progPTVars)
 
-            -- Convert the ParserTVars in the aliases
-            (i', _, convertedAliases) = convertTVarsAliases (i, m, aliases)
-
+            -- Add the command line arguments
             progWithArgs = addFunc argsToProg prog
 
             -- Type check the program
             unifyRes =
                 inferFull
-                    convertedAliases
-                    (snd (contextProg i' progWithArgs))
+                    (snd (contextProg i progWithArgs))
                     (allToLambdas progWithArgs)
 
             -- Verify that the program has a main function

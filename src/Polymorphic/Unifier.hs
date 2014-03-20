@@ -9,18 +9,17 @@ import qualified Data.Set as S
 -- without type variables. The ConstraintSet parameter is the set of initial
 -- constraints i.e. the user's type aliases
 infer :: Term -> Maybe Type
-infer exp = case (inferFull S.empty M.empty exp) of
+infer exp = case (inferFull M.empty exp) of
     Just (ty, _) -> Just ty
     Nothing      -> Nothing
 
 -- Infer the type of a term, with type aliases. Both the term & aliases should
 -- not contain ParserTVars. Return the constraint set with the inferred type.
-inferFull :: ConstraintSet -> Context -> Term -> Maybe (Type, ConstraintSet)
-inferFull aliases initialCtx exp = do
-    rewrite <- unify allConstraints
-    return (rewrite typeOfExp, allConstraints)
+inferFull :: Context -> Term -> Maybe (Type, ConstraintSet)
+inferFull initialCtx exp = do
+    rewrite <- unify constraints
+    return (rewrite typeOfExp, constraints)
   where
-    allConstraints = S.union aliases constraints
     (constraints, typeOfExp, i) =
         getConstraints (maxTVarInExp exp + 1) initialCtx exp
 
@@ -284,13 +283,14 @@ typeOfOperation ot = case ot of
 
     Lss -> TFunc TInt  (TFunc TInt  TBool)
     LsE -> TFunc TInt  (TFunc TInt  TBool)
-    Equ -> TFunc TInt  (TFunc TInt  TBool)
     NEq -> TFunc TInt  (TFunc TInt  TBool)
     Gtr -> TFunc TInt  (TFunc TInt  TBool)
     GtE -> TFunc TInt  (TFunc TInt  TBool)
 
     Not -> TFunc TBool TBool
     IsZ -> TFunc TInt  TBool
+
+    Equ -> TQuant 0 (TFunc (TVar 0) (TFunc (TVar 0) TBool))
 
     Empty -> TQuant 0 (TList (TVar 0))
     Cons  -> TQuant 0 (TFunc (TVar 0) (TFunc (TList (TVar 0)) (TList (TVar 0))))

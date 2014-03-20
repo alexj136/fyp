@@ -64,6 +64,19 @@ addFunc f (Prog p)
     | otherwise           = Prog (M.insert nm f p)
     where nm = getName f
 
+-- Given two Prog objects, get a list of function names that the two Prog
+-- objects have in common. Used to ensure that the user does not define
+-- functions that have name conflicts with prelude functions
+defConflicts :: Prog -> Prog -> [Name]
+defConflicts (Prog p1) (Prog p2) = M.keys (M.intersection p1 p2)
+
+-- Combine two Prog objects. Raises an error if there are duplicates - check
+-- defConflicts first.
+combine :: Prog -> Prog -> Prog
+combine (Prog p1) (Prog p2) = Prog (M.unionWith errorIfConflict p1 p2)
+  where
+    errorIfConflict = \a -> \b -> error "combine: conflicting definitions"
+
 data Func
     = Func Type Name [Name] Term
     | FuncInf   Name [Name] Term
@@ -288,12 +301,15 @@ instance Show Value where
 -- can be performed.
 data OpType
     -- Operations on Int & Bool primitives
-    = Add | Sub | Mul | Div | Mod       -- : Int  -> Int  -> Int
-    | Lss | LsE | Equ | NEq | Gtr | GtE -- : Int  -> Int  -> Bool
-    | And | Or  | Xor                   -- : Bool -> Bool -> Bool
-    | Not                               -- : Bool -> Bool
-    | IsZ                               -- : Int  -> Bool
-    
+    = Add | Sub | Mul | Div | Mod   -- : Int  -> Int  -> Int
+    | Lss | LsE | NEq | Gtr | GtE   -- : Int  -> Int  -> Bool
+    | And | Or  | Xor               -- : Bool -> Bool -> Bool
+    | Not                           -- : Bool -> Bool
+    | IsZ                           -- : Int  -> Bool
+
+    -- Expression equality
+    | Equ   -- : Va. a -> a -> Bool
+
     -- List operations
     | Empty     -- The empty list       : Va.[a]
     | Cons      -- List constructor     : Va. a  -> [a] -> [a]
