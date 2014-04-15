@@ -217,7 +217,7 @@ data Term
     | AbsInf Name      Term -- Unlabelled Abs - type is inferred
     | Var    Name           -- Variable
     | App    Term Term      -- Function application
-    | Constant  Value       -- Integer & boolean constantserm
+    | Constant  Value       -- Integer, boolean & character constants
     | Operation OpType      -- Operators like +, - etc
     deriving (Eq, Ord)
 

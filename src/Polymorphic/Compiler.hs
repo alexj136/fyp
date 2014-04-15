@@ -2,8 +2,8 @@ module Compiler where
 
 import Syntax
 
-compileTerm :: Term -> [String]
-compileTerm exp = case exp of
+codeGenTerm :: Term -> [String]
+codeGenTerm exp = case exp of
 
     -- Constants
     Constant (IntVal  x    ) -> ["movl $" ++ show x ++ ", %eax"]
@@ -13,17 +13,20 @@ compileTerm exp = case exp of
 
     -- Binary operations
     App (App (Operation ot) m) n | isBinary ot ->
-        (compileTerm n) ++
+        (codeGenTerm n) ++
         ["pushl %eax"] ++
-        (compileTerm m) ++
+        (codeGenTerm m) ++
         ["popl %ebx"] ++
-        (compileOp ot)
+        (codeGenOp ot)
 
     -- Unary operations
     App (Operation ot) m | isUnary ot ->
-        (compileTerm m) ++
-        (compileOp ot)
+        (codeGenTerm m) ++
+        (codeGenOp ot)
 
     -- Abstractions should be lifted into functions before compilation
     Abs  _ _ _ -> error "Unlifted abstraction"
     AbsInf _ _ -> error "Unlifted abstraction"
+
+lambdaLift :: Term -> Term
+lambdaLift _ = error "Lambda lifting not yet implemented"
