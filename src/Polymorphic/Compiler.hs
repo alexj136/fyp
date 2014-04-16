@@ -3,7 +3,7 @@ module Compiler where
 import Syntax
 
 codeGenProg :: Prog -> [String]
-codeGenProg _ = "codeGenProg not yet implemented"
+codeGenProg _ = error "codeGenProg not yet implemented"
 
 -- Most of the work for function calls is handled on the caller's side - we need
 -- not do anything more than include an address to jump to, and a return
@@ -39,6 +39,20 @@ codeGenTerm exp = case exp of
     -- Abstractions should be lifted into functions before compilation
     Abs  _ _ _ -> error "Unlifted abstraction"
     AbsInf _ _ -> error "Unlifted abstraction"
+
+codeGenOp :: OpType -> [String]
+codeGenOp ot = case ot of
+    Add -> ["addl %ebx, %eax"]
+    Sub -> ["subl %ebx, %eax"]
+    Mul -> ["imull %ebx, %eax"]
+    Div -> ["idivl %ebx, %eax"]
+    Mod -> ["idivl %ebx, %eax", "movl %edx, %eax"] -- idivl puts remndr in %edx
+
+    And -> ["andl %ebx, %eax"]
+    Or  -> ["orl %ebx, %eax"]
+    Xor -> ["xorl %ebx, %eax"]
+
+    Not -> ["movl $1, %ebx", "cmove ..."]
 
 lambdaLiftProg :: Prog -> Prog
 lambdaLiftProg _ = error "lambdaLiftProg not yet implemented"
