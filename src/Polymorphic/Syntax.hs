@@ -97,6 +97,11 @@ numArgs :: Func -> Int
 numArgs (Func  _ _ a _) = length a
 numArgs (FuncInf _ a _) = length a
 
+-- Get the function arguments as a list
+getArgs :: Func -> [Name]
+getArgs (Func  _ _ a _) = a
+getArgs (FuncInf _ a _) = a
+
 instance Show Func where
     show (Func ty nm args body) = show ty ++ " :\n" ++ nm ++ showArgs args ++
                                   " = " ++ show body
