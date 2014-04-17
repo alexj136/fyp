@@ -1,4 +1,4 @@
-module Compiler where
+module CodeGen where
 
 import Syntax
 

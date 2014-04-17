@@ -1,4 +1,4 @@
-MODULES  = Lexer Parser PostParsing Syntax Unifier Interpreter Compiler
+MODULES  = Lexer Parser PostParsing Syntax Unifier Interpreter CodeGen
 
 OBJECTS  = Main.o  $(MODULES:=.o)
 HIFILES  = Main.hi $(MODULES:=.hi)
