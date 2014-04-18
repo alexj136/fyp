@@ -1,5 +1,12 @@
 module CodeGen where
 
+{-
+ -  Assemble generated code on x86_64 systems with the command:
+ -      gcc -m32 asmfile.s -o asmfile
+ -  and on x86 systems with:
+ -      gcc asmfile.s -o asmfile
+ -}
+
 import Syntax
 
 codeGenProg :: Prog -> [String]
