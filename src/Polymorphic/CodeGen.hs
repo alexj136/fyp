@@ -64,5 +64,12 @@ codeGenOp ot = case ot of
 lambdaLiftProg :: Prog -> Prog
 lambdaLiftProg _ = error "lambdaLiftProg not yet implemented"
 
-lambdaLiftFunc :: Func -> Func
-lambdaLiftFunc _ = error "lambdaLiftFunc not yet implemented"
+lambdaLiftFunc :: Func -> [Func]
+lambdaLiftFunc f
+    | numArgs f <= 1 = [f]
+    | otherwise      = case f of
+        Func  _ _ _ _ -> error "lambdaLiftFunc not yet implemented"
+        FuncInf _ _ _ -> error "lambdaLiftFunc not yet implemented"
+
+lambdaLiftTerm :: Term -> Either Term [Func]
+lambdaLiftTerm _ = error "lambdaLiftTerm not yet implemented"
