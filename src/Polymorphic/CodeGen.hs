@@ -26,8 +26,8 @@ codeGenTerm exp = case exp of
 
     -- Constants
     Constant (IntVal  x    ) -> ["movl $" ++ show x ++ ", %eax"]
-    Constant (BoolVal True ) -> ["movl $1, %eax"]
-    Constant (BoolVal False) -> ["movl $0, %eax"]
+    Constant (BoolVal True ) -> ["mov $1, %ax"]
+    Constant (BoolVal False) -> ["mov $0, %ax"]
     Constant (CharVal c    ) -> ["mov '" ++ c : ", %ax"]
 
     -- Binary operations
@@ -55,11 +55,16 @@ codeGenOp ot = case ot of
     Div -> ["idivl %ebx, %eax"]
     Mod -> ["idivl %ebx, %eax", "movl %edx, %eax"] -- idivl puts remndr in %edx
 
-    And -> ["andl %ebx, %eax"]
-    Or  -> ["orl %ebx, %eax"]
-    Xor -> ["xorl %ebx, %eax"]
+    And -> ["and %ebx, %eax"]
+    Or  -> ["or %ebx, %eax"]
+    Xor -> ["xor %ebx, %eax"]
 
-    Not -> ["movl $1, %ebx", "cmove ..."]
+    Not ->
+        [ "mov %ax, %bx"    -- Move the value we want to 'not' into %bx.
+        , "mov $1 %ax"      -- Move a 1 to %ax.
+        , "cmp %ax, %bx"    -- Compare our value in %bx, with the 1 in %ax.
+        , "cmove $0 %ax"    -- If our value is 1, move a 0 into %ax. If it's 0,
+        ]                   -- leave the 1 there.
 
 lambdaLiftProg :: Prog -> Prog
 lambdaLiftProg _ = error "lambdaLiftProg not yet implemented"
