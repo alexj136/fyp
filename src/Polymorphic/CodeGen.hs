@@ -43,6 +43,11 @@ codeGenTerm exp = case exp of
         (codeGenTerm m)
         ++ (codeGenOp ot)
 
+    -- Conditionals
+    App (App (App (Operation Cond) guard) m) n ->
+        (codeGenTerm guard)
+        ++ ["cmp $1, %ax", ""]
+
     -- Abstractions should be lifted into functions before compilation
     Abs  _ _ _ -> error "Unlifted abstraction"
     AbsInf _ _ -> error "Unlifted abstraction"
@@ -61,20 +66,20 @@ codeGenOp ot = case ot of
 
     Not ->
         [ "mov %ax, %bx"    -- Move the value we want to 'not' into %bx.
-        , "mov $1 %ax"      -- Move a 1 to %ax.
+        , "mov $1, %ax"      -- Move a 1 to %ax.
         , "cmp %ax, %bx"    -- Compare our value in %bx, with the 1 in %ax.
-        , "cmove $0 %ax"    -- If our value is 1, move a 0 into %ax. If it's 0,
+        , "cmove $0, %ax"    -- If our value is 1, move a 0 into %ax. If it's 0,
         ]                   -- leave the 1 there.
 
 lambdaLiftProg :: Prog -> Prog
 lambdaLiftProg _ = error "lambdaLiftProg not yet implemented"
 
 lambdaLiftFunc :: Func -> [Func]
-lambdaLiftFunc f
-    | numArgs f <= 1 = [f]
-    | otherwise      = case f of
-        Func  _ _ _ _ -> error "lambdaLiftFunc not yet implemented"
-        FuncInf _ _ _ -> error "lambdaLiftFunc not yet implemented"
+lambdaLiftFunc f =
+    let (newBody, newFuncs) = lambdaLiftTerm (getBody f) in
+        case f of
+            Func ty nm args _ -> Func ty nm args newBody : newFuncs
+            FuncInf nm args _ -> FuncInf nm args newBody : newFuncs
 
-lambdaLiftTerm :: Term -> Either Term [Func]
+lambdaLiftTerm :: Term -> (Term, [Func])
 lambdaLiftTerm _ = error "lambdaLiftTerm not yet implemented"
