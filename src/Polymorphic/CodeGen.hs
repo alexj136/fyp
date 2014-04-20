@@ -15,38 +15,63 @@ codeGenProg _ = error "codeGenProg not yet implemented"
 -- Most of the work for function calls is handled on the caller's side - we need
 -- not do anything more than include an address to jump to, and a return
 -- instruction.
-codeGenFunc :: Func -> [String]
-codeGenFunc f =
-    [getName f ++ "_entry:"]
-    ++ codeGenTerm (getBody f)
-    ++ ["ret"]
+codeGenFunc :: Int -> Func -> (Int, [String])
+codeGenFunc nextLabel f =
+    let (nextNextLabel, codeF) = codeGenTerm nextLabel (getBody f)
+    in
+    (nextNextLabel,
+        [getName f ++ "_entry:"]
+        ++ codeF
+        ++ ["ret"]
+    )
 
-codeGenTerm :: Term -> [String]
-codeGenTerm exp = case exp of
+codeGenTerm :: Int -> Term -> (Int, [String])
+codeGenTerm nextLabel exp = case exp of
 
     -- Constants
-    Constant (IntVal  x    ) -> ["movl $" ++ show x ++ ", %eax"]
-    Constant (BoolVal True ) -> ["mov $1, %ax"]
-    Constant (BoolVal False) -> ["mov $0, %ax"]
-    Constant (CharVal c    ) -> ["mov '" ++ c : ", %ax"]
+    Constant (IntVal  x    ) -> (nextLabel, ["movl $" ++ show x ++ ", %eax"])
+    Constant (BoolVal True ) -> (nextLabel, ["mov $1, %ax"])
+    Constant (BoolVal False) -> (nextLabel, ["mov $0, %ax"])
+    Constant (CharVal c    ) -> (nextLabel, ["mov '" ++ c : ", %ax"])
 
     -- Binary operations
     App (App (Operation ot) m) n | isBinary ot ->
-        (codeGenTerm n)
-        ++ ["pushl %eax"]
-        ++ (codeGenTerm m)
-        ++ ["popl %ebx"]
-        ++ (codeGenOp ot)
+        let (nextNextLabel    , codeN ) = codeGenTerm nextLabel     n
+            (nextNextNextLabel, codeM ) = codeGenTerm nextNextLabel m
+        in
+        (nextNextNextLabel,
+            codeN
+            ++ ["pushl %eax"]
+            ++ codeM
+            ++ ["popl %ebx"]
+            ++ codeGenOp ot
+        )
 
     -- Unary operations
     App (Operation ot) m | isUnary ot ->
-        (codeGenTerm m)
-        ++ (codeGenOp ot)
+        let (nextNextLabel, codeM ) = codeGenTerm nextLabel m
+        in
+        (nextNextLabel,
+            codeM ++
+            codeGenOp ot
+        )
 
     -- Conditionals
     App (App (App (Operation Cond) guard) m) n ->
-        (codeGenTerm guard)
-        ++ ["cmp $1, %ax", ""]
+        let (nextNextLabel        , codeGuard) = codeGenTerm nextLabel         guard
+            (nextNextNextLabel    , codeM    ) = codeGenTerm nextNextLabel     m
+            (nextNextNextNextLabel, codeN    ) = codeGenTerm nextNextNextLabel n
+        in
+        (nextNextNextNextLabel,
+            codeGuard
+            ++ ["cmp $1, %ax", ""]
+            ++ ["labelCondTrue" ++ show nextNextLabel ++ ":"]
+            ++ codeM
+            ++ ["jmp labelCondEnd" ++ show nextNextLabel]
+            ++ ["labelCondFalse" ++ show nextNextLabel ++ ":"]
+            ++ codeN
+            ++ ["labelCondEnd" ++ show nextNextLabel ++ ":"]
+        )
 
     -- Abstractions should be lifted into functions before compilation
     Abs  _ _ _ -> error "Unlifted abstraction"
