@@ -64,13 +64,13 @@ codeGenTerm nextLabel exp = case exp of
         in
         (nextNextNextNextLabel,
             codeGuard
-            ++ ["cmp $1, %ax", ""]
-            ++ ["labelCondTrue" ++ show nextNextLabel ++ ":"]
+            ++ ["cmp $0, %ax"]
+            ++ ["je condFalse" ++ show nextNextLabel]
             ++ codeM
-            ++ ["jmp labelCondEnd" ++ show nextNextLabel]
-            ++ ["labelCondFalse" ++ show nextNextLabel ++ ":"]
+            ++ ["jmp condEnd" ++ show nextNextLabel]
+            ++ ["condFalse" ++ show nextNextLabel ++ ":"]
             ++ codeN
-            ++ ["labelCondEnd" ++ show nextNextLabel ++ ":"]
+            ++ ["condEnd" ++ show nextNextLabel ++ ":"]
         )
 
     -- Abstractions should be lifted into functions before compilation
@@ -91,10 +91,27 @@ codeGenOp ot = case ot of
 
     Not ->
         [ "mov %ax, %bx"    -- Move the value we want to 'not' into %bx.
-        , "mov $1, %ax"      -- Move a 1 to %ax.
+        , "mov $1, %ax"     -- Move a 1 to %ax.
         , "cmp %ax, %bx"    -- Compare our value in %bx, with the 1 in %ax.
-        , "cmove $0, %ax"    -- If our value is 1, move a 0 into %ax. If it's 0,
+        , "cmove $0, %ax"   -- If our value is 1, move a 0 into %ax. If it's 0,
         ]                   -- leave the 1 there.
+
+    Lss -> boolComparison "cmovl $1, %ax"
+    LsE -> boolComparison "cmovle $1, %ax"
+    NEq -> boolComparison "cmovne $1, %ax"
+    Gtr -> boolComparison "cmovg $1, %ax"
+    GtE -> boolComparison "cmovge $1, %ax"
+
+    _   -> error $ "\'" ++ show ot ++ "\' not yet implemented"
+
+-- Create code to do a boolean comparison
+boolComparison :: String -> [String] =
+boolComparison comp =
+    [ "movl %eax, %ecx"
+    , "mov $0, %ax"
+    , "cmpl %ecx, %ebx"
+    , comp
+    ]
 
 lambdaLiftProg :: Prog -> Prog
 lambdaLiftProg _ = error "lambdaLiftProg not yet implemented"

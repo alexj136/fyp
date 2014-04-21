@@ -38,7 +38,7 @@ main = do
             -- type declarations, and a list of type aliases
             parseRes = P.parse tokens
 
-            -- Obtain a Prog containing ParserTVars, and the type aliases
+            -- Obtain a Prog containing ParserTVars
             progPTVars = combineTyDecs parseRes
 
             -- Convert ParserTVars into integer TVars and add the command-line
