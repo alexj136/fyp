@@ -6,6 +6,7 @@ import PostParsing
 import Syntax
 import Unifier
 import Interpreter
+import CodeGen
 
 import System.Environment (getArgs)
 import qualified Data.Map as M
@@ -20,11 +21,32 @@ parseArgs (arg:args) =
 main = do
     args <- getArgs
     
-    if (length args) == 0 then do
-        putStrLn "Please provide a filename"
+    if (length args) < 2 then do
+        putStrLn "usage = Main [[-c|--compile] filename |\
+            \ [-i|--interpret] filename args]"
 
-    else do
-        progStr <- readFile (head args)
+    else if (head args) == "-c" || (head args) == "--compile" then do
+        putStrLn "Warning: lambda lifting not yet implemented. Local \
+            \Definitions will cause errors."
+        progStr <- readFile $ head (tail args)
+        let tokens       = scan progStr
+            parseRes     = P.parse tokens
+            progPTVars   = combineTyDecs parseRes
+            (i, _, prog) = convertTVarsProg (0, M.empty, progPTVars)
+            unifyRes     = inferFull (snd (contextProg i prog)) (allToLambdas prog)
+            hasMain      = hasFunc prog "main"
+            liftedProg   = lambdaLiftProg prog
+            outputCode   = codeGenProg liftedProg
+            in
+            if unifyRes == Nothing then
+                putStrLn "Type check failure"
+            else if not hasMain then
+                putStrLn "No main function found"
+            else
+                writeFile ((head (tail args)) ++ ".s") outputCode
+
+    else if (head args) == "-i" || (head args) == "--interpret" then do
+        progStr <- readFile (head (tail args))
         prelude <- readFile "prelude"
         let
             -- Tokenise the program, add the prelude code
@@ -32,7 +54,7 @@ main = do
 
             -- Convert the command line arguments to hand to the program
             argsToProg = Func (TList (TList TChar))
-                           "args" [] (parseArgs (tail args))
+                           "args" [] (parseArgs (tail (tail args)))
 
             -- Obtain a ParseResult - a map from names to functions, a list of
             -- type declarations, and a list of type aliases
@@ -68,3 +90,6 @@ main = do
                         "main function must take exactly 0 arguments"
                     else
                         show (reduceNorm progWithArgs (Var "main"))
+    else
+        putStrLn "usage = Main [[-c|--compile] filename |\
+            \ [-i|--interpret] filename args]"
