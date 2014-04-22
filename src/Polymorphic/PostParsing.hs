@@ -10,7 +10,7 @@ import qualified Data.Map as M
 type TyDec = (Name, Type)
 
 -- The ParseResult type is the return type for the parser - it contains a list
--- of functions, a list of type declarations, and a list of type aliases.
+-- of functions, a list of type declarations
 data ParseResult = ParseResult (M.Map Name Func) [TyDec]
 
 instance Show ParseResult where
@@ -34,8 +34,7 @@ addTyDec :: ParseResult -> TyDec -> ParseResult
 addTyDec (ParseResult pgMap ts) t = ParseResult pgMap (t:ts)
 
 -- Combine all TyDec objects in the ParseResult with their accompanying function
--- definitions, returning a Prog object and a set of aliases, ready for the
--- latter stages of the pipeline.
+-- definitions, returning a Prog object ready for the latter stages of the pipeline.
 combineTyDecs:: ParseResult -> Prog
 combineTyDecs (ParseResult pgMap [])                = Prog pgMap
 combineTyDecs (ParseResult pgMap ((nm, ty):tyDecs)) =

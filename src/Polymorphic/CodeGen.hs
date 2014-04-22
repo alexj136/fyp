@@ -9,8 +9,10 @@ module CodeGen where
 
 import Syntax
 
-codeGenProg :: Prog -> [String]
-codeGenProg _ = error "codeGenProg not yet implemented"
+import Data.List (intersperse)
+
+codeGenProg :: Prog -> String
+codeGenProg _ = concat $ intersperse "\n" $ error "codeGenProg not yet implemented"
 
 -- Most of the work for function calls is handled on the caller's side - we need
 -- not do anything more than include an address to jump to, and a return
@@ -105,7 +107,7 @@ codeGenOp ot = case ot of
     _   -> error $ "\'" ++ show ot ++ "\' not yet implemented"
 
 -- Create code to do a boolean comparison
-boolComparison :: String -> [String] =
+boolComparison :: String -> [String]
 boolComparison comp =
     [ "movl %eax, %ecx"
     , "mov $0, %ax"
