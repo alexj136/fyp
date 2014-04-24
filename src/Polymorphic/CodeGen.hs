@@ -10,6 +10,7 @@ module CodeGen where
 import Syntax
 
 import Data.List (intersperse)
+import qualified Data.Set as S
 
 codeGenProg :: Prog -> String
 codeGenProg _ = concat $ intersperse "\n" $ error "codeGenProg not yet implemented"
@@ -120,10 +121,28 @@ lambdaLiftProg _ = error "lambdaLiftProg not yet implemented"
 
 lambdaLiftFunc :: Func -> [Func]
 lambdaLiftFunc f =
-    let (newBody, newFuncs) = lambdaLiftTerm (getBody f) in
+    let (newBody, newFuncs) = lambdaLiftTerm (getBody f) [] in
         case f of
             Func ty nm args _ -> Func ty nm args newBody : newFuncs
             FuncInf nm args _ -> FuncInf nm args newBody : newFuncs
 
 lambdaLiftTerm :: Term -> (Term, [Func])
-lambdaLiftTerm _ = error "lambdaLiftTerm not yet implemented"
+lambdaLiftTerm tm = case tm of
+    Abs v t m   -> (Var nm, Func ty nm (S.toList (freeVars tm)) liftedM : funcsM)
+      where
+        nm =
+        ty =
+        (liftedM, funcsM) = lambdaLiftTerm m
+    AbsInf v m  -> error "lambdaLiftTerm not yet implemented"
+      where
+        (liftedM, funcsM) = lambdaLiftTerm m
+    Var _       -> (tm, [])
+    App m n     -> (App liftedM liftedN, funcsM ++ funcsN)
+      where
+        (liftedM, funcsM) = lambdaLiftTerm m
+        (liftedN, funcsN) = lambdaLiftTerm n
+    Constant  _ -> (tm, [])
+    Operation _ -> (tm, [])
+
+makeCall :: Name -> [Name] -> Term
+makeCall nm (arg:args) = App
