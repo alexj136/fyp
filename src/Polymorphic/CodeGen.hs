@@ -11,9 +11,19 @@ import Syntax
 
 import Data.List (intersperse)
 import qualified Data.Set as S
+import qualified Data.Map as M
 
 codeGenProg :: Prog -> String
-codeGenProg _ = concat $ intersperse "\n" $ error "codeGenProg not yet implemented"
+codeGenProg pg = case pg of
+    Prog pgMap ->
+        concat $ intersperse "\n" $
+            [".globl main"]     ++
+            ["main:"]           ++
+            ["call __main__"] ++
+            ["movl %eax, %ebx"] ++      -- OS expects program result in %ebx
+            ["movl $1, %eax"]   ++      -- System call type 1 is an exit call
+            ["int $0x80"]       ++ (    -- Do the system call
+            concat $ map snd $ map (codeGenFunc 0) $ map snd (M.toList pgMap))
 
 -- Most of the work for function calls is handled on the caller's side - we need
 -- not do anything more than include an address to jump to, and a return
@@ -23,7 +33,7 @@ codeGenFunc nextLabel f =
     let (nextNextLabel, codeF) = codeGenTerm nextLabel (getBody f)
     in
     (nextNextLabel,
-        [getName f ++ "_entry:"]
+        ["__" ++ getName f ++ "__:"]
         ++ codeF
         ++ ["ret"]
     )
@@ -117,7 +127,7 @@ boolComparison comp =
     ]
 
 lambdaLiftProg :: Prog -> Prog
-lambdaLiftProg _ = error "lambdaLiftProg not yet implemented"
+lambdaLiftProg pg = pg
 
 lambdaLiftFunc :: Func -> [Func]
 lambdaLiftFunc f =
