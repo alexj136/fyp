@@ -17,13 +17,23 @@ codeGenProg :: Prog -> String
 codeGenProg pg = case pg of
     Prog pgMap ->
         concat $ intersperse "\n" $
-            [".globl main"]     ++
-            ["main:"]           ++
-            ["call __main__"] ++
-            ["movl %eax, %ebx"] ++      -- OS expects program result in %ebx
-            ["movl $1, %eax"]   ++      -- System call type 1 is an exit call
-            ["int $0x80"]       ++ (    -- Do the system call
-            concat $ map snd $ map (codeGenFunc 0) $ map snd (M.toList pgMap))
+            [ ".globl main"
+            , "main:"
+            ,"call __main__"
+            ,"movl %eax, %ebx"  -- OS expects program result in %ebx
+            ,"movl $1, %eax"    -- System call type 1 is an exit call
+            ,"int $0x80"        -- Do the system call
+            ] ++ (snd (codeGenFuncs 0 (map snd (M.toList pgMap))))
+
+-- Generate code for multiple functions
+codeGenFuncs :: Int -> [Func] -> (Int, [String])
+codeGenFuncs = codeGenFuncsAcc []
+  where
+    codeGenFuncsAcc :: [String] -> Int -> [Func] -> (Int, [String])
+    codeGenFuncsAcc acc nextLabel []     = (nextLabel, acc)
+    codeGenFuncsAcc acc nextLabel (f:fs) =
+        let (nextLabel2, fCode) = codeGenFunc nextLabel f in
+            codeGenFuncsAcc (acc ++ fCode) nextLabel2 fs
 
 -- Most of the work for function calls is handled on the caller's side - we need
 -- not do anything more than include an address to jump to, and a return
@@ -71,19 +81,19 @@ codeGenTerm nextLabel exp = case exp of
 
     -- Conditionals
     App (App (App (Operation Cond) guard) m) n ->
-        let (nextNextLabel        , codeGuard) = codeGenTerm nextLabel         guard
-            (nextNextNextLabel    , codeM    ) = codeGenTerm nextNextLabel     m
-            (nextNextNextNextLabel, codeN    ) = codeGenTerm nextNextNextLabel n
+        let (nextLabel2, codeGuard) = codeGenTerm nextLabel  guard
+            (nextLabel3, codeM    ) = codeGenTerm nextLabel2 m
+            (nextLabel4, codeN    ) = codeGenTerm nextLabel3 n
         in
-        (nextNextNextNextLabel,
+        (nextLabel4,
             codeGuard
             ++ ["cmp $0, %ax"]
-            ++ ["je condFalse" ++ show nextNextLabel]
+            ++ ["je condFalse" ++ show nextLabel2]
             ++ codeM
-            ++ ["jmp condEnd" ++ show nextNextLabel]
-            ++ ["condFalse" ++ show nextNextLabel ++ ":"]
+            ++ ["jmp condEnd" ++ show nextLabel2]
+            ++ ["condFalse" ++ show nextLabel2 ++ ":"]
             ++ codeN
-            ++ ["condEnd" ++ show nextNextLabel ++ ":"]
+            ++ ["condEnd" ++ show nextLabel2 ++ ":"]
         )
 
     -- Abstractions should be lifted into functions before compilation
@@ -131,21 +141,27 @@ lambdaLiftProg pg = pg
 
 lambdaLiftFunc :: Func -> [Func]
 lambdaLiftFunc f =
-    let (newBody, newFuncs) = lambdaLiftTerm (getBody f) [] in
+    let (newBody, newFuncs) = lambdaLiftTerm (getBody f) in
         case f of
             Func ty nm args _ -> Func ty nm args newBody : newFuncs
             FuncInf nm args _ -> FuncInf nm args newBody : newFuncs
 
 lambdaLiftTerm :: Term -> (Term, [Func])
 lambdaLiftTerm tm = case tm of
-    Abs v t m   -> (Var nm, Func ty nm (S.toList (freeVars tm)) liftedM : funcsM)
+
+    Abs v t m   -> (makeCall nm args, FuncInf nm args (liftedM : funcsM))
       where
-        nm =
-        ty =
+        nm = error "lambdaLiftTerm not yet implemented"
+        ty = error "lambdaLiftTerm not yet implemented"
+        args = S.toList (freeVars tm)
         (liftedM, funcsM) = lambdaLiftTerm m
-    AbsInf v m  -> error "lambdaLiftTerm not yet implemented"
+
+    AbsInf v m  -> (makeCall nm args, FuncInf nm args (liftedM : funcsM))
       where
+        nm = error "lambdaLiftTerm not yet implemented"
+        args = S.toList (freeVars tm)
         (liftedM, funcsM) = lambdaLiftTerm m
+
     Var _       -> (tm, [])
     App m n     -> (App liftedM liftedN, funcsM ++ funcsN)
       where
@@ -155,4 +171,4 @@ lambdaLiftTerm tm = case tm of
     Operation _ -> (tm, [])
 
 makeCall :: Name -> [Name] -> Term
-makeCall nm (arg:args) = App
+makeCall nm (arg:args) = error "makeCall not yet implemented"
