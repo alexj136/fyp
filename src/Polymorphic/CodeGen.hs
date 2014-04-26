@@ -8,6 +8,7 @@ module CodeGen where
  -}
 
 import Syntax
+import Interpreter (replace)
 
 import Data.List (intersperse)
 import qualified Data.Set as S
@@ -19,7 +20,7 @@ codeGenProg pg = case pg of
         concat $ intersperse "\n" $
             [ ".globl main"
             , "main:"
-            ,"call __main__"
+            ,"call " ++ (codeName "main")
             ,"movl %eax, %ebx"  -- OS expects program result in %ebx
             ,"movl $1, %eax"    -- System call type 1 is an exit call
             ,"int $0x80"        -- Do the system call
@@ -43,7 +44,7 @@ codeGenFunc nextLabel f =
     let (nextNextLabel, codeF) = codeGenTerm nextLabel (getBody f)
     in
     (nextNextLabel,
-        ["__" ++ getName f ++ "__:"]
+        [(codeName (getName f)) ++ ":"]
         ++ codeF
         ++ ["ret"]
     )
@@ -141,34 +142,46 @@ lambdaLiftProg pg = pg
 
 lambdaLiftFunc :: Func -> [Func]
 lambdaLiftFunc f =
-    let (newBody, newFuncs) = lambdaLiftTerm (getBody f) in
+    let (_, newBody, newFuncs) = lambdaLiftTerm (getName f) 0 (getBody f) in
         case f of
             Func ty nm args _ -> Func ty nm args newBody : newFuncs
             FuncInf nm args _ -> FuncInf nm args newBody : newFuncs
 
-lambdaLiftTerm :: Term -> (Term, [Func])
-lambdaLiftTerm tm = case tm of
+-- Takes the name of the containing function, an integer representing the next
+-- usable function name for functions we lift out, and the term to lift.
+lambdaLiftTerm :: Name -> Int -> Term -> (Int, Term, [Func])
+lambdaLiftTerm nm liftNum tm = case tm of
 
-    Abs v t m   -> (makeCall nm args, FuncInf nm args (liftedM : funcsM))
+    App (AbsInf v m) n ->
+        ( liftNum + 1
+        , replace v m (makeCall v args)
+        , FuncInf liftName args n : []
+        )
       where
-        nm = error "lambdaLiftTerm not yet implemented"
-        ty = error "lambdaLiftTerm not yet implemented"
+        liftName = liftCodeName nm liftNum
         args = S.toList (freeVars tm)
-        (liftedM, funcsM) = lambdaLiftTerm m
 
-    AbsInf v m  -> (makeCall nm args, FuncInf nm args (liftedM : funcsM))
-      where
-        nm = error "lambdaLiftTerm not yet implemented"
-        args = S.toList (freeVars tm)
-        (liftedM, funcsM) = lambdaLiftTerm m
+    -- Take a shortcut here - to lift a function with a type declaration, throw
+    -- away the type declaration and lift the implicitly typed function.
+    App (Abs v t m) n -> lambdaLiftTerm nm liftNum (App (AbsInf v m) n)
 
-    Var _       -> (tm, [])
-    App m n     -> (App liftedM liftedN, funcsM ++ funcsN)
+    Var _       -> (liftNum, tm, [])
+    App m n     -> (newLiftNum2, App liftedM liftedN, funcsM ++ funcsN)
       where
-        (liftedM, funcsM) = lambdaLiftTerm m
-        (liftedN, funcsN) = lambdaLiftTerm n
-    Constant  _ -> (tm, [])
-    Operation _ -> (tm, [])
+        (newLiftNum , liftedM, funcsM) = lambdaLiftTerm nm    liftNum m
+        (newLiftNum2, liftedN, funcsN) = lambdaLiftTerm nm newLiftNum n
+    Constant  _ -> (liftNum, tm, [])
+    Operation _ -> (liftNum, tm, [])
 
 makeCall :: Name -> [Name] -> Term
 makeCall nm (arg:args) = error "makeCall not yet implemented"
+
+-- Translate a declared function name into a name that will be included as a
+-- label in the generated assembly code
+codeName :: Name -> Name
+codeName n = "__" ++ n ++ "__"
+
+-- Generate the name of a function that has been lifted out of an abstraction,
+-- that can be used in generated assembly code
+liftCodeName :: Name -> Int -> Name
+liftCodeName n i = "__" ++ n ++ "__lift__" ++ show i ++ "__"
