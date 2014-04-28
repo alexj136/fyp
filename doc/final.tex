@@ -58,7 +58,7 @@ Interpretation is an execution system that performs \emph{immediate evaluation} 
 Code generation involves outputting machine code while traversing the AST. The generated machine code is then saved as a file, which can be directly executed by the computer at a later time. Thus, we have a distinction between \emph{compile-time} and \emph{runtime}, that does not exist with interpretation.
 
 \paragraph{Just-In-Time Systems \\}
-Just-in-time (JIT) compilation is similar to interpretation in that there is no compile-time/runtime distinction. However, machine code \emph{is} generated with JIT, but instead of it being written to a file, it is mapped directly into the computer's memory for immediate execution. A JIT system will have a program managing the generation and execution of machine code, so that it is as efficient as possible - for example, if some piece of source code is never executed, it would be wasteful to generate machine code for it. For this reason, source code (or an AST, depending on the strategy used by the JIT system) is only translated into machine code at the last possible moment prior to execution (hence the term just-in-time).
+Just-in-time (JIT) compilation is similar to interpretation in that there is no compile-time/runtime distinction. However, machine code \emph{is} generated with JIT, but instead of it being written to a file, it is mapped directly into the computer's memory for immediate execution. A JIT system will have a program managing the generation and execution of machine code, so that it is as efficient as possible - for example, if some piece of source code is never executed, it would be wasteful to generate machine code for it. For this reason, source code (or an AST, depending on the strategy used by the JIT system) is only translated into machine code at the last possible moment prior to execution (hence the term just-in-time). JIT systems are effective because much more information about the execution of the program is known at runtime as opposed to compile-time, meaning that JIT-compiled code can be optimised to a much greater degree than code compiled ahead of time.
 
 \paragraph{Hybrid Systems \\}
 There are many hybrid systems in existence that combine interpretation, code generation and JIT systems into a programming language implementation. One such example is the Java programming language, which generates intermediate code at compile-time, and at runtime, the intermediate code is executed by a \emph{tracing} JIT system, where code is initially interpreted, and when a part of the program is determined to be 'hot code' - code that is executed frequently - it is translated to machine code and directly executed. There are a vast array of different hybrid systems in existence, and many possible combinations that have not been attempted. The goal is usually to maximise performance.
@@ -167,6 +167,52 @@ Below are the target completion dates for the subtasks of the project:
 \end{tabular}
 \\\\
 Should I complete tasks early, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
+
+\pagebreak
+\section{Design \& Implementation}
+\subsection{Modules}
+The language implementation is divided into several modules discussed below.
+% For each section describe:
+%   - Broad purpose
+%   - Key datatypes
+%   - Key functions
+%   - Implementation issues and solutions to them
+\subsubsection{Syntax}
+\subsubsection{Interpreter}
+\subsubsection{CodeGen}
+\subsubsection{Unifier}
+\subsubsection{Lexer}
+\subsubsection{Parser}
+\subsubsection{PostParsing}
+\subsubsection{Test Modules}
+
+\subsection{Testing}
+\subsection{Source Repository}
+% PureCalculus, TypedCalculus & Polymorphic
+
+\pagebreak
+\section{Language Specification}
+This section will give details of the implemented language and serve as user documentation.
+\subsection{Context-Free Grammar}
+\subsection{Basic Data Types}
+\subsection{Functions for Basic Data Types}
+\subsection{Abstract Data Types}
+\subsection{Functions for Abstract Data Types}
+\subsection{Function Definitions}
+\subsection{Type Declarations}
+\subsection{Prelude Functions}
+\subsection{Type Inference}
+\subsection{Polymorphic Types}
+\subsection{Interpreted Implementation}
+\subsection{Compiled Implementation}
+\subsection{Interface}
+
+\pagebreak
+\section{Evaluation}
+% Comments on performance and robustness of each feature e.g. interpreter, type inference, etc.
+% What has not yet been done & why not
+% What I would do with more time
+
 \pagebreak
 \section{Appendix}
 \subsection{References}
