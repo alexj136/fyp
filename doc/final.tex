@@ -191,11 +191,14 @@ This is used to represent types of functions and terms. Values of this type may 
 This is used to represent functions that are built into the language, and is essentially just an extension of the Term datatype.
 \\\\ A more detailed description of these datatypes is given by the context-free grammar for the language, which can be found in the Language Specification section of this document.
 \subsubsection{Interpreter}
-\subsubsection{CodeGen}
+The Interpreter module contains functions required for interpreting programs, the most notable of which is \texttt{reduce}, which reduces Terms to their normal form. \texttt{reduce} has the type signature: \texttt{Prog -> Term -> Term}. It takes two arguments, the first of which is of type Prog, which provides a 'context' for Term reduction, that is, the function definitions to which the second parameter, the Term to reduce, may refer. The result is the normal form of the given Term. This function implements the reduction rules for the $lambda$ calculus, with additional reduction rules for the additional features of the language. The other functions present in the Interpreter module are used to handle the \emph{name clash} problem, described below.
+\\\indent The main difficulty in implementing the interpreter for the language has been the problem of name clashes. When function application is evaluated, one expression (the \emph{argument expression}) is substituted into another (the \emph{body expression}). If the argument expression contains free variables, the names of which are bound in the body expression, those free variables become erroneously captured by the bindings present in the body expression.
+\\\indent To handle this problem, $\alpha$ conversion is used. $\alpha$ conversion is the transformation from one expression to another, that is $\alpha$ equivalent (equivalent modulo the choice of variable names) to the original expression. Before substitution, the free variables of the argument expression are computed. If any of those variables are bound in the body expression, those bindings and corresponding variables are renamed to names not present in the argument expression - that is, the body expression is $\alpha$ converted, such that it binds no variables that are free in the argument expression. The argument expression can then be safely substituted into the body expression.
 \subsubsection{Unifier}
 \subsubsection{Lexer}
 \subsubsection{Parser}
 \subsubsection{PostParsing}
+\subsubsection{CodeGen}
 \subsubsection{Test Modules}
 
 \subsection{Testing}
