@@ -8,6 +8,7 @@ module CodeGen where
  -}
 
 import Syntax
+import Interpreter (replace)
 
 import Data.List (intersperse)
 import qualified Data.Set as S
@@ -17,13 +18,23 @@ codeGenProg :: Prog -> String
 codeGenProg pg = case pg of
     Prog pgMap ->
         concat $ intersperse "\n" $
-            [".globl main"]     ++
-            ["main:"]           ++
-            ["call __main__"] ++
-            ["movl %eax, %ebx"] ++      -- OS expects program result in %ebx
-            ["movl $1, %eax"]   ++      -- System call type 1 is an exit call
-            ["int $0x80"]       ++ (    -- Do the system call
-            concat $ map snd $ map (codeGenFunc 0) $ map snd (M.toList pgMap))
+            [ ".globl main"
+            , "main:"
+            ,"call " ++ (codeName "main")
+            ,"movl %eax, %ebx"  -- OS expects program result in %ebx
+            ,"movl $1, %eax"    -- System call type 1 is an exit call
+            ,"int $0x80"        -- Do the system call
+            ] ++ (snd (codeGenFuncs 0 (map snd (M.toList pgMap))))
+
+-- Generate code for multiple functions
+codeGenFuncs :: Int -> [Func] -> (Int, [String])
+codeGenFuncs = codeGenFuncsAcc []
+  where
+    codeGenFuncsAcc :: [String] -> Int -> [Func] -> (Int, [String])
+    codeGenFuncsAcc acc nextLabel []     = (nextLabel, acc)
+    codeGenFuncsAcc acc nextLabel (f:fs) =
+        let (nextLabel2, fCode) = codeGenFunc nextLabel f in
+            codeGenFuncsAcc (acc ++ fCode) nextLabel2 fs
 
 -- Most of the work for function calls is handled on the caller's side - we need
 -- not do anything more than include an address to jump to, and a return
@@ -33,7 +44,7 @@ codeGenFunc nextLabel f =
     let (nextNextLabel, codeF) = codeGenTerm nextLabel (getBody f)
     in
     (nextNextLabel,
-        ["__" ++ getName f ++ "__:"]
+        [(codeName (getName f)) ++ ":"]
         ++ codeF
         ++ ["ret"]
     )
@@ -71,19 +82,19 @@ codeGenTerm nextLabel exp = case exp of
 
     -- Conditionals
     App (App (App (Operation Cond) guard) m) n ->
-        let (nextNextLabel        , codeGuard) = codeGenTerm nextLabel         guard
-            (nextNextNextLabel    , codeM    ) = codeGenTerm nextNextLabel     m
-            (nextNextNextNextLabel, codeN    ) = codeGenTerm nextNextNextLabel n
+        let (nextLabel2, codeGuard) = codeGenTerm nextLabel  guard
+            (nextLabel3, codeM    ) = codeGenTerm nextLabel2 m
+            (nextLabel4, codeN    ) = codeGenTerm nextLabel3 n
         in
-        (nextNextNextNextLabel,
+        (nextLabel4,
             codeGuard
             ++ ["cmp $0, %ax"]
-            ++ ["je condFalse" ++ show nextNextLabel]
+            ++ ["je condFalse" ++ show nextLabel2]
             ++ codeM
-            ++ ["jmp condEnd" ++ show nextNextLabel]
-            ++ ["condFalse" ++ show nextNextLabel ++ ":"]
+            ++ ["jmp condEnd" ++ show nextLabel2]
+            ++ ["condFalse" ++ show nextLabel2 ++ ":"]
             ++ codeN
-            ++ ["condEnd" ++ show nextNextLabel ++ ":"]
+            ++ ["condEnd" ++ show nextLabel2 ++ ":"]
         )
 
     -- Abstractions should be lifted into functions before compilation
@@ -131,28 +142,46 @@ lambdaLiftProg pg = pg
 
 lambdaLiftFunc :: Func -> [Func]
 lambdaLiftFunc f =
-    let (newBody, newFuncs) = lambdaLiftTerm (getBody f) [] in
+    let (_, newBody, newFuncs) = lambdaLiftTerm (getName f) 0 (getBody f) in
         case f of
             Func ty nm args _ -> Func ty nm args newBody : newFuncs
             FuncInf nm args _ -> FuncInf nm args newBody : newFuncs
 
-lambdaLiftTerm :: Term -> (Term, [Func])
-lambdaLiftTerm tm = case tm of
-    Abs v t m   -> (Var nm, Func ty nm (S.toList (freeVars tm)) liftedM : funcsM)
+-- Takes the name of the containing function, an integer representing the next
+-- usable function name for functions we lift out, and the term to lift.
+lambdaLiftTerm :: Name -> Int -> Term -> (Int, Term, [Func])
+lambdaLiftTerm nm liftNum tm = case tm of
+
+    App (AbsInf v m) n ->
+        ( liftNum + 1
+        , replace v m (makeCall v args)
+        , FuncInf liftName args n : []
+        )
       where
-        nm =
-        ty =
-        (liftedM, funcsM) = lambdaLiftTerm m
-    AbsInf v m  -> error "lambdaLiftTerm not yet implemented"
+        liftName = liftCodeName nm liftNum
+        args = S.toList (freeVars tm)
+
+    -- Take a shortcut here - to lift a function with a type declaration, throw
+    -- away the type declaration and lift the implicitly typed function.
+    App (Abs v t m) n -> lambdaLiftTerm nm liftNum (App (AbsInf v m) n)
+
+    Var _       -> (liftNum, tm, [])
+    App m n     -> (newLiftNum2, App liftedM liftedN, funcsM ++ funcsN)
       where
-        (liftedM, funcsM) = lambdaLiftTerm m
-    Var _       -> (tm, [])
-    App m n     -> (App liftedM liftedN, funcsM ++ funcsN)
-      where
-        (liftedM, funcsM) = lambdaLiftTerm m
-        (liftedN, funcsN) = lambdaLiftTerm n
-    Constant  _ -> (tm, [])
-    Operation _ -> (tm, [])
+        (newLiftNum , liftedM, funcsM) = lambdaLiftTerm nm    liftNum m
+        (newLiftNum2, liftedN, funcsN) = lambdaLiftTerm nm newLiftNum n
+    Constant  _ -> (liftNum, tm, [])
+    Operation _ -> (liftNum, tm, [])
 
 makeCall :: Name -> [Name] -> Term
-makeCall nm (arg:args) = App
+makeCall nm (arg:args) = error "makeCall not yet implemented"
+
+-- Translate a declared function name into a name that will be included as a
+-- label in the generated assembly code
+codeName :: Name -> Name
+codeName n = "__" ++ n ++ "__"
+
+-- Generate the name of a function that has been lifted out of an abstraction,
+-- that can be used in generated assembly code
+liftCodeName :: Name -> Int -> Name
+liftCodeName n i = "__" ++ n ++ "__lift__" ++ show i ++ "__"
