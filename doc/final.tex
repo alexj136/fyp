@@ -126,13 +126,13 @@ The British Computer Society (BCS) defines a code of conduct for IT professional
 
 \subsection{Toolchain}
 \subsubsection{Arch GNU/Linux}
-Arch GNU/Linux is an appropriate development platform that I will be using for this project. It has a wide range of development tools that I will require, such as GNU make, a tool for build \& test automation, \& Vim, a text editor, easily and freely available via a package manager.
+Arch GNU/Linux is an appropriate development platform that I will be using for this project. It has a wide range of development tools that I will require, such as GNU make, a tool for build and test automation, and Vim, a text editor, easily and freely available via a package manager.
 
 \subsubsection{Haskell}
 Haskell is an expressive, functional, high level programming language that is ideally suited to programming language implementation. It also has an associated package manager, Cabal, which makes the installation of libraries that I will require for the project very quick and simple.
 
-\subsubsection{Lexer \& Parser Generators}
-To simplify lexical \& syntactic analysis, I will be using lexer \& parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical \& syntactical specifications for the lexer \& parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
+\subsubsection{Lexer and Parser Generators}
+To simplify lexical and syntactic analysis, I will be using lexer and parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical and syntactical specifications for the lexer and parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
 
 \subsubsection{Testing}
 Testing is a critical part of any software project. It enables confident refactoring, since any changes to code that prohibit the software system from functioning correctly, are immediately identified. Randomised testing is also very powerful, and helps to discover bugs and 'corner cases' that would otherwise be incredibly difficult to find.
@@ -169,15 +169,27 @@ Below are the target completion dates for the subtasks of the project:
 Should I complete tasks early, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
 
 \pagebreak
-\section{Design \& Implementation}
+\section{Design and Implementation}
 \subsection{Modules}
-The language implementation is divided into several modules discussed below.
+The language implementation is divided into several modules, each discussed below.
 % For each section describe:
 %   - Broad purpose
 %   - Key datatypes
 %   - Key functions
 %   - Implementation issues and solutions to them
 \subsubsection{Syntax}
+The purpose of the Syntax module is primarily to define the representation of programs in the language, rather than to provide any significant functionality. There are five datatypes used to achieve this: \texttt{Prog}, \texttt{Func}, \texttt{Term}, \texttt{Type} and \texttt{OpType}.
+\paragraph{The \texttt{Prog} Datatype \\}
+This is used to represent programs at the highest level, and is essentially a mapping between function names and their values.
+\paragraph{The \texttt{Func} Datatype \\}
+This is used to represent functions, and consists of four members - a name (a string) for the function itself, arguments (a list of names), a body (an instance of the Term datatype) and possibly an instance of the Type datatype, representing the type signature of the function. This may not be present since it can be inferred.
+\paragraph{The \texttt{Term} Datatype \\}
+This is a recursive datatype that defines the bodies of functions. Values of this type may be simple constants, such as integers, characters or booleans, they may be variables, operators such as '+' and '-', lambda expressions, function calls, list literals, sum type literals or product type literals.
+\paragraph{The \texttt{Type} Datatype \\}
+This is used to represent types of functions and terms. Values of this type may be simple types such as Int (integer), Char (character) or Bool (boolean). They may also be function types, sum types, product types, list types or type variables.
+\paragraph{The \texttt{OpType} Datatype \\}
+This is used to represent functions that are built into the language, and is essentially just an extension of the Term datatype.
+\\\\ A more detailed description of these datatypes is given by the context-free grammar for the language, which can be found in the Language Specification section of this document.
 \subsubsection{Interpreter}
 \subsubsection{CodeGen}
 \subsubsection{Unifier}
