@@ -1,4 +1,6 @@
 src/Polymorphic/Main
+doc/final.txt
+doc/interim.txt
 syntax: glob
 *.aux
 *.log

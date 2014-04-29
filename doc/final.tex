@@ -195,6 +195,16 @@ The Interpreter module contains functions required for interpreting programs, th
 \\\indent The main difficulty in implementing the interpreter for the language has been the problem of name clashes. When function application is evaluated, one expression (the \emph{argument expression}) is substituted into another (the \emph{body expression}). If the argument expression contains free variables, the names of which are bound in the body expression, those free variables become erroneously captured by the bindings present in the body expression.
 \\\indent To handle this problem, $\alpha$ conversion is used. $\alpha$ conversion is the transformation from one expression to another, that is $\alpha$ equivalent (equivalent modulo the choice of variable names) to the original expression. Before substitution, the free variables of the argument expression are computed. If any of those variables are bound in the body expression, those bindings and corresponding variables are renamed to names not present in the argument expression - that is, the body expression is $\alpha$ converted, such that it binds no variables that are free in the argument expression. The argument expression can then be safely substituted into the body expression.
 \subsubsection{Unifier}
+The Unifier module implements polymorphic type inference, using the Hindley-Milner type inference algorithm (Ben Pierce TAPL Reference here). This algorithm consists of two phases, a \textbf{constraint generation} phase and a \textbf{unification} phase.
+\\\indent Constraint generation involves walking the abstract syntax tree, collecting constraints, which are equations concerning the types in the AST. Consider the expression:
+\\\\
+\indent \texttt{f 10}
+\\\\
+Here the function \texttt{f} is applied to a single integer argument, \texttt{10}. This tells us that the type of argument that \texttt{f} takes is integer. This is reflected in the constraint generated for this expression. This expression might exist within the larger expression:
+\\\\
+\indent \texttt{if f 10 then p else q}
+\\\\
+From which we can see that \texttt{f} must have return type boolean, as it is used as a guard in a conditional expression. This would be reflected in the constraint generated for this conditional expression. With the two constraints that we have, we can later construct the complete type of \texttt{f}, which is \texttt{Int -> Bool}, during the unification phase.
 \subsubsection{Lexer}
 \subsubsection{Parser}
 \subsubsection{PostParsing}
