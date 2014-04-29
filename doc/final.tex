@@ -205,6 +205,7 @@ Here the function \texttt{f} is applied to a single integer argument, \texttt{10
 \indent \texttt{if f 10 then p else q}
 \\\\
 From which we can see that \texttt{f} must have return type boolean, as it is used as a guard in a conditional expression. This would be reflected in the constraint generated for this conditional expression. With the two constraints that we have, we can later construct the complete type of \texttt{f}, which is \texttt{Int -> Bool}, during the unification phase.
+\\\indent Unification is the process of satisfying a set of equations...
 \subsubsection{Lexer}
 \subsubsection{Parser}
 \subsubsection{PostParsing}
