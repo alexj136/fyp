@@ -7,6 +7,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{newalg}
 
 \DeclareGraphicsExtensions{.png}
 
@@ -200,12 +201,43 @@ The Unifier module implements polymorphic type inference, using the Hindley-Miln
 \\\\
 \indent \texttt{f 10}
 \\\\
-Here the function \texttt{f} is applied to a single integer argument, \texttt{10}. This tells us that the type of argument that \texttt{f} takes is integer. This is reflected in the constraint generated for this expression. This expression might exist within the larger expression:
+Here the function \texttt{f} is applied to a single integer argument, \texttt{10}. This tells us that the type of argument that \texttt{f} takes is integer. This is reflected in the constraint generated for this expression, which can be written formally as 
 \\\\
-\indent \texttt{if f 10 then p else q}
+\indent \texttt{T\_f = Int -> T\_a}
 \\\\
-From which we can see that \texttt{f} must have return type boolean, as it is used as a guard in a conditional expression. This would be reflected in the constraint generated for this conditional expression. With the two constraints that we have, we can later construct the complete type of \texttt{f}, which is \texttt{Int -> Bool}, during the unification phase.
-\\\indent Unification is the process of satisfying a set of equations...
+where \texttt{T\_a} is an unknown type, and the return type of \texttt{f}. The expression \texttt{f 10} might exist within the larger expression:
+\\\\
+\indent \texttt{not (f 10)}
+\\\\
+From which we can see that the expression \texttt{f 10} must have type boolean, as it is used as an argument to the function \texttt{not}, which has type \texttt{Bool -> Bool}. This would be reflected in the constraint generated for this conditional expression, which would be
+\\\\
+\indent \texttt{T\_a = Bool}
+\\\\
+With the two constraints that we have, we can later construct the complete type of \texttt{f}, which is \texttt{Int -> Bool}, during the unification phase.
+\\\indent Unification is the process of satisfying a set of equations, and finds applications in many fields, such as in logic programming languages, where unification is used as the execution mechanism. Here we use unification to find a solution to our set of constraints, that is, `\emph{to check that the set of solutions is nonempty and, if so, to find a ``best'' element, in the sense that all solutions can be generated straightforwardly from this one.}' (Pierce, 2002:326). In the above case, we have the constraints:
+\\\\
+\indent \texttt{T\_a = Bool}
+\\\\
+\indent \texttt{T\_f = Int -> T\_a}
+\\\\
+to which we can straightforwardly find the solution:
+\\\\
+\indent \texttt{T\_f = Int -> Bool}
+\\\\
+This is a simple case, however the unification algorithm (given below) will find a solution to an arbitrarily large set of constraints, with arbitrary types in the grammar of types for the language. Where no solution exists, the algorithm will terminate and indicate this, which tells us that the corresponding program is ill-typed.
+\begin{algorithm}{Unify}{C}
+    \begin{IF}{C = \emptyset}
+        \lambda x . x \\
+    \ELSE
+        \{S = T\} \= \CALL{Next}(C) \\
+        C' \= C - \{S = T\} \\
+        \begin{IF}{S = T}
+            \CALL{Unify}(C')
+        \ELSE
+        \end{IF}
+    \end{IF}
+\end{algorithm}
+
 \subsubsection{Lexer}
 \subsubsection{Parser}
 \subsubsection{PostParsing}
