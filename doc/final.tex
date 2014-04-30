@@ -196,7 +196,7 @@ The Interpreter module contains functions required for interpreting programs, th
 \\\indent The main difficulty in implementing the interpreter for the language has been the problem of name clashes. When function application is evaluated, one expression (the \emph{argument expression}) is substituted into another (the \emph{body expression}). If the argument expression contains free variables, the names of which are bound in the body expression, those free variables become erroneously captured by the bindings present in the body expression.
 \\\indent To handle this problem, $\alpha$ conversion is used. $\alpha$ conversion is the transformation from one expression to another, that is $\alpha$ equivalent (equivalent modulo the choice of variable names) to the original expression. Before substitution, the free variables of the argument expression are computed. If any of those variables are bound in the body expression, those bindings and corresponding variables are renamed to names not present in the argument expression - that is, the body expression is $\alpha$ converted, such that it binds no variables that are free in the argument expression. The argument expression can then be safely substituted into the body expression.
 \subsubsection{Unifier}
-The Unifier module implements polymorphic type inference, using the Hindley-Milner type inference algorithm (Ben Pierce TAPL Reference here). This algorithm consists of two phases, a \textbf{constraint generation} phase and a \textbf{unification} phase.
+The Unifier module implements polymorphic type inference, using the Hindley-Milner type inference algorithm (Pierce, 2002:326). This algorithm consists of two phases, a \textbf{constraint generation} phase and a \textbf{unification} phase.
 \\\indent Constraint generation involves walking the abstract syntax tree, collecting constraints, which are equations concerning the types in the AST. Consider the expression:
 \\\\
 \indent \texttt{f 10}
@@ -216,8 +216,7 @@ From which we can see that the expression \texttt{f 10} must have type boolean, 
 With the two constraints that we have, we can later construct the complete type of \texttt{f}, which is \texttt{Int -> Bool}, during the unification phase.
 \\\indent Unification is the process of satisfying a set of equations, and finds applications in many fields, such as in logic programming languages, where unification is used as the execution mechanism. Here we use unification to find a solution to our set of constraints, that is, `\emph{to check that the set of solutions is nonempty and, if so, to find a ``best'' element, in the sense that all solutions can be generated straightforwardly from this one.}' (Pierce, 2002:326). In the above case, we have the constraints:
 \\\\
-\indent \texttt{T\_a = Bool}
-\\\\
+\indent \texttt{T\_a = Bool} \\
 \indent \texttt{T\_f = Int -> T\_a}
 \\\\
 to which we can straightforwardly find the solution:
@@ -254,8 +253,20 @@ This is a simple case, however the unification algorithm (given below) will find
 \end{algorithm}
 
 \subsubsection{Lexer}
+The Lexer module implements lexical analysis on source code. This module is generated using a lexical specification and \textbf{Alex}, a lexical analyser generator for Haskell. The lexical specification contains a list of regular expressions to match against source code, each of which has a corresponding token that should be returned when the source code matches that regular expression. The output is a list of tokens, each of which is labelled with its coordinates in the source file, so that when lexical and syntactic errors occur, the location in the source file where the error occurs can be indicated to the user.
 \subsubsection{Parser}
+The Parser module has the task of assembling the list of tokens from the Lexer, into a ParseResult, which will later be converted into an AST by the PostParsing module. A ParseResult contains two members, a map from function names to function values, and a list of type declarations, which state the types of the functions in the map.
+\\\indent The Parser module is generated using a context-free grammar for the language, given in special syntax, which \textbf{Happy}, a parser generator for Haskell, uses to produce a module that parses the language specified in the given grammar.
 \subsubsection{PostParsing}
+The PostParsing module has two responsibilities:
+\begin{enumerate}
+    \item[1.] Incorporating the type declarations in the ParseResult into the functions within the map in the ParseResult.
+\end{enumerate}
+        \indent The parser does not enforce a relationship between the location of a function in a file and the location of the corresponding type definition. Therefore it is not possible to return just a map of function names to function values where the functions already have type labels. This is why a ParseResult is returned by the parser, as opposed to a Prog object (which contains only a map from function names to function values).
+\begin{enumerate}
+    \item[2.] Convert the user's type variable names into integer type variable names.
+\end{enumerate}
+        \indent The language allows the user to supply type variable names as strings, for readability purposes. However these can be slow and messy to handle during type checking, so the strings are converted to integers, which are faster to handle.
 \subsubsection{CodeGen}
 \subsubsection{Test Modules}
 

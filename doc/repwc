@@ -1,7 +1,7 @@
 #!/bin/sh
 # Quickly make the final report pdf. Requires texlive-core & texlive-science
 # packages from the arch repository.
-pdflatex final.tex > /dev/null
-pdftotext final.pdf
 echo "Word count:"
+pdftotext final.pdf
 wc -w final.txt
+rm final.txt
