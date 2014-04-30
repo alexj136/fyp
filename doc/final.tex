@@ -225,16 +225,31 @@ to which we can straightforwardly find the solution:
 \indent \texttt{T\_f = Int -> Bool}
 \\\\
 This is a simple case, however the unification algorithm (given below) will find a solution to an arbitrarily large set of constraints, with arbitrary types in the grammar of types for the language. Where no solution exists, the algorithm will terminate and indicate this, which tells us that the corresponding program is ill-typed.
+\pagebreak
 \begin{algorithm}{Unify}{C}
     \begin{IF}{C = \emptyset}
-        \lambda x . x \\
+        \lambda x . x
     \ELSE
-        \{S = T\} \= \CALL{Next}(C) \\
-        C' \= C - \{S = T\} \\
-        \begin{IF}{S = T}
+        \{S = T\} \= \CALL{ArbitraryElement}(C) \\
+        C' \= C \setminus \{S = T\} \\
+        \begin{SWITCH}
+        \item{S = T} \\
             \CALL{Unify}(C')
-        \ELSE
-        \end{IF}
+        \item{S = X \hspace{1mm} \wedge \hspace{1mm} X \not\in \CALL{FV}(T)} \\
+            \CALL{Unify}([X \mapsto T]C') \circ [X \mapsto T]
+        \item{T = X \hspace{1mm} \wedge \hspace{1mm} X \not\in \CALL{FV}(S)} \\
+            \CALL{Unify}([X \mapsto S]C') \circ [X \mapsto S]
+        \item{S = S_1 \rightarrow S_2 \hspace{1mm} \wedge \hspace{1mm} T = T_1 \rightarrow T_2} \\
+            \CALL{Unify}(C' \cup \{S_1 = T_1, S_2 = T_2\})
+        \item{S = list \hspace{1mm} S' \hspace{1mm} \wedge \hspace{1mm} T = list \hspace{1mm} T'} \\
+            \CALL{Unify}(C' \cup \{S' = T'\})
+        \item{S = product \hspace{1mm} S_1, S_2 \hspace{1mm} \wedge \hspace{1mm} T = product \hspace{1mm} T_1, T_2} \\
+            \CALL{Unify}(C' \cup \{S_1 = T_1, S_2 = T_2\})
+        \item{S = sum \hspace{1mm} S_1, S_2 \hspace{1mm} \wedge \hspace{1mm} T = sum \hspace{1mm} T_1, T_2} \\
+            \CALL{Unify}(C' \cup \{S_1 = T_1, S_2 = T_2\})
+        \item{\DEFAULT} \\
+            fail
+        \end{SWITCH}
     \end{IF}
 \end{algorithm}
 
