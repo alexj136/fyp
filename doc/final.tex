@@ -262,11 +262,12 @@ The PostParsing module has two responsibilities:
 \begin{enumerate}
     \item[1.] Incorporating the type declarations in the ParseResult into the functions within the map in the ParseResult.
 \end{enumerate}
-        \indent The parser does not enforce a relationship between the location of a function in a file and the location of the corresponding type definition. Therefore it is not possible to return just a map of function names to function values where the functions already have type labels. This is why a ParseResult is returned by the parser, as opposed to a Prog object (which contains only a map from function names to function values).
+\indent The parser does not enforce a relationship between the location of a function in a file and the location of the corresponding type definition. Therefore it is not possible to return just a map of function names to function values where the functions already have type labels. This is why a ParseResult is returned by the parser, as opposed to a Prog object (which contains only a map from function names to function values).
 \begin{enumerate}
     \item[2.] Convert the user's type variable names into integer type variable names.
 \end{enumerate}
-        \indent The language allows the user to supply type variable names as strings, for readability purposes. However these can be slow and messy to handle during type checking, so the strings are converted to integers, which are faster to handle.
+\indent The language allows the user to supply type variable names as strings, for readability purposes. However these can be slow and messy to handle during type checking, so the strings are converted to integers, which are faster to handle.
+
 \subsubsection{CodeGen}
 \subsubsection{Test Modules}
 
@@ -278,6 +279,8 @@ The PostParsing module has two responsibilities:
 \section{Language Specification}
 This section will give details of the implemented language and serve as user documentation.
 \subsection{Context-Free Grammar}
+The context-free grammar for the language is given below:
+\\\textbf{GRAMMAR GOES HERE}
 \subsection{Basic Data Types}
 \subsection{Functions for Basic Data Types}
 \subsection{Abstract Data Types}
