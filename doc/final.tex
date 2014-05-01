@@ -43,6 +43,26 @@ Lexical analysis is concerned with the identification of words in source code. T
 
 \subsubsection{Syntax Analysis}
 Syntax analysis is concerned with deriving structure from from a sequence of tokens. A syntax analyser, or \emph{parser}, has the job of building an \emph{abstract syntax tree} (AST). An AST is an abstract data structure which represents the structure of a computer program. They are generated from a list of tokens that are the output of the lexer, based on a description of the \emph{grammar} of the language, which is usually represented formally using a \emph{context-free grammar}. An AST, representing the computer program, is the output of the parser, assuming that the tokens that are input can be structured correctly (the correctness of any given structure is specified by the language's context-free grammar). If not, this is usually indicated to the user and no further work is done by the compiler.
+\\\indent The figures below illustrate how some source code might be transformed into a list of tokens by a lexical analyser, and the list of tokens into an abstract syntax tree by a parser.
+\\\\
+\centerline{\textbf{Source Code - Factorial Calculation in C}}
+\\\\
+\indent \hspace{34mm} \texttt{int factorial(int n) \{    } \\
+\indent \hspace{40mm} \texttt{    int val = 1;           } \\
+\indent \hspace{40mm} \texttt{    while (n > 0) \{       } \\
+\indent \hspace{48mm} \texttt{        val *= n;          } \\
+\indent \hspace{48mm} \texttt{        n -= 1;            } \\
+\indent \hspace{40mm} \texttt{    \}                     } \\
+\indent \hspace{40mm} \texttt{    return val;            } \\
+\indent \hspace{34mm} \texttt{\}                         } \\
+\\
+\centerline{\textbf{Token List - Factorial Calculation in C}}
+\\\\
+\centerline{\includegraphics[width=400px]{lexed}}
+\\\\
+\centerline{\textbf{Abstract Syntax Tree - Factorial Calculation in C}}
+\\\\
+\centerline{\includegraphics[width=500px]{parsed}}
 
 \subsubsection{Semantic Analysis}
 Semantic Analysis is concerned with ensuring that the semantics of AST, which is output by the parser, are correct. This typically includes \emph{type checking}, which ensures that the programmer made no \emph{type errors} in their program, for example, adding a variable consisting of a number, to a variable consisting of a string of characters. Semantic analysis may also include type \emph{inference}, depending on the programming language. This involves not only type checking, but determining what types variables have without the programmer having to write them down. Semantic analysis will also typically check for errors such as the use of an undefined variable, or the use of a variable prior to its definition.
@@ -134,6 +154,9 @@ Haskell is an expressive, functional, high level programming language that is id
 
 \subsubsection{Lexer and Parser Generators}
 To simplify lexical and syntactic analysis, I will be using lexer and parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical and syntactical specifications for the lexer and parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
+
+\subsubsection{Version Control}
+Version control is a vital part of any software project, and this one is no exception. Version control allows... \textbf{MORE STUFF ABOUT VC}. The Mercurial version control system will be used for this project. A local copy of the project will be ketp, along with a master repository that will be hosted on bitbucket, to prevent loss and allow work to be carried out on multiple machines with little effort. \\
 
 \subsubsection{Testing}
 Testing is a critical part of any software project. It enables confident refactoring, since any changes to code that prohibit the software system from functioning correctly, are immediately identified. Randomised testing is also very powerful, and helps to discover bugs and 'corner cases' that would otherwise be incredibly difficult to find.
@@ -282,7 +305,14 @@ This section will give details of the implemented language and serve as user doc
 The context-free grammar for the language is given below:
 \\\textbf{GRAMMAR GOES HERE}
 \subsection{Basic Data Types}
+The language has 3 familiar basic data types, which are integers, characters and booleans. In the syntax of the language, these types are denoted as \texttt{Int}, \texttt{Char} and \texttt{Bool} respectively.
 \subsection{Functions for Basic Data Types}
+The language has a familiar set of built-in functions over the basic data types, which are: \\
+\begin{tabular}{ l l l l l }
+    Function Syntax & Description   & Type                          & Example usage     & Evaluated result of example \\
+    >               & Greater-than  & \texttt{Int -> Int -> Bool}   & \texttt{3 > 4}    & \texttt{true} \\
+\end{tabular}
+
 \subsection{Abstract Data Types}
 \subsection{Functions for Abstract Data Types}
 \subsection{Function Definitions}
