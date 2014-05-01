@@ -1,4 +1,0 @@
-dot -Tpng task_dependencies.dot -o task_dependencies.png
-dot -Kfdp -Tpng lexed.dot -o lexed.png
-dot -Kfdp -Tpng parsed.dot -o parsed.png
-pdflatex final.tex

@@ -156,7 +156,7 @@ Haskell is an expressive, functional, high level programming language that is id
 To simplify lexical and syntactic analysis, I will be using lexer and parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical and syntactical specifications for the lexer and parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
 
 \subsubsection{Version Control}
-Version control is a vital part of any software project, and this one is no exception. Version control allows... \textbf{MORE STUFF ABOUT VC}. The Mercurial version control system will be used for this project. A local copy of the project will be ketp, along with a master repository that will be hosted on bitbucket, to prevent loss and allow work to be carried out on multiple machines with little effort. \\
+Version control is a vital part of any software project, and this one is no exception. Easier recovery from implementation mistakes, backup and change tracking are just a few of the many benefits that version control provides to a software project. The Mercurial version control system will be used for this project. A local copy of the project will be ketp, along with a master repository that will be hosted on bitbucket, to prevent loss and allow work to be carried out on multiple machines with little effort. \\
 
 \subsubsection{Testing}
 Testing is a critical part of any software project. It enables confident refactoring, since any changes to code that prohibit the software system from functioning correctly, are immediately identified. Randomised testing is also very powerful, and helps to discover bugs and 'corner cases' that would otherwise be incredibly difficult to find.
@@ -165,11 +165,6 @@ Testing is a critical part of any software project. It enables confident refacto
 
 \pagebreak
 \section{Project Plan}
-\subsection{State of the Project} % Problems with α-conversion, etcetera.
-At the time of writing, an interpreter for $\lambda$ calculus expressions is almost complete, with some unit tests. This has been problematic, as there are many subtleties to $\lambda$ expression evaluation, such as the name clash problem. The name clash problem occurs during $\beta$-reduction - when evaluating an application, if the argument expression contains variable names that occur as bound variables in the body expression, and the substitution is done naively, there is a possibility that the resultant expression becomes incorrect as free names from the argument expression erroneously become bound by abstractions in the body expression. To avoid this problem, I have implemented an \emph{$\alpha$-conversion} function that renames bound variables in the body expression before substitution, so that there is no possibility for name clashes to occur.
-\\
-\indent There is currently no front-end, that is, the interpreter operates on ASTs, but there currently exists no lexer, parser or semantic analyser, so it is not yet possible to directly run source code. Abstract syntax expressions must be encoded in haskell in order to use the interpreter code.
-
 \subsection{Task Dependencies}
 The graph below specifies the interdependencies of the subtasks of the project:
 \\\\
@@ -302,18 +297,106 @@ The PostParsing module has two responsibilities:
 \section{Language Specification}
 This section will give details of the implemented language and serve as user documentation.
 \subsection{Context-Free Grammar}
-The context-free grammar for the language is given below:
-\\\textbf{GRAMMAR GOES HERE}
+The context-free grammar (in BNF) for the language is given below:
+\begin{verbatim}
+<prog> ::= "type" <identifier-lower-case> "=" <ty> <prog>
+    | "def" <identifier-lower-case> <args> "=" <exp> <prog>
+    | epsilon
+
+<args> ::= <identifier-lower-case> <args>
+    | epsilon
+
+<ty> ::= "Int"
+   | "Bool"
+   | "Char"
+   | "String"
+   | "[" <ty> "]"
+   | "{" <ty> "|" <ty> "}"
+   | "{" <ty> "&" <ty> "}"
+   | <ty> "->" <ty>
+   | "(" <ty> ")"
+   | <identifier-any-case>
+
+<exp> ::= "let" <identifier-lower-case> <args> "=" <exp> "in" <exp>
+    | "λ" <identifier-lower-case> "." <exp>
+    | "^" <identifier-lower-case> "." <exp>
+    | "\" <identifier-lower-case> "." <exp>
+    | <exp> <exp>
+    | <identifier-lower-case>
+    | "if" <exp> "then" <exp> "else" <exp>
+    | <exp> <infix-binary-op> <exp>
+    | <unary-op>
+    | "(" <exp> ")"
+    | "{" <exp> "," "_" "}"
+    | "{" "_" "," <exp> "}"
+    | "{" <exp> "," <exp> "}"
+    | "true"
+    | "false"
+    | <integer-literal>
+    | <string-literal>
+    | <list>
+
+<unary-op> ::= "iszero"
+    | "not"
+    | "reml"
+    | "remr"
+    | "fst"
+    | "snd"
+    | "head"
+    | "tail"
+    | "null"
+
+<list> ::= "[]"
+    | "[" <exp> <list-rest>
+
+<list-rest> ::= "," <exp> <list-rest>
+    | "]"
+
+<infix-binary-op> ::= "+"
+    | "-"
+    | "*"
+    | "/"
+    | "%"
+    | "and"
+    | "or"
+    | "xor"
+    | ">"
+    | ">="
+    | "<"
+    | "<="
+    | "=="
+    | "/="
+    | ":"
+\end{verbatim}
+
 \subsection{Basic Data Types}
 The language has 3 familiar basic data types, which are integers, characters and booleans. In the syntax of the language, these types are denoted as \texttt{Int}, \texttt{Char} and \texttt{Bool} respectively.
 \subsection{Functions for Basic Data Types}
 The language has a familiar set of built-in functions over the basic data types, which are: \\
-\begin{tabular}{ l l l l l }
-    Function Syntax & Description   & Type                          & Example usage     & Evaluated result of example \\
-    >               & Greater-than  & \texttt{Int -> Int -> Bool}   & \texttt{3 > 4}    & \texttt{true} \\
-\end{tabular}
+\centerline{\begin{tabular}{ | l | l | l | l | l | }
+    \hline
+    Function Syntax & Description                       & Type                                  & Example usage             & Evaluated result of example   \\
+    \hline
+    \texttt{==}     & Equality                          & \texttt{$\forall$a.a -> a -> Bool}    & \texttt{3 == 4}           & \texttt{false}                \\
+    \texttt{>}      & Greater than                      & \texttt{Int -> Int -> Bool}           & \texttt{3 > 4}            & \texttt{false}                \\
+    \texttt{>=}     & Greater than or equal             & \texttt{Int -> Int -> Bool}           & \texttt{3 >= 4}           & \texttt{false}                \\
+    \texttt{<}      & Less than                         & \texttt{Int -> Int -> Bool}           & \texttt{3 < 4}            & \texttt{true}                 \\
+    \texttt{<=}     & Less than or equal                & \texttt{Int -> Int -> Bool}           & \texttt{3 <= 4}           & \texttt{true}                 \\
+    \texttt{/=}     & Inequality                        & \texttt{Int -> Int -> Bool}           & \texttt{3 == 4}           & \texttt{false}                \\
+    \texttt{iszero} & Test for zero                     & \texttt{Int -> Bool}                  & \texttt{iszero 0}         & \texttt{true}                 \\
+    \texttt{and}    & Logical conjunction               & \texttt{Bool -> Bool -> Bool}         & \texttt{true and false}   & \texttt{false}                \\
+    \texttt{or}     & Logical disjunction               & \texttt{Bool -> Bool -> Bool}         & \texttt{true or false}    & \texttt{true}                 \\
+    \texttt{not}    & Logical negation                  & \texttt{Bool -> Bool}                 & \texttt{not false}        & \texttt{true}                 \\
+    \texttt{+}      & Binary sum                        & \texttt{Int -> Int -> Int}            & \texttt{1 + 2}            & \texttt{3}                    \\
+    \texttt{-}      & Subtraction                       & \texttt{Int -> Int -> Int}            & \texttt{2 * 2}            & \texttt{4}                    \\
+    \texttt{*}      & Multiplucation                    & \texttt{Int -> Int -> Int}            & \texttt{3 - 2}            & \texttt{1}                    \\
+    \texttt{/}      & Integer division                  & \texttt{Int -> Int -> Int}            & \texttt{10 / 2}           & \texttt{5}                    \\
+    \texttt{\%}     & Remainder from integer division   & \texttt{Int -> Int -> Int}            & \texttt{18 \% 4}          & \texttt{2}                    \\
+    \hline
+\end{tabular}}
 
 \subsection{Abstract Data Types}
+The language has several abstract data types, which can be used in a number of ways. The most familiar of these is the list type. These are denoted ``\texttt{[a]}'' where \texttt{a} is some other type.
 \subsection{Functions for Abstract Data Types}
 \subsection{Function Definitions}
 \subsection{Type Declarations}
