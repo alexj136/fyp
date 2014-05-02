@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
+#include <assert.h>
 #include "langdefs.h"
+#include "compiled.h"
 
 /*
  * Allocate on the heap using malloc and assert that it was successful.
@@ -141,6 +143,14 @@ bool isCon(Exp *exp) { return exp->type == T_Con; }
 bool isOpn(Exp *exp) { return exp->type == T_Opn; }
 
 /*
+ * Determine whether or not two expressions are equal.
+ */
+bool expEqual(Exp *e1, Exp *e2) {
+    printf("expEqual() not yet implemented");
+    exit(EXIT_FAILURE);
+}
+
+/*
  * Member retrieval functions for expressions. Fail when an expression of the
  * wrong type is given as an argument.
  */
@@ -233,14 +243,82 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             Exp *arg2 = appArg(t1);
             Exp *opn = appFun(t1);
             if(isOpn(opn)) {
-                switch(opnType(opn)) {
-                    case O_Add:
-                        // Do something
-                        break;
+                if(opnType(opn) == O_Equ) {
+                    reduceTemplateNorm(&arg1);
+                    reduceTemplateNorm(&arg2);
+                    bool same = expEqual(arg1, arg2);
+                    freeExp(*template);
+                    (*template) = newCon(same);
+                    (*normalForm) = false;
+                }
+                else if(!isCon(arg1)) {
+                    reduceTemplate(normalForm, &arg1);
+                }
+                else if(!isCon(arg2)) {
+                    reduceTemplate(normalForm, &arg2);
+                }
+                else {
+                    int arg1Val = conVal(arg1);
+                    int arg2Val = conVal(arg2);
+                    freeExp(*template);
+                    (*normalForm) = false;
+                    switch(opnType(opn)) {
+                        case O_Add:
+                            (*template) = newCon(arg1 + arg2);
+                            break;
+                        case O_Sub:
+                            (*template) = newCon(arg1 - arg2);
+                            break;
+                        case O_Mul:
+                            (*template) = newCon(arg1 * arg2);
+                            break;
+                        case O_Div:
+                            (*template) = newCon(arg1 / arg2);
+                            break;
+                        case O_Mod:
+                            (*template) = newCon(arg1 % arg2);
+                            break;
+                        case O_Lss:
+                            (*template) = newCon(arg1 < arg2);
+                            break;
+                        case O_LsE:
+                            (*template) = newCon(arg1 <= arg2);
+                            break;
+                        case O_NEq:
+                            (*template) = newCon(arg1 != arg2);
+                            break;
+                        case O_Gtr:
+                            (*template) = newCon(arg1 > arg2);
+                            break;
+                        case O_GtE:
+                            (*template) = newCon(arg1 >= arg2);
+                            break;
+                        case O_Xor:
+                            (*template) = newCon((!arg1) != (!arg2));
+                            break;
+                        case O_And:
+                            (*template) = newCon(arg1 && arg2);
+                            break;
+                        case O_Or:
+                            (*template) = newCon(arg1 || arg2);
+                            break;
+                    }
                 }
             }
         }
     }
     // End of binary operations case
 
+}
+
+/*
+ * Perform reduction on a template until it reaches its normal form (when no
+ * reduction rules are applicable).
+ */
+void reduceTemplateNorm(Exp **template) {
+    bool normalForm = false;
+    while(!normalForm) {
+        normalForm = true;
+        template = reduceTemplate(&normalForm, &template);
+    }
 }

@@ -155,6 +155,11 @@ bool isCon(Exp *exp);
 bool isOpn(Exp *exp);
 
 /*
+ * Determine whether or not two expressions are equal.
+ */
+bool expEqual(Exp *e1, Exp *e2);
+
+/*
  * Member retrieval functions for expressions
  */
 // Application
@@ -180,5 +185,11 @@ OpTy opnType(Exp *exp);
  * normalForm to false.
  */
 void reduceTemplate(bool *normalForm, Exp **template);
+
+/*
+ * Perform reduction on a template until it reaches its normal form (when no
+ * reduction rules are applicable).
+ */
+void reduceTemplateNorm(Exp **template);
 
 #endif
