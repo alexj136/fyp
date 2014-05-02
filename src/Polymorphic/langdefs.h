@@ -2,6 +2,10 @@
  * Header file for langdefs.c.
  * Contains data definitions used by compiled programs.
  */
+#ifndef COMPILED
+#include "compiled.h"
+#endif // COMPILED
+
 #ifndef LANGDEFS
 #define LANGDEFS
 
@@ -125,6 +129,12 @@ typedef enum {
  */
 void ckMalloc(int size);
 
+/* 
+ * Function that decides if two strings are equal. Returns 1 (true) if they are
+ * the same, or 0 (false) if they differ.
+ */
+bool strEqual(char *str1, char *str2);
+
 /*
  * Functions to allocate & deallocate new expressions on the heap.
  */
@@ -134,5 +144,32 @@ Exp *newVar(char *name);
 Exp *newCon(int val);
 Exp *newOpn(OpTy type);
 void freeExp(Exp *exp);
+
+/*
+ * Functions to determine the type of an expression node.
+ */
+bool isApp(Exp *exp);
+bool isAbs(Exp *exp);
+bool isVar(Exp *exp);
+bool isCon(Exp *exp);
+bool isOpn(Exp *exp);
+
+/*
+ * Member retrieval functions for expressions
+ */
+Exp *appFun(Exp *exp);
+Exp *appArg(Exp *exp);
+char *absVar(Exp *exp);
+Exp *absBody(Exp *exp);
+char *varName(Exp *exp);
+int conVal(Exp *exp);
+OpTy opnType(Exp *exp);
+
+/*
+ * Reduce the template referenced by the given pointer. If it was found to have
+ * normal form i.e. no reduction could be made, sets the dereferenced value at
+ * normalForm to false.
+ */
+void reduceTemplate(bool *normalForm, Exp **template);
 
 #endif
