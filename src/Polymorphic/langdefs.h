@@ -157,12 +157,21 @@ bool isOpn(Exp *exp);
 /*
  * Member retrieval functions for expressions
  */
+// Application
 Exp *appFun(Exp *exp);
 Exp *appArg(Exp *exp);
+
+// Abstraction
 char *absVar(Exp *exp);
 Exp *absBody(Exp *exp);
+
+// Variables
 char *varName(Exp *exp);
+
+// Constants
 int conVal(Exp *exp);
+
+// Operations
 OpTy opnType(Exp *exp);
 
 /*

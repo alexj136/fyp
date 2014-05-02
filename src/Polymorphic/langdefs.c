@@ -225,4 +225,22 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     }
     // End of conditional case
 
+    // Binary operations
+    if(isApp(*template)) {
+        Exp *arg2 = appArg(*template);
+        Exp *t1 = appFun(*template);
+        if(isApp(t1)) {
+            Exp *arg2 = appArg(t1);
+            Exp *opn = appFun(t1);
+            if(isOpn(opn)) {
+                switch(opnType(opn)) {
+                    case O_Add:
+                        // Do something
+                        break;
+                }
+            }
+        }
+    }
+    // End of binary operations case
+
 }
