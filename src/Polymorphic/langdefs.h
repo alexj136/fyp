@@ -2,6 +2,7 @@
  * Header file for langdefs.c.
  * Contains data definitions used by compiled programs.
  */
+
 #ifndef COMPILED
 #include "compiled.h"
 #endif // COMPILED
@@ -83,51 +84,51 @@ struct Con {
 };
 
 /*
+ * The possible types of operations.
+ */
+typedef enum {
+    O_Add, O_Sub, O_Mul, O_Div, O_Mod,  // Arithmetic
+
+    O_Lss, O_LsE, O_NEq, O_Gtr, O_GtE,  // Integer Comparison
+
+    O_Equ,                              // Expression equality
+
+    O_And, O_Or , O_Xor,                // Binary boolean operations
+
+    O_Not, O_IsZ,                       // Unary operations
+
+    O_Empty,                            // List operations
+    O_Cons,
+    O_Null,
+    O_Head,
+    O_Tail,
+
+    O_Cond,                             // Conditionals
+
+    O_Fix,                              // Fixed-point combinator
+
+    O_InjL,                             // Sum-types
+    O_Injr,
+    O_RemL,
+    O_RemR,
+
+    O_Tuple,                            // Product types
+    O_Fst,
+    O_Snd
+} OpTy;
+
+/*
  * An operation just carries its type
  */
 typedef struct Opn Opn;
 struct Opn {
     OpTy type;
-}
-
-/*
- * The possible types of expression.
- */
-typedef enum {
-    O_Add; O_Sub; O_Mul; O_Div; O_Mod;  // Arithmetic
-
-    O_Lss; O_LsE; O_NEq; O_Gtr; O_GtE;  // Integer Comparison
-
-    O_Equ;                              // Expression equality
-
-    O_And; O_Or ; O_Xor;                // Binary boolean operations
-
-    O_Not; O_IsZ;                       // Unary operations
-
-    O_Empty;                            // List operations
-    O_Cons;
-    O_Null;
-    O_Head;
-    O_Tail;
-
-    O_Cond;                             // Conditionals
-
-    O_Fix;                              // Fixed-point combinator
-
-    O_InjL;                             // Sum-types
-    O_Injr;
-    O_RemL;
-    O_RemR;
-
-    O_Tuple;                            // Product types
-    O_Fst;
-    O_Snd
-} OpTy;
+};
 
 /*
  * Allocate on the heap using malloc and assert that it was successful.
  */
-void ckMalloc(int size);
+void *ckMalloc(int size);
 
 /* 
  * Function that decides if two strings are equal. Returns 1 (true) if they are
@@ -158,6 +159,11 @@ bool isOpn(Exp *exp);
  * Determine whether or not two expressions are equal.
  */
 bool expEqual(Exp *e1, Exp *e2);
+
+/*
+ * Copy an expression, return a pointer to the newly allocated expression.
+ */
+Exp *copyExp(Exp *exp) {
 
 /*
  * Member retrieval functions for expressions

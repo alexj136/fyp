@@ -1,9 +1,16 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+
+#ifndef LANGDEFS
 #include "langdefs.h"
+#endif // LANGDEFS
+
+#ifndef COMPILED
 #include "compiled.h"
+#endif // COMPILED
 
 /*
  * Allocate on the heap using malloc and assert that it was successful.
@@ -73,9 +80,9 @@ Exp *newVar(char *name) {
     return newExpNode;
 }
 
-Exp *newCon(int val) {
+Exp *newCon(int conVal) {
     Con *newConNode = ckMalloc(sizeof(Con));
-    newConNode->val = val;
+    newConNode->val = conVal;
 
     ExpV *val = ckMalloc(sizeof(ExpV));
     val->con = newConNode;
@@ -87,7 +94,7 @@ Exp *newCon(int val) {
 }
 
 Exp *newOpn(OpTy type) {
-    Opn *newConNode = ckMalloc(sizeof(Opn));
+    Opn *newOpnNode = ckMalloc(sizeof(Opn));
     newOpnNode->type = type;
 
     ExpV *val = ckMalloc(sizeof(ExpV));
@@ -147,6 +154,14 @@ bool isOpn(Exp *exp) { return exp->type == T_Opn; }
  */
 bool expEqual(Exp *e1, Exp *e2) {
     printf("expEqual() not yet implemented");
+    exit(EXIT_FAILURE);
+}
+
+/*
+ * Copy an expression, return a pointer to the newly allocated expression.
+ */
+Exp *copyExp(Exp *exp) {
+    printf("copyExp() not yet implemented");
     exit(EXIT_FAILURE);
 }
 
@@ -240,7 +255,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         Exp *arg2 = appArg(*template);
         Exp *t1 = appFun(*template);
         if(isApp(t1)) {
-            Exp *arg2 = appArg(t1);
+            Exp *arg1 = appArg(t1);
             Exp *opn = appFun(t1);
             if(isOpn(opn)) {
                 if(opnType(opn) == O_Equ) {
@@ -264,43 +279,43 @@ void reduceTemplate(bool *normalForm, Exp **template) {
                     (*normalForm) = false;
                     switch(opnType(opn)) {
                         case O_Add:
-                            (*template) = newCon(arg1 + arg2);
+                            (*template) = newCon(arg1Val + arg2Val);
                             break;
                         case O_Sub:
-                            (*template) = newCon(arg1 - arg2);
+                            (*template) = newCon(arg1Val - arg2Val);
                             break;
                         case O_Mul:
-                            (*template) = newCon(arg1 * arg2);
+                            (*template) = newCon(arg1Val * arg2Val);
                             break;
                         case O_Div:
-                            (*template) = newCon(arg1 / arg2);
+                            (*template) = newCon(arg1Val / arg2Val);
                             break;
                         case O_Mod:
-                            (*template) = newCon(arg1 % arg2);
+                            (*template) = newCon(arg1Val % arg2Val);
                             break;
                         case O_Lss:
-                            (*template) = newCon(arg1 < arg2);
+                            (*template) = newCon(arg1Val < arg2Val);
                             break;
                         case O_LsE:
-                            (*template) = newCon(arg1 <= arg2);
+                            (*template) = newCon(arg1Val <= arg2Val);
                             break;
                         case O_NEq:
-                            (*template) = newCon(arg1 != arg2);
+                            (*template) = newCon(arg1Val != arg2Val);
                             break;
                         case O_Gtr:
-                            (*template) = newCon(arg1 > arg2);
+                            (*template) = newCon(arg1Val > arg2Val);
                             break;
                         case O_GtE:
-                            (*template) = newCon(arg1 >= arg2);
+                            (*template) = newCon(arg1Val >= arg2Val);
                             break;
                         case O_Xor:
-                            (*template) = newCon((!arg1) != (!arg2));
+                            (*template) = newCon((!arg1Val) != (!arg2Val));
                             break;
                         case O_And:
-                            (*template) = newCon(arg1 && arg2);
+                            (*template) = newCon(arg1Val && arg2Val);
                             break;
                         case O_Or:
-                            (*template) = newCon(arg1 || arg2);
+                            (*template) = newCon(arg1Val || arg2Val);
                             break;
                     }
                 }
@@ -319,6 +334,6 @@ void reduceTemplateNorm(Exp **template) {
     bool normalForm = false;
     while(!normalForm) {
         normalForm = true;
-        template = reduceTemplate(&normalForm, &template);
+        reduceTemplate(&normalForm, template);
     }
 }
