@@ -275,9 +275,10 @@ void reduceTemplate(bool *normalForm, Exp **template) {
                 else {
                     int arg1Val = conVal(arg1);
                     int arg2Val = conVal(arg2);
+                    OpTy ty = opnType(opn);
                     freeExp(*template);
                     (*normalForm) = false;
-                    switch(opnType(opn)) {
+                    switch(ty) {
                         case O_Add:
                             (*template) = newCon(arg1Val + arg2Val);
                             break;
@@ -323,6 +324,31 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         }
     }
     // End of binary operations case
+
+    // Unary operations
+    if(isApp(*template)) {
+        Exp *arg = appArg(*template);
+        Exp *opn = appFun(*template);
+        // Simple Cases - iszero and not
+        if(isOpn(opn) && ((opnType(opn) == O_IsZ) || (opnType(opn) == O_Not))) {
+            if(isCon(arg)) {
+                OpTy ty = opnType(opn);
+                int argVal = conVal(arg);
+                freeExp(*template);
+                switch(opnType(opn)) {
+                    case O_IsZ:
+                        (*template) = newCon(argVal == 0);
+                        break;
+                    case O_Not:
+                        (*template) = newCon(!argVal);
+                        break;
+                }
+            }
+        }
+        // More complicated cases - polymorphic operations
+        else {
+        }
+    }
 
 }
 

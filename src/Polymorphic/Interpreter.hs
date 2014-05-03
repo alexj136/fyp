@@ -66,8 +66,9 @@ reduce prog exp = let reduce' = reduce prog in case exp of
 
     -- List operations
     App (Operation Null) m -> case reduceNorm prog m of
-        Operation Empty -> Constant (BoolVal True)
-        _               -> Constant (BoolVal False)
+        Operation Empty        -> Constant (BoolVal True)
+        App (Operation Cons) _ -> Constant (BoolVal False)
+        _                      -> error "reduce: null applied to non-list type"
 
     App (Operation Head) (App (App (Operation Cons) m) n) -> m
     App (Operation Head) m ->  App (Operation Head) (reduce' m)
