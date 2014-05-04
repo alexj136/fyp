@@ -198,4 +198,4 @@ void reduceTemplate(bool *normalForm, Exp **template);
  */
 void reduceTemplateNorm(Exp **template);
 
-#endif
+#endif // LANGDEFS

@@ -273,46 +273,60 @@ void reduceTemplate(bool *normalForm, Exp **template) {
                     int arg2Val = conVal(arg2);
                     OpTy ty = opnType(opn);
                     freeExp(*template);
-                    (*normalForm) = false;
                     switch(ty) {
                         case O_Add:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val + arg2Val);
                             break;
                         case O_Sub:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val - arg2Val);
                             break;
                         case O_Mul:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val * arg2Val);
                             break;
                         case O_Div:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val / arg2Val);
                             break;
                         case O_Mod:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val % arg2Val);
                             break;
                         case O_Lss:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val < arg2Val);
                             break;
                         case O_LsE:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val <= arg2Val);
                             break;
                         case O_NEq:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val != arg2Val);
                             break;
                         case O_Gtr:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val > arg2Val);
                             break;
                         case O_GtE:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val >= arg2Val);
                             break;
                         case O_Xor:
+                            (*normalForm) = false;
                             (*template) = newCon((!arg1Val) != (!arg2Val));
                             break;
                         case O_And:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val && arg2Val);
                             break;
                         case O_Or:
+                            (*normalForm) = false;
                             (*template) = newCon(arg1Val || arg2Val);
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -331,18 +345,46 @@ void reduceTemplate(bool *normalForm, Exp **template) {
                 OpTy ty = opnType(opn);
                 int argVal = conVal(arg);
                 freeExp(*template);
-                switch(opnType(opn)) {
+                switch(ty) {
                     case O_IsZ:
+                        (*normalForm) = false;
                         (*template) = newCon(argVal == 0);
                         break;
                     case O_Not:
+                        (*normalForm) = false;
                         (*template) = newCon(!argVal);
+                        break;
+                    default:
                         break;
                 }
             }
+            else {
+                reduceTemplate(normalForm, &arg);
+            }
         }
         // More complicated cases - polymorphic operations
-        else {
+        else if(isOpn(opn) && ((opnType(opn) == O_Head) ||
+                    (opnType(opn) == O_Tail))) {
+
+            if(isApp(arg)) {
+                Exp *tail = appArg(arg);
+                Exp *t1 = appFun(arg);
+                if(isApp(t1)) {
+                    Exp *head = appArg(t1);
+                    Exp *cons = appFun(t1);
+                    if(isOpn(cons) && (opnType(cons) == O_Cons)) {
+                        Exp *temporary =
+                            copyExp((opnType(opn) == O_Head) ? head : tail);
+                        freeExp(*template);
+                        (*template) = temporary;
+                        temporary = NULL;
+                        (*normalForm) = false;
+                    }
+                }
+            }
+        }
+        else if(isOpn(opn) && (opnType(opn) == O_Cons)) {
+            reduceTemplate(normalForm, &arg);
         }
     }
     // End unary operations case
