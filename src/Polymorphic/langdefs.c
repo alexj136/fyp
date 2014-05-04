@@ -402,6 +402,53 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         reduceTemplate(normalForm, &consArg);
     }
     // End Cons
+    
+    // Sum operations
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && ((opnType(appFun(exp)) == O_RemL)
+            || (opnType(appFun(exp)) == O_RemR))) {
+
+        OpTy opn = opnType(appFun(exp));
+        Exp *arg = appArg(exp);
+
+        if(isApp(arg)
+                && isOpn(appFun(arg))
+                && ((opnType(appFun(arg)) == O_InjL)
+                || (opnType(appFun(arg)) == O_InjR))) {
+
+            OpTy innerOpn = opnType(appFun(arg));
+            Exp *innerArg = appArg(arg);
+
+            if(((opn == O_RemL) && (innerOpn == O_InjL))
+                    || ((opn == O_RemR) && (innerOpn == O_InjR))) {
+                
+                Exp *tmp = copyExp(innerArg);
+                freeExp(exp);
+                exp = tmp;
+                tmp = NULL;
+                (*normalForm) = false;
+            }
+            else {
+                printf("Error - removed value from a non-sum expression or "
+                        "wrong side of sum expression\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else {
+            reduceTemplate(normalForm, &arg);
+        }
+    }
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && ((opnType(appFun(exp)) == O_InjL)
+            || (opnType(appFun(exp)) == O_InjR))) {
+
+        Exp *arg = appArg(exp);
+
+        reduceTemplate(normalForm, &arg);
+    }
+    // End sum operations
     // End polymorphic unary operations
 }
 

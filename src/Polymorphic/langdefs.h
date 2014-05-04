@@ -108,7 +108,7 @@ typedef enum {
     O_Fix,                              // Fixed-point combinator
 
     O_InjL,                             // Sum-types
-    O_Injr,
+    O_InjR,
     O_RemL,
     O_RemR,
 
