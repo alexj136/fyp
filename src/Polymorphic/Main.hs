@@ -9,6 +9,7 @@ import Interpreter
 import CodeGen
 
 import System.Environment (getArgs)
+import System.Cmd (system)
 import qualified Data.Map as M
 
 -- Convert the command line arguments from a haskell list of strings into an
@@ -26,8 +27,6 @@ main = do
             \ [-i|--interpret] filename args]"
 
     else if (head args) == "-c" || (head args) == "--compile" then do
-        putStrLn "Warning: lambda lifting not yet implemented. Local \
-            \Definitions will cause errors."
         progStr <- readFile $ head (tail args)
         let tokens       = scan progStr
             parseRes     = P.parse tokens
@@ -35,15 +34,15 @@ main = do
             (i, _, prog) = convertTVarsProg (0, M.empty, progPTVars)
             unifyRes     = inferFull (snd (contextProg i prog)) (allToLambdas prog)
             hasMain      = hasFunc prog "main"
-            liftedProg   = lambdaLiftProg prog
-            outputCode   = codeGenProg liftedProg
+            outputCode   = codeGenProg prog
             in
             if unifyRes == Nothing then
                 putStrLn "Type check failure"
             else if not hasMain then
                 putStrLn "No main function found"
             else
-                writeFile ((head (tail args)) ++ ".s") outputCode
+                system "sh makebinary.sh" >>
+                writeFile "compiled.c" outputCode
 
     else if (head args) == "-i" || (head args) == "--interpret" then do
         progStr <- readFile (head (tail args))

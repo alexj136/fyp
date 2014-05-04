@@ -197,4 +197,10 @@ void reduceTemplate(bool *normalForm, Exp **template);
  */
 void reduceTemplateNorm(Exp **template);
 
+/*
+ * Implementation of function application - walk the template replacing all
+ * occurences of the bound variable with the given argument expression.
+ */
+void replace(int bind, Exp *argument, Exp **template);
+
 #endif // LANGDEFS

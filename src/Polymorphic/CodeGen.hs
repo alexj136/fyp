@@ -51,25 +51,28 @@ codeGenFunc f =
     [ ""
     , "Exp *instantiate_" ++ getName f ++ "() {"
     , "    return"
-    ] ++ codeGenTerm 2 (toLambdas f) ++
+    ] ++ codeGenTerm M.empty 2 (toLambdas f) ++
     [ "    ;"
     , "}"
     ]
 
-codeGenTerm :: Int -> Term -> [String]
-codeGenTerm tabNo exp = let t = tabs "" tabNo in case exp of
+-- Generate code for the given Term. The Map parameter determines the De Bruijn
+-- index that should be given to a variable. The Int parameter is used to
+-- determine the number of tabs to use before a line.
+codeGenTerm :: M.Map String Int -> Int -> Term -> [String]
+codeGenTerm map tabNo exp = let t = tabs "" tabNo in case exp of
     App m n ->
         [ t ++ "newApp(" ]
-        ++ codeGenTerm (tabNo + 1) m ++
+        ++ codeGenTerm map (tabNo + 1) m ++
         [ t ++ "," ]
-        ++ codeGenTerm (tabNo + 1) n ++
+        ++ codeGenTerm map (tabNo + 1) n ++
         [ t ++ ")" ]
     AbsInf v m ->
-        [ t ++ "newAbs(\"" ++ v ++ "\", " ]
-        ++ codeGenTerm (tabNo + 1) m ++
+        [ t ++ "newAbs(" ]
+        ++ codeGenTerm (M.insert v 0 (M.map (+ 1) map)) (tabNo + 1) m ++
         [ t ++ ")" ]
-    Abs    v _ m -> codeGenTerm tabNo (AbsInf v m)
-    Var    v     -> ["newVar(\"" ++ v ++ "\")"]
+    Abs    v _ m -> codeGenTerm map tabNo (AbsInf v m)
+    Var    v     -> ["newVar(" ++ show (map M.! v) ++ ")"]
     Constant  c  -> ["newCon(" ++ codeGenVal c ++ ")"]
     Operation ot -> ["newOpn(" ++ codeGenOp ot ++ ")"]
 

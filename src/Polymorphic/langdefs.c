@@ -203,7 +203,7 @@ bool expEqual(Exp *e1, Exp *e2) {
         }
     }
     else {
-        printf("Error - unrecognised expression type\n");
+        printf("Error - unrecognised expression type in expEqual()\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -212,9 +212,25 @@ bool expEqual(Exp *e1, Exp *e2) {
  * Copy an expression, return a pointer to the newly allocated expression.
  */
 Exp *copyExp(Exp *exp) {
-    printf("copyExp() not yet implemented");
-    exit(EXIT_FAILURE);
-    return NULL;
+    if(isApp(exp)) {
+        return newApp(copyExp(appFun(exp)), copyExp(appArg(exp)));
+    }
+    else if(isAbs(exp)) {
+        return newAbs(copyExp(absBody(exp)));
+    }
+    else if(isVar(exp)) {
+        return newVar(varBind(exp));
+    }
+    else if(isCon(exp)) {
+        return newCon(conVal(exp));
+    }
+    else if(isOpn(exp)) {
+        return newOpn(opnType(exp));
+    }
+    else {
+        printf("Error - unrecognised expression type in copyExp()\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*
@@ -543,5 +559,34 @@ void reduceTemplateNorm(Exp **template) {
     while(!normalForm) {
         normalForm = true;
         reduceTemplate(&normalForm, template);
+    }
+}
+
+/*
+ * Implementation of function application - walk the template replacing all
+ * occurences of the bound variable with the given argument expression.
+ */
+void replace(int bind, Exp *argument, Exp *body) {
+
+    if(isApp(body)) {
+        Exp *fun = appFun(body);
+        Exp *arg = appArg(body);
+        if(isVar(fun) && (varBind(fun) == bind)) {
+            freeExp(fun);
+            body->val->app->fun = copyExp(argument);
+        }
+        else {
+            replace(bind, argument, fun);
+        }
+        if(isVar(arg) && (varBind(arg) == bind)) {
+            freeExp(arg);
+            body->val->app->arg = copyExp(argument);
+        }
+        else {
+            replace(bind, argument, arg);
+        }
+    }
+    else if(isAbs(body)) {
+        // TODO
     }
 }
