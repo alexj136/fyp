@@ -46,9 +46,8 @@ Exp *newApp(Exp *fun, Exp *arg) {
     return newExpNode;
 }
 
-Exp *newAbs(char *name, Exp *body) {
+Exp *newAbs(Exp *body) {
     Abs *newAbsNode = ckMalloc(sizeof(Abs));
-    newAbsNode->name = name;
     newAbsNode->body = body;
 
     ExpV *val = ckMalloc(sizeof(ExpV));
@@ -61,9 +60,9 @@ Exp *newAbs(char *name, Exp *body) {
     return newExpNode;
 }
 
-Exp *newVar(char *name) {
+Exp *newVar(int bind) {
     Var *newVarNode = ckMalloc(sizeof(Var));
-    newVarNode->name = name;
+    newVarNode->bind = bind;
 
     ExpV *val = ckMalloc(sizeof(ExpV));
     val->var = newVarNode;
@@ -112,13 +111,11 @@ void freeExp(Exp *exp) {
             free(exp->val);
             break;
         case T_Abs:
-            free(exp->val->abs->name);
             freeExp(exp->val->abs->body);
             free(exp->val->abs);
             free(exp->val);
             break;
         case T_Var:
-            free(exp->val->var->name);
             free(exp->val->var);
             free(exp->val);
             break;
@@ -164,9 +161,51 @@ bool isBinaryOpn(Exp *exp) {
  * Determine whether or not two expressions are equal.
  */
 bool expEqual(Exp *e1, Exp *e2) {
-    printf("expEqual() not yet implemented");
-    exit(EXIT_FAILURE);
-    return false;
+    if(isApp(e1)) {
+        if(!isApp(e2)) {
+            return false;
+        }
+        else {
+            return expEqual(appFun(e1), appFun(e2))
+                && expEqual(appArg(e1), appArg(e2));
+        }
+    }
+    else if(isAbs(e1)) {
+        if(!isAbs(e2)) {
+            return false;
+        }
+        else {
+            return expEqual(absBody(e1), absBody(e2));
+        }
+    }
+    else if(isVar(e1)) {
+        if(!isVar(e2)) {
+            return false;
+        }
+        else {
+            return varBind(e1) == varBind(e2);
+        }
+    }
+    else if(isCon(e1)) {
+        if(!isCon(e2)) {
+            return false;
+        }
+        else {
+            return conVal(e1) == conVal(e2);
+        }
+    }
+    else if(isOpn(e1)) {
+        if(!isOpn(e2)) {
+            return false;
+        }
+        else {
+            return opnType(e1) == opnType(e2);
+        }
+    }
+    else {
+        printf("Error - unrecognised expression type\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*
@@ -192,19 +231,14 @@ Exp *appArg(Exp *exp) {
     return exp->val->app->arg;
 }
 
-char *absVar(Exp *exp) {
-    assert(exp->type == T_Abs);
-    return exp->val->abs->name;
-}
-
 Exp *absBody(Exp *exp) {
     assert(exp->type == T_Abs);
     return exp->val->abs->body;
 }
 
-char *varName(Exp *exp) {
+int varBind(Exp *exp) {
     assert(exp->type == T_Var);
-    return exp->val->var->name;
+    return exp->val->var->bind;
 }
 
 int conVal(Exp *exp) {
@@ -218,9 +252,9 @@ OpTy opnType(Exp *exp) {
 }
 
 /*
- * Reduce the template referenced by the given pointer. If it was found to have
- * normal form i.e. no reduction could be made, sets the dereferenced value at
- * normalForm to false.
+ * Reduce the indirectly referenced template. If any reduction was made, set the
+ * value at the given boolean pointer to be false, indicating that the template
+ * is not in normal form.
  */
 void reduceTemplate(bool *normalForm, Exp **template) {
 
@@ -449,6 +483,54 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         reduceTemplate(normalForm, &arg);
     }
     // End sum operations
+    
+    // Tuple operations
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && ((opnType(appFun(exp)) == O_Fst)
+            || (opnType(appFun(exp)) == O_Snd))) {
+
+        OpTy opn = opnType(appFun(exp));
+        Exp *arg = appArg(exp);
+
+        if(isApp(arg)
+                && isApp(appFun(arg))
+                && isOpn(appFun(appFun(arg)))
+                && (opnType(appFun(appFun(arg))) == O_Tuple)) {
+
+            Exp *fst = appArg(appFun(arg));
+            Exp *snd = appArg(arg);
+
+            Exp *tmp = copyExp((opn == O_Fst) ? fst : snd);
+            freeExp(exp);
+            exp = tmp;
+            tmp = NULL;
+            (*normalForm) = false;
+        }
+        else {
+            reduceTemplate(normalForm, &arg);
+        }
+    }
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && (opnType(appFun(exp)) == O_Tuple)) {
+
+        Exp *arg = appArg(exp);
+
+        reduceTemplate(normalForm, &arg);
+    }
+    // End Tuple operations
+
+    // Fixed point combinator
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && (opnType(appFun(exp)) == O_Fix)) {
+
+        Exp *fCopy = copyExp(appArg(exp));
+
+        exp = newApp(fCopy, exp);
+    }
+    // End fixed point combinator
     // End polymorphic unary operations
 }
 

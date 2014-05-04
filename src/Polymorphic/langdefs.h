@@ -3,12 +3,12 @@
  * Contains data definitions used by compiled programs.
  */
 
+#ifndef LANGDEFS
+#define LANGDEFS
+
 #ifndef COMPILED
 #include "compiled.h"
 #endif // COMPILED
-
-#ifndef LANGDEFS
-#define LANGDEFS
 
 typedef enum {
     false,
@@ -61,7 +61,6 @@ struct App {
  */
 typedef struct Abs Abs;
 struct Abs {
-    char *name;
     Exp *body;
 };
 
@@ -71,7 +70,7 @@ struct Abs {
  */
 typedef struct Var Var;
 struct Var {
-    char *name;
+    int bind;
 };
 
 /*
@@ -140,8 +139,8 @@ bool strEqual(char *str1, char *str2);
  * Functions to allocate & deallocate new expressions on the heap.
  */
 Exp *newApp(Exp *fun, Exp *arg);
-Exp *newAbs(char *name, Exp *body);
-Exp *newVar(char *name);
+Exp *newAbs(Exp *body);
+Exp *newVar(int bind);
 Exp *newCon(int val);
 Exp *newOpn(OpTy type);
 void freeExp(Exp *exp);
@@ -174,11 +173,10 @@ Exp *appFun(Exp *exp);
 Exp *appArg(Exp *exp);
 
 // Abstraction
-char *absVar(Exp *exp);
 Exp *absBody(Exp *exp);
 
 // Variables
-char *varName(Exp *exp);
+int varBind(Exp *exp);
 
 // Constants
 int conVal(Exp *exp);

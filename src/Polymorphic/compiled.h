@@ -4,12 +4,12 @@
  * time the compiler is run.
  */
 
+#ifndef COMPILED
+#define COMPILED
+
 #ifndef LANGDEFS
 #include "langdefs.h"
 #endif // LANGDEFS
-
-#ifndef COMPILED
-#define COMPILED
 
 /*
  * Instantiate on the heap a template for the function with the given name, and
