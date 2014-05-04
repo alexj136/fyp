@@ -144,6 +144,23 @@ bool isCon(Exp *exp) { return exp->type == T_Con; }
 bool isOpn(Exp *exp) { return exp->type == T_Opn; }
 
 /*
+ * Determine if an operation is a binary operation.
+ */
+bool isBinaryOpn(Exp *exp) {
+    if(isOpn(exp)) {
+        OpTy opn = opnType(exp);
+        return (opn == O_Add) || (opn == O_Sub) || (opn == O_Mul)
+            || (opn == O_Div) || (opn == O_Mod) || (opn == O_Lss)
+            || (opn == O_LsE) || (opn == O_NEq) || (opn == O_Gtr)
+            || (opn == O_GtE) || (opn == O_And) || (opn == O_Or )
+            || (opn == O_Xor) || (opn == O_Equ);
+    }
+    else {
+        return false;
+    }
+}
+
+/*
  * Determine whether or not two expressions are equal.
  */
 bool expEqual(Exp *e1, Exp *e2) {
@@ -207,188 +224,185 @@ OpTy opnType(Exp *exp) {
  */
 void reduceTemplate(bool *normalForm, Exp **template) {
 
+    Exp *exp = (*template);
+
     // Conditionals
-    if(isApp(*template)) {
-        Exp *falseExp = appArg(*template);
-        Exp *t1 = appFun(*template);
-        if(isApp(t1)) {
-            Exp *trueExp = appArg(t1);
-            Exp *t2 = appFun(t1);
-            if(isApp(t2)) {
-                Exp *guard = appArg(t2);
-                Exp *cond = appFun(t2);
-                if(isOpn(cond)) {
-                    if(opnType(cond) == O_Cond) {
-                        if(isCon(guard)) {
-                            if(conVal(guard) == 0) {
-                                Exp *temporary = copyExp(falseExp);
-                                freeExp(*template);
-                                (*template) = temporary;
-                                temporary = NULL;
-                                (*normalForm) = false;
-                            }
-                            else {
-                                assert(conVal(guard) == 1);
-                                Exp *temporary = copyExp(trueExp);
-                                freeExp(*template);
-                                (*template) = temporary;
-                                temporary = NULL;
-                                (*normalForm) = false;
-                            }
-                        }
-                    }
-                }
-                else {
-                    reduceTemplate(normalForm, &guard);
-                }
-            }
+    if(isApp(exp)
+            && isApp(appFun(exp))
+            && isApp(appFun(appFun(exp)))
+            && isOpn(appFun(appFun(appFun(exp))))
+            && (opnType(appFun(appFun(appFun(exp)))) == O_Cond)) {
+
+        Exp *guard  = appArg(appFun(appFun(exp)));
+        Exp *truExp = appArg(appFun(exp));
+        Exp *falExp = appArg(exp);
+
+        // If the guard is true, replace the expression with the true argument.
+        if(isCon(guard) && (conVal(guard) == true)) {
+            Exp *tmp = copyExp(truExp);
+            freeExp(exp);
+            (*template) = tmp;
+            tmp = NULL;
+            (*normalForm) = false;
+        }
+        // If the guard is false, replace the expression with the false
+        // argument.
+        else if(isCon(guard) && (conVal(guard) == false)) {
+            Exp *tmp = copyExp(falExp);
+            freeExp(exp);
+            (*template) = tmp;
+            tmp = NULL;
+            (*normalForm) = false;
+        }
+        // If the guard is not reduced, reduce it.
+        else {
+            reduceTemplate(normalForm, &guard);
         }
     }
     // End of conditional case
 
     // Binary operations
-    if(isApp(*template)) {
-        Exp *arg2 = appArg(*template);
-        Exp *t1 = appFun(*template);
-        if(isApp(t1)) {
-            Exp *arg1 = appArg(t1);
-            Exp *opn = appFun(t1);
-            if(isOpn(opn)) {
-                if(opnType(opn) == O_Equ) {
-                    reduceTemplateNorm(&arg1);
-                    reduceTemplateNorm(&arg2);
-                    bool same = expEqual(arg1, arg2);
-                    freeExp(*template);
-                    (*template) = newCon(same);
-                    (*normalForm) = false;
-                }
-                else if(!isCon(arg1)) {
-                    reduceTemplate(normalForm, &arg1);
-                }
-                else if(!isCon(arg2)) {
-                    reduceTemplate(normalForm, &arg2);
-                }
-                else {
-                    int arg1Val = conVal(arg1);
-                    int arg2Val = conVal(arg2);
-                    OpTy ty = opnType(opn);
-                    freeExp(*template);
-                    switch(ty) {
-                        case O_Add:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val + arg2Val);
-                            break;
-                        case O_Sub:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val - arg2Val);
-                            break;
-                        case O_Mul:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val * arg2Val);
-                            break;
-                        case O_Div:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val / arg2Val);
-                            break;
-                        case O_Mod:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val % arg2Val);
-                            break;
-                        case O_Lss:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val < arg2Val);
-                            break;
-                        case O_LsE:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val <= arg2Val);
-                            break;
-                        case O_NEq:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val != arg2Val);
-                            break;
-                        case O_Gtr:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val > arg2Val);
-                            break;
-                        case O_GtE:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val >= arg2Val);
-                            break;
-                        case O_Xor:
-                            (*normalForm) = false;
-                            (*template) = newCon((!arg1Val) != (!arg2Val));
-                            break;
-                        case O_And:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val && arg2Val);
-                            break;
-                        case O_Or:
-                            (*normalForm) = false;
-                            (*template) = newCon(arg1Val || arg2Val);
-                            break;
-                        default:
-                            break;
-                    }
-                }
+    if(isApp(exp)
+            && isApp(appFun(exp))
+            && isBinaryOpn(appFun(appFun(exp)))) {
+
+        OpTy opn  = opnType(appFun(appFun(exp)));
+        Exp *arg1 = appArg(appFun(exp));
+        Exp *arg2 = appArg(exp);
+
+        // Handle equality differently because it is polymorphic.
+        if(opn == O_Equ) {
+            reduceTemplateNorm(&arg1);
+            reduceTemplateNorm(&arg2);
+            bool same = expEqual(arg1, arg2);
+            freeExp(exp);
+            (*template) = newCon(same);
+            (*normalForm) = false;
+        }
+        if(!isCon(arg1)) {
+            reduceTemplate(normalForm, &arg1);
+        }
+        else if(!isCon(arg2)) {
+            reduceTemplate(normalForm, &arg2);
+        }
+        else {
+            int arg1Val = conVal(arg1);
+            int arg2Val = conVal(arg2);
+            freeExp(exp);
+            (*normalForm) = false;
+                 if(opn == O_Add) { exp = newCon(arg1Val + arg2Val);        }
+            else if(opn == O_Sub) { exp = newCon(arg1Val - arg2Val);        }
+            else if(opn == O_Mul) { exp = newCon(arg1Val * arg2Val);        }
+            else if(opn == O_Div) { exp = newCon(arg1Val / arg2Val);        }
+            else if(opn == O_Mod) { exp = newCon(arg1Val % arg2Val);        }
+            else if(opn == O_Lss) { exp = newCon(arg1Val < arg2Val);        }
+            else if(opn == O_LsE) { exp = newCon(arg1Val <= arg2Val);       }
+            else if(opn == O_NEq) { exp = newCon(arg1Val != arg2Val);       }
+            else if(opn == O_Gtr) { exp = newCon(arg1Val > arg2Val);        }
+            else if(opn == O_GtE) { exp = newCon(arg1Val >= arg2Val);       }
+            else if(opn == O_Xor) { exp = newCon((!arg1Val) != (!arg2Val)); }
+            else if(opn == O_And) { exp = newCon(arg1Val && arg2Val);       }
+            else if(opn == O_Or ) { exp = newCon(arg1Val || arg2Val);       }
+            else {
+                printf("Error reducing binary operation - unrecognised "
+                        "operation\n");
+                exit(EXIT_FAILURE);
             }
         }
     }
     // End of binary operations case
 
-    // Unary operations
-    if(isApp(*template)) {
-        Exp *arg = appArg(*template);
-        Exp *opn = appFun(*template);
-        // Simple Cases - iszero and not
-        if(isOpn(opn) && ((opnType(opn) == O_IsZ) || (opnType(opn) == O_Not))) {
-            if(isCon(arg)) {
-                OpTy ty = opnType(opn);
-                int argVal = conVal(arg);
-                freeExp(*template);
-                switch(ty) {
-                    case O_IsZ:
-                        (*normalForm) = false;
-                        (*template) = newCon(argVal == 0);
-                        break;
-                    case O_Not:
-                        (*normalForm) = false;
-                        (*template) = newCon(!argVal);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else {
-                reduceTemplate(normalForm, &arg);
-            }
-        }
-        // More complicated cases - polymorphic operations
-        else if(isOpn(opn) && ((opnType(opn) == O_Head) ||
-                    (opnType(opn) == O_Tail))) {
+    // iszero & not unary operations
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && (opnType(appFun(exp)) == O_Not
+            || opnType(appFun(exp)) == O_IsZ)) {
 
-            if(isApp(arg)) {
-                Exp *tail = appArg(arg);
-                Exp *t1 = appFun(arg);
-                if(isApp(t1)) {
-                    Exp *head = appArg(t1);
-                    Exp *cons = appFun(t1);
-                    if(isOpn(cons) && (opnType(cons) == O_Cons)) {
-                        Exp *temporary =
-                            copyExp((opnType(opn) == O_Head) ? head : tail);
-                        freeExp(*template);
-                        (*template) = temporary;
-                        temporary = NULL;
-                        (*normalForm) = false;
-                    }
-                }
-            }
-        }
-        else if(isOpn(opn) && (opnType(opn) == O_Cons)) {
+        OpTy opn = opnType(appFun(exp));
+        Exp *arg = appArg(exp);
+
+        if(!isCon(arg)) {
             reduceTemplate(normalForm, &arg);
         }
+        else {
+            int argVal = conVal(arg);
+            freeExp(exp);
+            (*normalForm) = false;
+            if           (opn == O_Not)  { exp = newCon(!argVal);     }
+            else { assert(opn == O_IsZ);   exp = newCon(argVal == 0); }
+        }
     }
-    // End unary operations case
+    // End iszero & not unary operations case
 
+    // Polymorphic unary operations
+    // Null
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && (opnType(appFun(exp)) == O_Null)) {
+
+        Exp *arg = appArg(exp);
+
+        reduceTemplateNorm(&arg);
+        if(isOpn(arg) && (opnType(arg) == O_Empty)) {
+            freeExp(exp);
+            exp = newCon(true);
+            (*normalForm) = false;
+        }
+        else {
+            freeExp(exp);
+            exp = newCon(false);
+            (*normalForm) = false;
+        }
+    }
+    // End Null
+
+    // Head and Tail
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && ((opnType(appFun(exp)) == O_Head)
+            || (opnType(appFun(exp)) == O_Tail))) {
+
+        OpTy opn = opnType(appFun(exp));
+        Exp *arg = appArg(exp);
+
+        if(isApp(arg)
+                && isApp(appFun(arg))
+                && isOpn(appFun(appFun(arg)))
+                && (opnType(appFun(appFun(arg)))) == O_Cons) {
+            
+            Exp *head = appArg(appFun(arg));
+            Exp *tail = appArg(arg);
+
+            if(opn == O_Head) {
+                Exp *tmp = copyExp(head);
+                freeExp(exp);
+                exp = tmp;
+                tmp = NULL;
+                (*normalForm) = false;
+            }
+            else {
+                assert(opn == O_Tail);
+                Exp *tmp = copyExp(tail);
+                freeExp(exp);
+                exp = tmp;
+                tmp = NULL;
+                (*normalForm) = false;
+            }
+        }
+    }
+    // End Head and Tail
+
+    // Cons
+    if(isApp(exp)
+            && isOpn(appFun(exp))
+            && (opnType(appFun(exp)) == O_Cons)) {
+
+        Exp *consArg = appArg(exp);
+
+        reduceTemplate(normalForm, &consArg);
+    }
+    // End Cons
+    // End polymorphic unary operations
 }
 
 /*

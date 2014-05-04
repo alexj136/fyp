@@ -87,6 +87,8 @@ struct Con {
  * The possible types of operations.
  */
 typedef enum {
+    O_Cond,                             // Conditionals
+
     O_Add, O_Sub, O_Mul, O_Div, O_Mod,  // Arithmetic
 
     O_Lss, O_LsE, O_NEq, O_Gtr, O_GtE,  // Integer Comparison
@@ -102,8 +104,6 @@ typedef enum {
     O_Null,
     O_Head,
     O_Tail,
-
-    O_Cond,                             // Conditionals
 
     O_Fix,                              // Fixed-point combinator
 
@@ -154,6 +154,7 @@ bool isAbs(Exp *exp);
 bool isVar(Exp *exp);
 bool isCon(Exp *exp);
 bool isOpn(Exp *exp);
+bool isBinaryOpn(Exp *exp);
 
 /*
  * Determine whether or not two expressions are equal.
