@@ -163,7 +163,7 @@ bool expEqual(Exp *e1, Exp *e2);
 /*
  * Copy an expression, return a pointer to the newly allocated expression.
  */
-Exp *copyExp(Exp *exp) {
+Exp *copyExp(Exp *exp);
 
 /*
  * Member retrieval functions for expressions

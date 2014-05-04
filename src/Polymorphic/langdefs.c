@@ -3,14 +3,8 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
-
-#ifndef LANGDEFS
 #include "langdefs.h"
-#endif // LANGDEFS
-
-#ifndef COMPILED
 #include "compiled.h"
-#endif // COMPILED
 
 /*
  * Allocate on the heap using malloc and assert that it was successful.
@@ -155,6 +149,7 @@ bool isOpn(Exp *exp) { return exp->type == T_Opn; }
 bool expEqual(Exp *e1, Exp *e2) {
     printf("expEqual() not yet implemented");
     exit(EXIT_FAILURE);
+    return false;
 }
 
 /*
@@ -163,6 +158,7 @@ bool expEqual(Exp *e1, Exp *e2) {
 Exp *copyExp(Exp *exp) {
     printf("copyExp() not yet implemented");
     exit(EXIT_FAILURE);
+    return NULL;
 }
 
 /*
@@ -349,6 +345,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         else {
         }
     }
+    // End unary operations case
 
 }
 
