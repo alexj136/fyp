@@ -3,7 +3,6 @@
 #include <malloc.h>
 #include <assert.h>
 #include "langdefs.h"
-#include "compiled.h"
 
 /*
  * Allocate on the heap using malloc and assert that it was successful.

@@ -41,8 +41,9 @@ main = do
             else if not hasMain then
                 putStrLn "No main function found"
             else
-                system "sh makebinary.sh" >>
-                writeFile "compiled.c" outputCode
+                writeFile "compiled.c" outputCode >>= \_ ->
+                system "sh makebinary.sh" >>= \_ ->
+                return ()
 
     else if (head args) == "-i" || (head args) == "--interpret" then do
         progStr <- readFile (head (tail args))
