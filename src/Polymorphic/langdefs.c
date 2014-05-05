@@ -240,9 +240,6 @@ void printExp(Exp *exp) {
             printf("F%d", -varBind(exp));
         }
     }
-    else if(isCon(exp) && (conTy(exp) == C_Int)) {
-        printf("%d", conVal(exp));
-    }
     else if(isCon(exp) && (conTy(exp) == C_Bool) && (conVal(exp) == true)) {
         printf("true");
     }
@@ -251,6 +248,9 @@ void printExp(Exp *exp) {
     }
     else if(isCon(exp) && (conTy(exp) == C_Char)) {
         printf("%c", conVal(exp));
+    }
+    else if(isCon(exp)/* && (conTy(exp) == C_Int)*/) {
+        printf("%d", conVal(exp));
     }
     else if(isOpn(exp)) {
         switch(opnType(exp)) {

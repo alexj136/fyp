@@ -42,7 +42,7 @@ main = do
                 putStrLn "No main function found"
             else
                 writeFile "compiled.c" outputCode >>= \_ ->
-                system "sh makebinary.sh" >>= \_ ->
+                system "gcc -Wall -g langdefs.c compiled.c -o binary" >>= \_ ->
                 return ()
 
     else if (head args) == "-i" || (head args) == "--interpret" then do
