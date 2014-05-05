@@ -59,9 +59,10 @@ Exp *newVar(int bind) {
     return newExpNode;
 }
 
-Exp *newCon(int conVal) {
+Exp *newCon(ConTy ty, int conVal) {
     Con *newConNode = ckMalloc(sizeof(Con));
     newConNode->val = conVal;
+    newConNode->ty = ty;
 
     ExpV *val = ckMalloc(sizeof(ExpV));
     val->con = newConNode;
@@ -177,7 +178,7 @@ bool expEqual(Exp *e1, Exp *e2) {
             return false;
         }
         else {
-            return conVal(e1) == conVal(e2);
+            return (conVal(e1) == conVal(e2)) && (conTy(e1) == conTy(e2));
         }
     }
     else if(isOpn(e1)) {
@@ -208,7 +209,7 @@ Exp *copyExp(Exp *exp) {
         return newVar(varBind(exp));
     }
     else if(isCon(exp)) {
-        return newCon(conVal(exp));
+        return newCon(conTy(exp), conVal(exp));
     }
     else if(isOpn(exp)) {
         return newOpn(opnType(exp));
@@ -224,10 +225,13 @@ Exp *copyExp(Exp *exp) {
  */
 void printExp(Exp *exp) {
     if(isApp(exp)) {
-        printf("%s %s", printExp(appFun(exp)), printExp(appArg(exp)));
+        printExp(appFun(exp));
+        printf(" ");
+        printExp(appArg(exp));
     }
     else if(isAbs(exp)) {
-        printf("^. %s", printExp(absBody(exp)));
+        printf("^. ");
+        printExp(absBody(exp));
     }
     else if(isVar(exp)) {
         if(varBind(exp) > 0) {
@@ -237,8 +241,17 @@ void printExp(Exp *exp) {
             printf("F%d", -varBind(exp));
         }
     }
-    else if(isCon(exp)) {
+    else if(isCon(exp) && (conTy(exp) == C_Int)) {
         printf("%d", conVal(exp));
+    }
+    else if(isCon(exp) && (conTy(exp) == C_Bool) && (conVal(exp) == true)) {
+        printf("true");
+    }
+    else if(isCon(exp) && (conTy(exp) == C_Bool) && (conVal(exp) == false)) {
+        printf("false");
+    }
+    else if(isCon(exp) && (conTy(exp) == C_Char)) {
+        printf("%c", conVal(exp));
     }
     else if(isOpn(exp)) {
         switch(opnType(exp)) {
@@ -302,6 +315,11 @@ Exp *absBody(Exp *exp) {
 int varBind(Exp *exp) {
     assert(exp->type == T_Var);
     return exp->val->var->bind;
+}
+
+ConTy conTy(Exp *exp) {
+    assert(exp->type == T_Con);
+    return exp->val->con->ty;
 }
 
 int conVal(Exp *exp) {
@@ -373,7 +391,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             reduceTemplateNorm(&arg2);
             bool same = expEqual(arg1, arg2);
             freeExp(exp);
-            (*template) = newCon(same);
+            (*template) = newCon(C_Bool, same);
             (*normalForm) = false;
         }
         if(!isCon(arg1)) {
@@ -387,19 +405,45 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             int arg2Val = conVal(arg2);
             freeExp(exp);
             (*normalForm) = false;
-                 if(opn == O_Add) { exp = newCon(arg1Val + arg2Val);        }
-            else if(opn == O_Sub) { exp = newCon(arg1Val - arg2Val);        }
-            else if(opn == O_Mul) { exp = newCon(arg1Val * arg2Val);        }
-            else if(opn == O_Div) { exp = newCon(arg1Val / arg2Val);        }
-            else if(opn == O_Mod) { exp = newCon(arg1Val % arg2Val);        }
-            else if(opn == O_Lss) { exp = newCon(arg1Val < arg2Val);        }
-            else if(opn == O_LsE) { exp = newCon(arg1Val <= arg2Val);       }
-            else if(opn == O_NEq) { exp = newCon(arg1Val != arg2Val);       }
-            else if(opn == O_Gtr) { exp = newCon(arg1Val > arg2Val);        }
-            else if(opn == O_GtE) { exp = newCon(arg1Val >= arg2Val);       }
-            else if(opn == O_Xor) { exp = newCon((!arg1Val) != (!arg2Val)); }
-            else if(opn == O_And) { exp = newCon(arg1Val && arg2Val);       }
-            else if(opn == O_Or ) { exp = newCon(arg1Val || arg2Val);       }
+            if(opn == O_Add) {
+                exp = newCon(C_Int, arg1Val + arg2Val);
+            }
+            else if(opn == O_Sub) {
+                exp = newCon(C_Int, arg1Val - arg2Val);
+            }
+            else if(opn == O_Mul) {
+                exp = newCon(C_Int, arg1Val * arg2Val);
+            }
+            else if(opn == O_Div) {
+                exp = newCon(C_Int, arg1Val / arg2Val);
+            }
+            else if(opn == O_Mod) {
+                exp = newCon(C_Int, arg1Val % arg2Val);
+            }
+            else if(opn == O_Lss) {
+                exp = newCon(C_Int, arg1Val < arg2Val);
+            }
+            else if(opn == O_LsE) {
+                exp = newCon(C_Bool, arg1Val <= arg2Val);
+            }
+            else if(opn == O_NEq) {
+                exp = newCon(C_Bool, arg1Val != arg2Val);
+            }
+            else if(opn == O_Gtr) {
+                exp = newCon(C_Bool, arg1Val > arg2Val);
+            }
+            else if(opn == O_GtE) {
+                exp = newCon(C_Bool, arg1Val >= arg2Val);
+            }
+            else if(opn == O_Xor) {
+                exp = newCon(C_Bool, (!arg1Val) != (!arg2Val));
+            }
+            else if(opn == O_And) {
+                exp = newCon(C_Bool, arg1Val && arg2Val);
+            }
+            else if(opn == O_Or ) {
+                exp = newCon(C_Bool, arg1Val || arg2Val);
+            }
             else {
                 printf("Error reducing binary operation - unrecognised "
                         "operation\n");
@@ -425,8 +469,8 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             int argVal = conVal(arg);
             freeExp(exp);
             (*normalForm) = false;
-            if           (opn == O_Not)  { exp = newCon(!argVal);     }
-            else { assert(opn == O_IsZ);   exp = newCon(argVal == 0); }
+            if           (opn == O_Not)  { exp = newCon(C_Bool, !argVal);     }
+            else { assert(opn == O_IsZ);   exp = newCon(C_Bool, argVal == 0); }
         }
     }
     // End iszero & not unary operations case
@@ -442,12 +486,12 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         reduceTemplateNorm(&arg);
         if(isOpn(arg) && (opnType(arg) == O_Empty)) {
             freeExp(exp);
-            exp = newCon(true);
+            exp = newCon(C_Bool, true);
             (*normalForm) = false;
         }
         else {
             freeExp(exp);
-            exp = newCon(false);
+            exp = newCon(C_Bool, false);
             (*normalForm) = false;
         }
     }
@@ -682,7 +726,7 @@ Exp *replace(Exp *body, int bind, Exp *arg) {
         }
     }
     else if(isCon(body)) {
-        return newCon(conVal(body));
+        return newCon(conTy(body), conVal(body));
     }
     else if(isOpn(body)) {
         return newOpn(opnType(body));

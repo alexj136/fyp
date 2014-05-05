@@ -6,10 +6,6 @@
 #ifndef LANGDEFS
 #define LANGDEFS
 
-#ifndef COMPILED
-#include "compiled.h"
-#endif // COMPILED
-
 typedef enum {
     false,
     true
@@ -73,12 +69,19 @@ struct Var {
     int bind;
 };
 
+typedef enum {
+    C_Int,
+    C_Bool,
+    C_Char
+} ConTy;
+
 /*
  * A constant can be an int, a char or a bool. We check this at compile-time, so
  * at run-time, we don't need to know which it is.
  */
 typedef struct Con Con;
 struct Con {
+    ConTy ty;
     int val;
 };
 
@@ -124,6 +127,8 @@ struct Opn {
     OpTy type;
 };
 
+// DEFINED IN langdefs.h
+
 /*
  * Allocate on the heap using malloc and assert that it was successful.
  */
@@ -135,7 +140,7 @@ void *ckMalloc(int size);
 Exp *newApp(Exp *fun, Exp *arg);
 Exp *newAbs(Exp *body);
 Exp *newVar(int bind);
-Exp *newCon(int val);
+Exp *newCon(ConTy ty, int val);
 Exp *newOpn(OpTy type);
 void freeExp(Exp *exp);
 
@@ -178,6 +183,7 @@ Exp *absBody(Exp *exp);
 int varBind(Exp *exp);
 
 // Constants
+ConTy conTy(Exp *exp);
 int conVal(Exp *exp);
 
 // Operations
@@ -201,5 +207,18 @@ void reduceTemplateNorm(Exp **template);
  * given expression.
  */
 Exp *replace(Exp *body, int bind, Exp *arg);
+
+// DEFINED IN compiled.c GENERATED AT COMPILE-TIME
+
+/*
+ * Instantiate on the heap a template for the function with the given index
+ * number, and return a pointer to it.
+ */
+Exp *instantiate(int funcNo);
+
+/*
+ * Determine if the function with given index number exists
+ */
+bool hasFunc(int funcNo);
 
 #endif // LANGDEFS

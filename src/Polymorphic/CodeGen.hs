@@ -20,7 +20,6 @@ codeGenProg (Prog pgMap) = concat $ intersperse "\n" $
     [ "#include <stdio.h>"
     , "#include <stdlib.h>"
     , "#include \"langdefs.h\""
-    , "#include \"compiled.h\""
     , ""
     , "int main() {"
     , "    Exp *template = instantiate_" ++ show (funcIndex M.! "main") ++ "();"
