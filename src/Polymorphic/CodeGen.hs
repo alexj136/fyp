@@ -6,6 +6,15 @@ import Data.List (intersperse)
 --import qualified Data.Set as S
 import qualified Data.Map as M
 
+-- Assign to each function an integer, which is negative, to be used in variable
+-- nodes. These numbers are negative because ordinary variables use
+-- positive De Bruijn indices.
+genIndexes :: Int -> M.Map Name Func -> M.Map Name Int
+genIndexes i m
+    | M.empty m = M.empty
+    | otherwise = let ((n, _), rest) = deleteFindMin m in
+        M.union (M.singleton n i) (genNames (i + 1) rest)
+
 codeGenProg :: Prog -> String
 codeGenProg (Prog pgMap) = concat $ intersperse "\n" $
     [ "#include <stdio.h>"
@@ -14,31 +23,45 @@ codeGenProg (Prog pgMap) = concat $ intersperse "\n" $
     , "#include \"compiled.h\""
     , ""
     , "int main() {"
-    , "    Exp *template = instantiate_main();"
+    , "    Exp *template = instantiate_" ++ show (funcIndex M.! "main") ++ "();"
     , "    reduceTemplateNorm(&template);"
     , "    printExp(template);"
     , "    return 0;"
     , "}"
     , ""
-    , "Exp *instantiate(char *funcName) {"
-    ] ++ codeGenIndexFunc fList ++
+    , "Exp *instantiate(int funcNo) {"
+    ] ++ codeGenIndexFunc funcIndex funcList ++
     [ "    else {"
     , "        printf(\"ERROR: instantiate(): function \'%s\' not found\\n\","
     , "            funcName);"
     , "        exit(EXIT_FAILURE);"
     , "    }"
     , "}"
-    ] ++ codeGenFuncs fList
-    where fList = map snd $ M.toList pgMap
+    , ""
+    , "bool hasFunc(int funcNo) {"
+    ] ++ codeGenHasFunc funcList ++
+    [ "    return false;"
+    , "}"
+    ] ++ codeGenFuncs funcList
+  where
+    funcList  = map snd $ M.toList pgMap
+    funcIndex = genIndexes 1 pgMap
 
-codeGenIndexFunc :: [Func] -> [String]
-codeGenIndexFunc fs = concat $ intersperse ["    else"] $
-    map codeGenIndexEntry fs
+codeGenHasFunc :: [Func] -> [String]
+codeGenHasFunc = map codeGenHasThisFunc
 
-codeGenIndexEntry :: Func -> [String]
-codeGenIndexEntry f =
-    [ "if (strEqual(funcName, \"" ++ getName f ++ "\")) {"
-    , "    return instantiate_" ++ getName f ++ "();"
+codeGenHasThisFunc :: Func -> String
+codeGenHasThisFunc f = "    if(funcNo == -"
+    ++ show (funcIndex M.! (getName f)) ++ ") return true;"
+
+codeGenIndexFunc :: M.Map String Int -> [Func] -> [String]
+codeGenIndexFunc funcIndex fs = concat $ intersperse ["    else"] $
+    map (codeGenIndexEntry funcIndex) fs
+
+codeGenIndexEntry :: M.Map String Int -> Func -> [String]
+codeGenIndexEntry funcIndex f = let idStr = show (funcIndex M.! (getName f)) in
+    [ "if (funcNo == -" ++ idStr ++ ")) {"
+    , "    return instantiate_" ++ idStr ++ "();"
     , "}"
     ]
 
@@ -46,10 +69,10 @@ codeGenIndexEntry f =
 codeGenFuncs :: [Func] -> [String]
 codeGenFuncs fs = concat $ map codeGenFunc fs
 
-codeGenFunc :: Func -> [String]
-codeGenFunc f =
+codeGenFunc :: M.Map String Int -> Func -> [String]
+codeGenFunc funcIndex f =
     [ ""
-    , "Exp *instantiate_" ++ getName f ++ "() {"
+    , "Exp *instantiate_" ++ show (funcIndex M.! (getName f)) ++ "() {"
     , "    return"
     ] ++ codeGenTerm M.empty 2 (toLambdas f) ++
     [ "    ;"
@@ -60,19 +83,22 @@ codeGenFunc f =
 -- index that should be given to a variable. The Int parameter is used to
 -- determine the number of tabs to use before a line.
 codeGenTerm :: M.Map String Int -> Int -> Term -> [String]
-codeGenTerm map tabNo exp = let t = tabs "" tabNo in case exp of
+codeGenTerm funcIndex bindings tabNo exp = let t = tabs "" tabNo in case exp of
     App m n ->
         [ t ++ "newApp(" ]
-        ++ codeGenTerm map (tabNo + 1) m ++
+        ++ codeGenTerm bindings (tabNo + 1) m ++
         [ t ++ "," ]
-        ++ codeGenTerm map (tabNo + 1) n ++
+        ++ codeGenTerm bindings (tabNo + 1) n ++
         [ t ++ ")" ]
     AbsInf v m ->
         [ t ++ "newAbs(" ]
-        ++ codeGenTerm (M.insert v 0 (M.map (+ 1) map)) (tabNo + 1) m ++
+        ++ codeGenTerm (M.insert v 0 (M.map (+ 1) bindings)) (tabNo + 1) m ++
         [ t ++ ")" ]
-    Abs    v _ m -> codeGenTerm map tabNo (AbsInf v m)
-    Var    v     -> ["newVar(" ++ show (map M.! v) ++ ")"]
+    Abs    v _ m -> codeGenTerm bindings tabNo (AbsInf v m)
+    Var    v     | M.member v bindings =
+                        ["newVar(" ++ show (bindings M.! v) ++ ")"]
+                 | otherwise           =
+                        ["newVar(-" ++ show (funcIndex M.! v) ++ ")"]
     Constant  c  -> ["newCon(" ++ codeGenVal c ++ ")"]
     Operation ot -> ["newOpn(" ++ codeGenOp ot ++ ")"]
 

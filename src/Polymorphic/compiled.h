@@ -12,9 +12,14 @@
 #endif // LANGDEFS
 
 /*
- * Instantiate on the heap a template for the function with the given name, and
- * return a pointer to it.
+ * Instantiate on the heap a template for the function with the given index
+ * number, and return a pointer to it.
  */
-Exp *instantiate(char *funcName);
+Exp *instantiate(int funcNo);
+
+/*
+ * Determine if the function with given index number exists
+ */
+bool hasFunc(int funcNo);
 
 #endif // COMPILED

@@ -129,12 +129,6 @@ struct Opn {
  */
 void *ckMalloc(int size);
 
-/* 
- * Function that decides if two strings are equal. Returns 1 (true) if they are
- * the same, or 0 (false) if they differ.
- */
-bool strEqual(char *str1, char *str2);
-
 /*
  * Functions to allocate & deallocate new expressions on the heap.
  */
@@ -164,6 +158,11 @@ bool expEqual(Exp *e1, Exp *e2);
  * Copy an expression, return a pointer to the newly allocated expression.
  */
 Exp *copyExp(Exp *exp);
+
+/*
+ * Print an expression to stdout.
+ */
+void printExp(Exp *exp);
 
 /*
  * Member retrieval functions for expressions
@@ -198,9 +197,9 @@ void reduceTemplate(bool *normalForm, Exp **template);
 void reduceTemplateNorm(Exp **template);
 
 /*
- * Implementation of function application - walk the template replacing all
- * occurences of the bound variable with the given argument expression.
+ * Copy an expression, but replace all occurences of a given variable with a
+ * given expression.
  */
-void replace(int bind, Exp *argument, Exp **template);
+Exp *replace(Exp *body, int bind, Exp *arg);
 
 #endif // LANGDEFS

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
-#include <string.h>
 #include <assert.h>
 #include "langdefs.h"
 #include "compiled.h"
@@ -13,19 +12,6 @@ void *ckMalloc(int size) {
     void *ptr = malloc(size);
     assert(ptr);
     return ptr;
-}
-
-/* 
- * Function that decides if two strings are equal. Returns 1 (true) if they are
- * the same, or 0 (false) if they differ.
- */
-bool strEqual(char *str1, char *str2) {
-	// If they have different lengths, we can say immediately that they differ
-	if(strlen(str1) != strlen(str2)) return 0;
-	// If they are she same length, we must use strncmp to compare them. strncmp
-	// returns 0 for identical strings, and other ints for different ones, so we
-	// negate the result.
-	else return !strncmp(str1, str2, strlen(str1));
 }
 
 /*
@@ -229,6 +215,67 @@ Exp *copyExp(Exp *exp) {
     }
     else {
         printf("Error - unrecognised expression type in copyExp()\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+/*
+ * Print an expression to stdout.
+ */
+void printExp(Exp *exp) {
+    if(isApp(exp)) {
+        printf("%s %s", printExp(appFun(exp)), printExp(appArg(exp)));
+    }
+    else if(isAbs(exp)) {
+        printf("^. %s", printExp(absBody(exp)));
+    }
+    else if(isVar(exp)) {
+        if(varBind(exp) > 0) {
+            printf("V%d", varBind(exp));
+        }
+        else {
+            printf("F%d", -varBind(exp));
+        }
+    }
+    else if(isCon(exp)) {
+        printf("%d", conVal(exp));
+    }
+    else if(isOpn(exp)) {
+        switch(opnType(exp)) {
+            case O_Cond : printf("cond")  ; break;
+            case O_Add  : printf("+")     ; break;
+            case O_Sub  : printf("-")     ; break;
+            case O_Mul  : printf("*")     ; break;
+            case O_Div  : printf("/")     ; break;
+            case O_Mod  : printf("%%")    ; break;
+            case O_Lss  : printf("<")     ; break;
+            case O_LsE  : printf("<=")    ; break;
+            case O_NEq  : printf("/=")    ; break;
+            case O_Gtr  : printf(">")     ; break;
+            case O_GtE  : printf(">=")    ; break;
+            case O_Equ  : printf("==")    ; break;
+            case O_And  : printf("and")   ; break;
+            case O_Or   : printf("or")    ; break;
+            case O_Xor  : printf("xor")   ; break;
+            case O_Not  : printf("not")   ; break;
+            case O_IsZ  : printf("iszero"); break;
+            case O_Empty: printf("[]")    ; break;
+            case O_Cons : printf(":")     ; break;
+            case O_Null : printf("null")  ; break;
+            case O_Head : printf("head")  ; break;
+            case O_Tail : printf("tail")  ; break;
+            case O_Fix  : printf("fix")   ; break;
+            case O_InjL : printf("injl")  ; break;
+            case O_InjR : printf("injr")  ; break;
+            case O_RemL : printf("reml")  ; break;
+            case O_RemR : printf("remr")  ; break;
+            case O_Tuple: printf("tuple") ; break;
+            case O_Fst  : printf("fst")   ; break;
+            case O_Snd  : printf("snd")   ; break;
+        }
+    }
+    else {
+        printf("Error - unrecognised expression type in printExp()\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -548,6 +595,58 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     }
     // End fixed point combinator
     // End polymorphic unary operations
+
+    // Lambda abstractions
+    if(isApp(exp)
+            && isAbs(appFun(exp))) {
+
+        Exp *abs = appFun(exp);
+        Exp *arg = appArg(exp);
+
+        Exp *tmp = replace(absBody(abs), 0, arg);
+        freeExp(exp);
+        exp = tmp;
+        tmp = NULL;
+        (*normalForm) = false;
+    }
+    // End lambda abstractions
+
+    // Function calls
+    if(isApp(exp)
+            && isVar(appFun(exp))) {
+
+        Exp *var = appFun(exp);
+        Exp *arg = appArg(exp);
+
+        if(hasFunc(varBind(var))) {
+
+            int bind = varBind(var);
+            freeExp(var);
+            exp->val->app->fun = instantiate(bind);
+            (*normalForm) = false;
+        }
+        else {
+            reduceTemplate(normalForm, &arg);
+        }
+    }
+    if(isVar(exp)
+            && hasFunc(varBind(exp))) {
+
+        int bind = varBind(exp);
+        freeExp(exp);
+        (*template) = instantiate(bind);
+        (*normalForm) = false;
+    }
+    // End function calls
+
+    // Catch-all application case
+    if(isApp(exp)) {
+        Exp *fun = appFun(exp);
+        Exp *arg = appArg(exp);
+        reduceTemplate(normalForm, &fun);
+        reduceTemplate(normalForm, &arg);
+    }
+    // End catch-all application case
 }
 
 /*
@@ -563,30 +662,34 @@ void reduceTemplateNorm(Exp **template) {
 }
 
 /*
- * Implementation of function application - walk the template replacing all
- * occurences of the bound variable with the given argument expression.
+ * Copy an expression, but replace all occurences of a given variable with a
+ * given expression.
  */
-void replace(int bind, Exp *argument, Exp *body) {
-
+Exp *replace(Exp *body, int bind, Exp *arg) {
     if(isApp(body)) {
-        Exp *fun = appFun(body);
-        Exp *arg = appArg(body);
-        if(isVar(fun) && (varBind(fun) == bind)) {
-            freeExp(fun);
-            body->val->app->fun = copyExp(argument);
-        }
-        else {
-            replace(bind, argument, fun);
-        }
-        if(isVar(arg) && (varBind(arg) == bind)) {
-            freeExp(arg);
-            body->val->app->arg = copyExp(argument);
-        }
-        else {
-            replace(bind, argument, arg);
-        }
+        return newApp(replace(appFun(body), bind, arg),
+                replace(appArg(body), bind, arg));
     }
     else if(isAbs(body)) {
-        // TODO
+        return newAbs(replace(absBody(body), bind + 1, arg));
+    }
+    else if(isVar(body)) {
+        if(varBind(body) == bind) {
+            return copyExp(arg);
+        }
+        else {
+            return newVar(varBind(body));
+        }
+    }
+    else if(isCon(body)) {
+        return newCon(conVal(body));
+    }
+    else if(isOpn(body)) {
+        return newOpn(opnType(body));
+    }
+    else {
+        printf("Error - unrecognised expression type in replace()\n");
+        exit(EXIT_FAILURE);
+        return NULL;
     }
 }
