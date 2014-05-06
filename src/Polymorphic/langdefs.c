@@ -347,10 +347,7 @@ OpTy opnType(Exp *exp) {
  * value at the given boolean pointer to be false, indicating that the template
  * is not in normal form.
  */
-void reduceTemplate(bool *normalForm, Exp **template) {
-
-    Exp *exp = (*template);
-    printf("!! "); printlnExp(exp);
+Exp *reduceTemplate(Exp *exp) {
 
     // Conditionals
     if(isApp(exp)
@@ -363,26 +360,19 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         Exp *truExp = appArg(appFun(exp));
         Exp *falExp = appArg(exp);
 
-        // If the guard is true, replace the expression with the true argument.
+        // If the guard is true, return the true expression.
         if(isCon(guard) && (conVal(guard) == true)) {
-            Exp *tmp = copyExp(truExp);
-            freeExp(exp);
-            (*template) = tmp;
-            tmp = NULL;
-            (*normalForm) = false;
+            return copyExp(truExp);
         }
-        // If the guard is false, replace the expression with the false
-        // argument.
+        // If the guard is false, return the false expression.
         else if(isCon(guard) && (conVal(guard) == false)) {
-            Exp *tmp = copyExp(falExp);
-            freeExp(exp);
-            (*template) = tmp;
-            tmp = NULL;
-            (*normalForm) = false;
+            return copyExp(falExp);
         }
         // If the guard is not reduced, reduce it.
         else {
-            reduceTemplate(normalForm, &guard);
+            return newApp(newApp(newApp(
+                            newOpn(O_Cond), reduceTemplate(guard)),
+                        copyExp(truExp)), copyExp(falExp));
         }
     }
     // End of conditional case
@@ -398,69 +388,58 @@ void reduceTemplate(bool *normalForm, Exp **template) {
 
         // Handle equality differently because it is polymorphic.
         if(opn == O_Equ) {
-            reduceTemplateNorm(&arg1);
-            reduceTemplateNorm(&arg2);
-            bool same = expEqual(arg1, arg2);
-            freeExp(exp);
-            (*template) = newCon(C_Bool, same);
-            (*normalForm) = false;
+            Exp *redA1 = reduceTemplateNorm(arg1);
+            Exp *redA2 = reduceTemplateNorm(arg2);
+            bool same = expEqual(redA1, redA2);
+            freeExp(redA1);
+            freeExp(redA2);
+            return newCon(C_Bool, same);
         }
         else if(isApp(arg1) || isAbs(arg1) || isVar(arg1) || isOpn(arg1)) {
-            printf("reducing "); printExp(arg1); printf("\n");
-            reduceTemplate(normalForm, &arg1);
-            printf("done\n");
+            return newApp(newApp(newOpn(opn), reduceTemplate(arg1)), arg2);
         }
         else if(isApp(arg2) || isAbs(arg2) || isVar(arg2) || isOpn(arg2)) {
-            printf("reducing "); printExp(arg2); printf("\n");
-            reduceTemplate(normalForm, &arg2);
-            printf("done\n");
+            return newApp(newApp(newOpn(opn), arg1), reduceTemplate(arg2));
         }
         else {
-            assert(isCon(arg1) && isCon(arg2));
-            int arg1Val = conVal(arg1);
-            int arg2Val = conVal(arg2);
-            freeExp(exp);
-            (*normalForm) = false;
             if(opn == O_Add) {
-                printf("doing %d + %d\n", arg1Val, arg2Val);
-                (*template) = newCon(C_Int, arg1Val + arg2Val);
-                printf("got "); printlnExp(*template);
+                return newCon(C_Int, conVal(arg1) + conVal(arg2));
             }
             else if(opn == O_Sub) {
-                (*template) = newCon(C_Int, arg1Val - arg2Val);
+                return newCon(C_Int, conVal(arg1) - conVal(arg2));
             }
             else if(opn == O_Mul) {
-                (*template) = newCon(C_Int, arg1Val * arg2Val);
+                return newCon(C_Int, conVal(arg1) * conVal(arg2));
             }
             else if(opn == O_Div) {
-                (*template) = newCon(C_Int, arg1Val / arg2Val);
+                return newCon(C_Int, conVal(arg1) / conVal(arg2));
             }
             else if(opn == O_Mod) {
-                (*template) = newCon(C_Int, arg1Val % arg2Val);
+                return newCon(C_Int, conVal(arg1) % conVal(arg2));
             }
             else if(opn == O_Lss) {
-                (*template) = newCon(C_Bool, arg1Val < arg2Val);
+                return newCon(C_Bool, conVal(arg1) < conVal(arg2));
             }
             else if(opn == O_LsE) {
-                (*template) = newCon(C_Bool, arg1Val <= arg2Val);
+                return newCon(C_Bool, conVal(arg1) <= conVal(arg2));
             }
             else if(opn == O_NEq) {
-                (*template) = newCon(C_Bool, arg1Val != arg2Val);
+                return newCon(C_Bool, conVal(arg1) != conVal(arg2));
             }
             else if(opn == O_Gtr) {
-                (*template) = newCon(C_Bool, arg1Val > arg2Val);
+                return newCon(C_Bool, conVal(arg1) > conVal(arg2));
             }
             else if(opn == O_GtE) {
-                (*template) = newCon(C_Bool, arg1Val >= arg2Val);
+                return newCon(C_Bool, conVal(arg1) >= conVal(arg2));
             }
             else if(opn == O_Xor) {
-                (*template) = newCon(C_Bool, (!arg1Val) != (!arg2Val));
+                return newCon(C_Bool, (!conVal(arg1)) != (!conVal(arg2)));
             }
             else if(opn == O_And) {
-                (*template) = newCon(C_Bool, arg1Val && arg2Val);
+                return newCon(C_Bool, conVal(arg1) && conVal(arg2));
             }
             else if(opn == O_Or ) {
-                (*template) = newCon(C_Bool, arg1Val || arg2Val);
+                return newCon(C_Bool, conVal(arg1) || conVal(arg2));
             }
             else {
                 printf("Error reducing binary operation - unrecognised "
@@ -476,25 +455,20 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Not
             || opnType(appFun(exp)) == O_IsZ)) {
-        printf("app unop _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
 
         if(isApp(arg) || isAbs(arg) || isVar(arg) || isOpn(arg)) {
-            reduceTemplate(normalForm, &arg);
+            return newApp(newOpn(opn), reduceTemplate(arg));
         }
         else {
-            assert(isCon(arg));
-            int argVal = conVal(arg);
-            freeExp(exp);
-            (*normalForm) = false;
             if(opn == O_Not)  {
-                (*template) = newCon(C_Bool, !argVal);
+                return newCon(C_Bool, !(conVal(arg)));
             }
             else {
                 assert(opn == O_IsZ);
-                (*template) = newCon(C_Bool, argVal == 0);
+                return newCon(C_Bool, conVal(arg) == 0);
             }
         }
     }
@@ -505,20 +479,17 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Null)) {
-        printf("app null _\n");
 
         Exp *arg = appArg(exp);
+        Exp *reducedArg = reduceTemplateNorm(arg);
 
-        reduceTemplateNorm(&arg);
-        if(isOpn(arg) && (opnType(arg) == O_Empty)) {
-            freeExp(exp);
-            (*template) = newCon(C_Bool, true);
-            (*normalForm) = false;
+        if(isOpn(reducedArg) && (opnType(reducedArg) == O_Empty)) {
+            freeExp(reducedArg);
+            return newCon(C_Bool, true);
         }
         else {
-            freeExp(exp);
-            (*template) = newCon(C_Bool, false);
-            (*normalForm) = false;
+            freeExp(reducedArg);
+            return newCon(C_Bool, false);
         }
     }
     // End Null
@@ -528,7 +499,6 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_Head)
             || (opnType(appFun(exp)) == O_Tail))) {
-        printf("app [head|tail] _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
@@ -542,23 +512,15 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             Exp *tail = appArg(arg);
 
             if(opn == O_Head) {
-                Exp *tmp = copyExp(head);
-                freeExp(exp);
-                (*template) = tmp;
-                tmp = NULL;
-                (*normalForm) = false;
+                return copyExp(head);
             }
             else {
                 assert(opn == O_Tail);
-                Exp *tmp = copyExp(tail);
-                freeExp(exp);
-                (*template) = tmp;
-                tmp = NULL;
-                (*normalForm) = false;
+                return copyExp(tail);
             }
         }
         else {
-            reduceTemplate(normalForm, &arg);
+            return newApp(newOpn(opn), reduceTemplate(arg));
         }
     }
     // End Head and Tail
@@ -567,11 +529,10 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Cons)) {
-        printf("app cons _\n");
 
         Exp *consArg = appArg(exp);
 
-        reduceTemplate(normalForm, &consArg);
+        return newApp(newOpn(O_Cons), reduceTemplate(consArg));
     }
     // End Cons
     
@@ -580,7 +541,6 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_RemL)
             || (opnType(appFun(exp)) == O_RemR))) {
-        printf("app [reml|remr] _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
@@ -596,11 +556,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             if(((opn == O_RemL) && (innerOpn == O_InjL))
                     || ((opn == O_RemR) && (innerOpn == O_InjR))) {
                 
-                Exp *tmp = copyExp(innerArg);
-                freeExp(exp);
-                (*template) = tmp;
-                tmp = NULL;
-                (*normalForm) = false;
+                return copyExp(innerArg);
             }
             else {
                 printf("Error - removed value from a non-sum expression or "
@@ -609,18 +565,18 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             }
         }
         else {
-            reduceTemplate(normalForm, &arg);
+            return newApp(newOpn(opn), reduceTemplate(arg));
         }
     }
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_InjL)
             || (opnType(appFun(exp)) == O_InjR))) {
-        printf("app [injl|injr] _\n");
 
+        OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
 
-        reduceTemplate(normalForm, &arg);
+        return newApp(newOpn(opn), reduceTemplate(arg));
     }
     // End sum operations
     
@@ -629,7 +585,6 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_Fst)
             || (opnType(appFun(exp)) == O_Snd))) {
-        printf("app [fst|snd] _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
@@ -642,24 +597,19 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             Exp *fst = appArg(appFun(arg));
             Exp *snd = appArg(arg);
 
-            Exp *tmp = copyExp((opn == O_Fst) ? fst : snd);
-            freeExp(exp);
-            (*template) = tmp;
-            tmp = NULL;
-            (*normalForm) = false;
+            return copyExp((opn == O_Fst) ? fst : snd);
         }
         else {
-            reduceTemplate(normalForm, &arg);
+            return newApp(newOpn(opn), reduceTemplate(arg));
         }
     }
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Tuple)) {
-        printf("app tuple _\n");
 
         Exp *arg = appArg(exp);
 
-        reduceTemplate(normalForm, &arg);
+        return newApp(newOpn(O_Tuple), reduceTemplate(arg));
     }
     // End Tuple operations
 
@@ -667,12 +617,8 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Fix)) {
-        printf("app fix _\n");
 
-        Exp *fCopy = copyExp(appArg(exp));
-
-        (*template) = newApp(fCopy, exp);
-        (*normalForm) = false;
+        return newApp(copyExp(appArg(exp)), copyExp(exp));
     }
     // End fixed point combinator
     // End polymorphic unary operations
@@ -680,70 +626,68 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // Lambda abstractions
     else if(isApp(exp)
             && isAbs(appFun(exp))) {
-        printf("app (abs _) _\n");
 
         Exp *abs = appFun(exp);
         Exp *arg = appArg(exp);
 
-        Exp *tmp = replace(absBody(abs), 0, arg);
-        freeExp(exp);
-        (*template) = tmp;
-        tmp = NULL;
-        (*normalForm) = false;
+        return replace(absBody(abs), 0, arg);
     }
     // End lambda abstractions
 
     // Function calls
     else if(isApp(exp)
             && isVar(appFun(exp))) {
-        printf("app (var _) _\n");
 
         Exp *var = appFun(exp);
         Exp *arg = appArg(exp);
 
         if(hasFunc(varBind(var))) {
 
-            int bind = varBind(var);
-            freeExp(var);
-            exp->value->app->fun = instantiate(bind);
-            (*normalForm) = false;
+            return newApp(instantiate(varBind(var)), copyExp(arg));
         }
         else {
-            reduceTemplate(normalForm, &arg);
+            return newApp(copyExp(var), reduceTemplate(arg));
         }
     }
     else if(isVar(exp)
             && hasFunc(varBind(exp))) {
-        printf("var _\n");
 
-        int bind = varBind(exp);
-        freeExp(exp);
-        (*template) = instantiate(bind);
-        (*normalForm) = false;
+        return instantiate(varBind(exp));
     }
     // End function calls
 
     // Catch-all application case
     else if(isApp(exp)) {
-        printf("app _ _\n");
         Exp *fun = appFun(exp);
         Exp *arg = appArg(exp);
-        reduceTemplate(normalForm, &fun);
-        reduceTemplate(normalForm, &arg);
+
+        return newApp(reduceTemplate(fun), reduceTemplate(arg));
     }
     // End catch-all application case
+
+    // If there are no reductions to make, return a copy of the given template.
+    else {
+        return copyExp(exp);
+    }
 }
 
 /*
  * Perform reduction on a template until it reaches its normal form (when no
  * reduction rules are applicable).
  */
-void reduceTemplateNorm(Exp **template) {
+Exp *reduceTemplateNorm(Exp *exp) {
+    Exp *initExp = copyExp(exp);
+
     bool normalForm = false;
+
     while(!normalForm) {
-        normalForm = true;
-        reduceTemplate(&normalForm, template);
+        Exp *redExp = reduceTemplate(initExp);
+        normalForm = expEqual(initExp, redExp);
+        freeExp(initExp);
+        initExp = redExp;
     }
+
+    return initExp;
 }
 
 /*

@@ -199,13 +199,13 @@ OpTy opnType(Exp *exp);
  * normal form i.e. no reduction could be made, sets the dereferenced value at
  * normalForm to false.
  */
-void reduceTemplate(bool *normalForm, Exp **template);
+Exp *reduceTemplate(Exp *exp);
 
 /*
  * Perform reduction on a template until it reaches its normal form (when no
  * reduction rules are applicable).
  */
-void reduceTemplateNorm(Exp **template);
+Exp *reduceTemplateNorm(Exp *exp);
 
 /*
  * Copy an expression, but replace all occurences of a given variable with a
