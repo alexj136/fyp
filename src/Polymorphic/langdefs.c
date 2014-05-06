@@ -224,13 +224,16 @@ Exp *copyExp(Exp *exp) {
  */
 void printExp(Exp *exp) {
     if(isApp(exp)) {
+        printf("(");
         printExp(appFun(exp));
         printf(" ");
         printExp(appArg(exp));
+        printf(")");
     }
     else if(isAbs(exp)) {
-        printf("^. ");
+        printf("(\\ ");
         printExp(absBody(exp));
+        printf(")");
     }
     else if(isVar(exp)) {
         if(varBind(exp) > 0) {
@@ -297,6 +300,8 @@ void printExp(Exp *exp) {
  * wrong type is given as an argument.
  */
 Exp *appFun(Exp *exp) {
+    // Conditionals
+
     assert(exp->type == T_App);
     return exp->val->app->fun;
 }
@@ -376,7 +381,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // End of conditional case
 
     // Binary operations
-    if(isApp(exp)
+    else if(isApp(exp)
             && isApp(appFun(exp))
             && isBinaryOpn(appFun(appFun(exp)))) {
 
@@ -393,7 +398,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             (*template) = newCon(C_Bool, same);
             (*normalForm) = false;
         }
-        if(!isCon(arg1)) {
+        else if(!isCon(arg1)) {
             reduceTemplate(normalForm, &arg1);
         }
         else if(!isCon(arg2)) {
@@ -405,43 +410,43 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             freeExp(exp);
             (*normalForm) = false;
             if(opn == O_Add) {
-                exp = newCon(C_Int, arg1Val + arg2Val);
+                (*template) = newCon(C_Int, arg1Val + arg2Val);
             }
             else if(opn == O_Sub) {
-                exp = newCon(C_Int, arg1Val - arg2Val);
+                (*template) = newCon(C_Int, arg1Val - arg2Val);
             }
             else if(opn == O_Mul) {
-                exp = newCon(C_Int, arg1Val * arg2Val);
+                (*template) = newCon(C_Int, arg1Val * arg2Val);
             }
             else if(opn == O_Div) {
-                exp = newCon(C_Int, arg1Val / arg2Val);
+                (*template) = newCon(C_Int, arg1Val / arg2Val);
             }
             else if(opn == O_Mod) {
-                exp = newCon(C_Int, arg1Val % arg2Val);
+                (*template) = newCon(C_Int, arg1Val % arg2Val);
             }
             else if(opn == O_Lss) {
-                exp = newCon(C_Int, arg1Val < arg2Val);
+                (*template) = newCon(C_Bool, arg1Val < arg2Val);
             }
             else if(opn == O_LsE) {
-                exp = newCon(C_Bool, arg1Val <= arg2Val);
+                (*template) = newCon(C_Bool, arg1Val <= arg2Val);
             }
             else if(opn == O_NEq) {
-                exp = newCon(C_Bool, arg1Val != arg2Val);
+                (*template) = newCon(C_Bool, arg1Val != arg2Val);
             }
             else if(opn == O_Gtr) {
-                exp = newCon(C_Bool, arg1Val > arg2Val);
+                (*template) = newCon(C_Bool, arg1Val > arg2Val);
             }
             else if(opn == O_GtE) {
-                exp = newCon(C_Bool, arg1Val >= arg2Val);
+                (*template) = newCon(C_Bool, arg1Val >= arg2Val);
             }
             else if(opn == O_Xor) {
-                exp = newCon(C_Bool, (!arg1Val) != (!arg2Val));
+                (*template) = newCon(C_Bool, (!arg1Val) != (!arg2Val));
             }
             else if(opn == O_And) {
-                exp = newCon(C_Bool, arg1Val && arg2Val);
+                (*template) = newCon(C_Bool, arg1Val && arg2Val);
             }
             else if(opn == O_Or ) {
-                exp = newCon(C_Bool, arg1Val || arg2Val);
+                (*template) = newCon(C_Bool, arg1Val || arg2Val);
             }
             else {
                 printf("Error reducing binary operation - unrecognised "
@@ -453,7 +458,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // End of binary operations case
 
     // iszero & not unary operations
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Not
             || opnType(appFun(exp)) == O_IsZ)) {
@@ -468,15 +473,20 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             int argVal = conVal(arg);
             freeExp(exp);
             (*normalForm) = false;
-            if           (opn == O_Not)  { exp = newCon(C_Bool, !argVal);     }
-            else { assert(opn == O_IsZ);   exp = newCon(C_Bool, argVal == 0); }
+            if(opn == O_Not)  {
+                (*template) = newCon(C_Bool, !argVal);
+            }
+            else {
+                assert(opn == O_IsZ);
+                (*template) = newCon(C_Bool, argVal == 0);
+            }
         }
     }
     // End iszero & not unary operations case
 
     // Polymorphic unary operations
     // Null
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Null)) {
 
@@ -485,19 +495,19 @@ void reduceTemplate(bool *normalForm, Exp **template) {
         reduceTemplateNorm(&arg);
         if(isOpn(arg) && (opnType(arg) == O_Empty)) {
             freeExp(exp);
-            exp = newCon(C_Bool, true);
+            (*template) = newCon(C_Bool, true);
             (*normalForm) = false;
         }
         else {
             freeExp(exp);
-            exp = newCon(C_Bool, false);
+            (*template) = newCon(C_Bool, false);
             (*normalForm) = false;
         }
     }
     // End Null
 
     // Head and Tail
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_Head)
             || (opnType(appFun(exp)) == O_Tail))) {
@@ -516,7 +526,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             if(opn == O_Head) {
                 Exp *tmp = copyExp(head);
                 freeExp(exp);
-                exp = tmp;
+                (*template) = tmp;
                 tmp = NULL;
                 (*normalForm) = false;
             }
@@ -524,7 +534,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
                 assert(opn == O_Tail);
                 Exp *tmp = copyExp(tail);
                 freeExp(exp);
-                exp = tmp;
+                (*template) = tmp;
                 tmp = NULL;
                 (*normalForm) = false;
             }
@@ -533,7 +543,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // End Head and Tail
 
     // Cons
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Cons)) {
 
@@ -544,7 +554,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // End Cons
     
     // Sum operations
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_RemL)
             || (opnType(appFun(exp)) == O_RemR))) {
@@ -565,7 +575,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
                 
                 Exp *tmp = copyExp(innerArg);
                 freeExp(exp);
-                exp = tmp;
+                (*template) = tmp;
                 tmp = NULL;
                 (*normalForm) = false;
             }
@@ -579,7 +589,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             reduceTemplate(normalForm, &arg);
         }
     }
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_InjL)
             || (opnType(appFun(exp)) == O_InjR))) {
@@ -591,7 +601,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // End sum operations
     
     // Tuple operations
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_Fst)
             || (opnType(appFun(exp)) == O_Snd))) {
@@ -609,7 +619,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
 
             Exp *tmp = copyExp((opn == O_Fst) ? fst : snd);
             freeExp(exp);
-            exp = tmp;
+            (*template) = tmp;
             tmp = NULL;
             (*normalForm) = false;
         }
@@ -617,7 +627,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             reduceTemplate(normalForm, &arg);
         }
     }
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Tuple)) {
 
@@ -628,19 +638,20 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // End Tuple operations
 
     // Fixed point combinator
-    if(isApp(exp)
+    else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Fix)) {
 
         Exp *fCopy = copyExp(appArg(exp));
 
-        exp = newApp(fCopy, exp);
+        (*template) = newApp(fCopy, exp);
+        (*normalForm) = false;
     }
     // End fixed point combinator
     // End polymorphic unary operations
 
     // Lambda abstractions
-    if(isApp(exp)
+    else if(isApp(exp)
             && isAbs(appFun(exp))) {
 
         Exp *abs = appFun(exp);
@@ -648,14 +659,14 @@ void reduceTemplate(bool *normalForm, Exp **template) {
 
         Exp *tmp = replace(absBody(abs), 0, arg);
         freeExp(exp);
-        exp = tmp;
+        (*template) = tmp;
         tmp = NULL;
         (*normalForm) = false;
     }
     // End lambda abstractions
 
     // Function calls
-    if(isApp(exp)
+    else if(isApp(exp)
             && isVar(appFun(exp))) {
 
         Exp *var = appFun(exp);
@@ -672,7 +683,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             reduceTemplate(normalForm, &arg);
         }
     }
-    if(isVar(exp)
+    else if(isVar(exp)
             && hasFunc(varBind(exp))) {
 
         int bind = varBind(exp);
@@ -683,7 +694,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // End function calls
 
     // Catch-all application case
-    if(isApp(exp)) {
+    else if(isApp(exp)) {
         Exp *fun = appFun(exp);
         Exp *arg = appArg(exp);
         reduceTemplate(normalForm, &fun);
@@ -708,7 +719,7 @@ void reduceTemplateNorm(Exp **template) {
  * Copy an expression, but replace all occurences of a given variable with a
  * given expression.
  */
-Exp *replace(Exp *body, int bind, Exp *arg) {
+Exp *replace(Exp *body, int bind, Exp *arg) { // :-) YOU CAN DO IT!!!
     if(isApp(body)) {
         return newApp(replace(appFun(body), bind, arg),
                 replace(appArg(body), bind, arg));

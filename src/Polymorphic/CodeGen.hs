@@ -40,6 +40,8 @@ codeGenProg (Prog pgMap) = concat $ intersperse "\n" $
     , "    Exp *template = instantiate_" ++ show (funcIndex M.! "main") ++ "();"
     , "    reduceTemplateNorm(&template);"
     , "    printExp(template);"
+    , "    printf(\"\\n\");"
+    , "    freeExp(template);"
     , "    return 0;"
     , "}"
     ]
