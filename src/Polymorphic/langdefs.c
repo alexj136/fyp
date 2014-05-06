@@ -21,12 +21,12 @@ Exp *newApp(Exp *fun, Exp *arg) {
     newAppNode->fun = fun;
     newAppNode->arg = arg;
 
-    ExpV *val = ckMalloc(sizeof(ExpV));
-    val->app = newAppNode;
+    ExpV *valu = ckMalloc(sizeof(ExpV));
+    valu->app = newAppNode;
 
     Exp *newExpNode = ckMalloc(sizeof(Exp));
     newExpNode->type = T_App;
-    newExpNode->val = val;
+    newExpNode->value = valu;
 
     return newExpNode;
 }
@@ -35,12 +35,12 @@ Exp *newAbs(Exp *body) {
     Abs *newAbsNode = ckMalloc(sizeof(Abs));
     newAbsNode->body = body;
 
-    ExpV *val = ckMalloc(sizeof(ExpV));
-    val->abs = newAbsNode;
+    ExpV *valu = ckMalloc(sizeof(ExpV));
+    valu->abs = newAbsNode;
 
     Exp *newExpNode = ckMalloc(sizeof(Exp));
     newExpNode->type = T_Abs;
-    newExpNode->val = val;
+    newExpNode->value = valu;
 
     return newExpNode;
 }
@@ -49,12 +49,12 @@ Exp *newVar(int bind) {
     Var *newVarNode = ckMalloc(sizeof(Var));
     newVarNode->bind = bind;
 
-    ExpV *val = ckMalloc(sizeof(ExpV));
-    val->var = newVarNode;
+    ExpV *valu = ckMalloc(sizeof(ExpV));
+    valu->var = newVarNode;
 
     Exp *newExpNode = ckMalloc(sizeof(Exp));
     newExpNode->type = T_Var;
-    newExpNode->val = val;
+    newExpNode->value = valu;
     return newExpNode;
 }
 
@@ -63,12 +63,12 @@ Exp *newCon(ConTy ty, int conVal) {
     newConNode->val = conVal;
     newConNode->ty = ty;
 
-    ExpV *val = ckMalloc(sizeof(ExpV));
-    val->con = newConNode;
+    ExpV *valu = ckMalloc(sizeof(ExpV));
+    valu->con = newConNode;
 
     Exp *newExpNode = ckMalloc(sizeof(Exp));
     newExpNode->type = T_Con;
-    newExpNode->val = val;
+    newExpNode->value = valu;
     return newExpNode;
 }
 
@@ -76,12 +76,12 @@ Exp *newOpn(OpTy type) {
     Opn *newOpnNode = ckMalloc(sizeof(Opn));
     newOpnNode->type = type;
 
-    ExpV *val = ckMalloc(sizeof(ExpV));
-    val->opn = newOpnNode;
+    ExpV *valu = ckMalloc(sizeof(ExpV));
+    valu->opn = newOpnNode;
 
     Exp *newExpNode = ckMalloc(sizeof(Exp));
     newExpNode->type = T_Opn;
-    newExpNode->val = val;
+    newExpNode->value = valu;
     return newExpNode;
 }
 
@@ -91,27 +91,27 @@ Exp *newOpn(OpTy type) {
 void freeExp(Exp *exp) {
     switch(exp->type) {
         case T_App:
-            freeExp(exp->val->app->fun);
-            freeExp(exp->val->app->arg);
-            free(exp->val->app);
-            free(exp->val);
+            freeExp(exp->value->app->fun);
+            freeExp(exp->value->app->arg);
+            free(exp->value->app);
+            free(exp->value);
             break;
         case T_Abs:
-            freeExp(exp->val->abs->body);
-            free(exp->val->abs);
-            free(exp->val);
+            freeExp(exp->value->abs->body);
+            free(exp->value->abs);
+            free(exp->value);
             break;
         case T_Var:
-            free(exp->val->var);
-            free(exp->val);
+            free(exp->value->var);
+            free(exp->value);
             break;
         case T_Con:
-            free(exp->val->con);
-            free(exp->val);
+            free(exp->value->con);
+            free(exp->value);
             break;
         case T_Opn:
-            free(exp->val->opn);
-            free(exp->val);
+            free(exp->value->opn);
+            free(exp->value);
             break;
     }
     free(exp);
@@ -190,7 +190,7 @@ bool expEqual(Exp *e1, Exp *e2) {
     }
     else {
         printf("Error - unrecognised expression type in expEqual()\n");
-        exit(EXIT_FAILURE);
+        assert(false);
     }
 }
 
@@ -215,8 +215,16 @@ Exp *copyExp(Exp *exp) {
     }
     else {
         printf("Error - unrecognised expression type in copyExp()\n");
-        exit(EXIT_FAILURE);
+        assert(false);
     }
+}
+
+/*
+ * Print an expression to stdout, folled by a newline character.
+ */
+void printlnExp(Exp *exp) {
+    printExp(exp);
+    printf("\n");
 }
 
 /*
@@ -250,7 +258,7 @@ void printExp(Exp *exp) {
         printf("false");
     }
     else if(isCon(exp) && (conTy(exp) == C_Char)) {
-        printf("%c", conVal(exp));
+        printf("\'%c\'", conVal(exp));
     }
     else if(isCon(exp)/* && (conTy(exp) == C_Int)*/) {
         printf("%d", conVal(exp));
@@ -291,7 +299,7 @@ void printExp(Exp *exp) {
     }
     else {
         printf("Error - unrecognised expression type in printExp()\n");
-        exit(EXIT_FAILURE);
+        assert(false);
     }
 }
 
@@ -300,40 +308,38 @@ void printExp(Exp *exp) {
  * wrong type is given as an argument.
  */
 Exp *appFun(Exp *exp) {
-    // Conditionals
-
     assert(exp->type == T_App);
-    return exp->val->app->fun;
+    return exp->value->app->fun;
 }
 
 Exp *appArg(Exp *exp) {
     assert(exp->type == T_App);
-    return exp->val->app->arg;
+    return exp->value->app->arg;
 }
 
 Exp *absBody(Exp *exp) {
     assert(exp->type == T_Abs);
-    return exp->val->abs->body;
+    return exp->value->abs->body;
 }
 
 int varBind(Exp *exp) {
     assert(exp->type == T_Var);
-    return exp->val->var->bind;
+    return exp->value->var->bind;
 }
 
 ConTy conTy(Exp *exp) {
     assert(exp->type == T_Con);
-    return exp->val->con->ty;
+    return exp->value->con->ty;
 }
 
 int conVal(Exp *exp) {
     assert(exp->type == T_Con);
-    return exp->val->con->val;
+    return exp->value->con->val;
 }
 
 OpTy opnType(Exp *exp) {
     assert(exp->type == T_Opn);
-    return exp->val->opn->type;
+    return exp->value->opn->type;
 }
 
 /*
@@ -344,6 +350,7 @@ OpTy opnType(Exp *exp) {
 void reduceTemplate(bool *normalForm, Exp **template) {
 
     Exp *exp = (*template);
+    printf("!! "); printlnExp(exp);
 
     // Conditionals
     if(isApp(exp)
@@ -398,19 +405,26 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             (*template) = newCon(C_Bool, same);
             (*normalForm) = false;
         }
-        else if(!isCon(arg1)) {
+        else if(isApp(arg1) || isAbs(arg1) || isVar(arg1) || isOpn(arg1)) {
+            printf("reducing "); printExp(arg1); printf("\n");
             reduceTemplate(normalForm, &arg1);
+            printf("done\n");
         }
-        else if(!isCon(arg2)) {
+        else if(isApp(arg2) || isAbs(arg2) || isVar(arg2) || isOpn(arg2)) {
+            printf("reducing "); printExp(arg2); printf("\n");
             reduceTemplate(normalForm, &arg2);
+            printf("done\n");
         }
         else {
+            assert(isCon(arg1) && isCon(arg2));
             int arg1Val = conVal(arg1);
             int arg2Val = conVal(arg2);
             freeExp(exp);
             (*normalForm) = false;
             if(opn == O_Add) {
+                printf("doing %d + %d\n", arg1Val, arg2Val);
                 (*template) = newCon(C_Int, arg1Val + arg2Val);
+                printf("got "); printlnExp(*template);
             }
             else if(opn == O_Sub) {
                 (*template) = newCon(C_Int, arg1Val - arg2Val);
@@ -451,7 +465,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             else {
                 printf("Error reducing binary operation - unrecognised "
                         "operation\n");
-                exit(EXIT_FAILURE);
+                assert(false);
             }
         }
     }
@@ -462,14 +476,16 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Not
             || opnType(appFun(exp)) == O_IsZ)) {
+        printf("app unop _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
 
-        if(!isCon(arg)) {
+        if(isApp(arg) || isAbs(arg) || isVar(arg) || isOpn(arg)) {
             reduceTemplate(normalForm, &arg);
         }
         else {
+            assert(isCon(arg));
             int argVal = conVal(arg);
             freeExp(exp);
             (*normalForm) = false;
@@ -489,6 +505,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Null)) {
+        printf("app null _\n");
 
         Exp *arg = appArg(exp);
 
@@ -511,6 +528,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_Head)
             || (opnType(appFun(exp)) == O_Tail))) {
+        printf("app [head|tail] _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
@@ -539,6 +557,9 @@ void reduceTemplate(bool *normalForm, Exp **template) {
                 (*normalForm) = false;
             }
         }
+        else {
+            reduceTemplate(normalForm, &arg);
+        }
     }
     // End Head and Tail
 
@@ -546,6 +567,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Cons)) {
+        printf("app cons _\n");
 
         Exp *consArg = appArg(exp);
 
@@ -558,6 +580,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_RemL)
             || (opnType(appFun(exp)) == O_RemR))) {
+        printf("app [reml|remr] _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
@@ -582,7 +605,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             else {
                 printf("Error - removed value from a non-sum expression or "
                         "wrong side of sum expression\n");
-                exit(EXIT_FAILURE);
+                assert(false);
             }
         }
         else {
@@ -593,6 +616,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_InjL)
             || (opnType(appFun(exp)) == O_InjR))) {
+        printf("app [injl|injr] _\n");
 
         Exp *arg = appArg(exp);
 
@@ -605,6 +629,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
             && isOpn(appFun(exp))
             && ((opnType(appFun(exp)) == O_Fst)
             || (opnType(appFun(exp)) == O_Snd))) {
+        printf("app [fst|snd] _\n");
 
         OpTy opn = opnType(appFun(exp));
         Exp *arg = appArg(exp);
@@ -630,6 +655,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Tuple)) {
+        printf("app tuple _\n");
 
         Exp *arg = appArg(exp);
 
@@ -641,6 +667,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     else if(isApp(exp)
             && isOpn(appFun(exp))
             && (opnType(appFun(exp)) == O_Fix)) {
+        printf("app fix _\n");
 
         Exp *fCopy = copyExp(appArg(exp));
 
@@ -653,6 +680,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // Lambda abstractions
     else if(isApp(exp)
             && isAbs(appFun(exp))) {
+        printf("app (abs _) _\n");
 
         Exp *abs = appFun(exp);
         Exp *arg = appArg(exp);
@@ -668,6 +696,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     // Function calls
     else if(isApp(exp)
             && isVar(appFun(exp))) {
+        printf("app (var _) _\n");
 
         Exp *var = appFun(exp);
         Exp *arg = appArg(exp);
@@ -676,7 +705,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
 
             int bind = varBind(var);
             freeExp(var);
-            exp->val->app->fun = instantiate(bind);
+            exp->value->app->fun = instantiate(bind);
             (*normalForm) = false;
         }
         else {
@@ -685,6 +714,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
     }
     else if(isVar(exp)
             && hasFunc(varBind(exp))) {
+        printf("var _\n");
 
         int bind = varBind(exp);
         freeExp(exp);
@@ -695,6 +725,7 @@ void reduceTemplate(bool *normalForm, Exp **template) {
 
     // Catch-all application case
     else if(isApp(exp)) {
+        printf("app _ _\n");
         Exp *fun = appFun(exp);
         Exp *arg = appArg(exp);
         reduceTemplate(normalForm, &fun);
@@ -732,18 +763,15 @@ Exp *replace(Exp *body, int bind, Exp *arg) { // :-) YOU CAN DO IT!!!
             return copyExp(arg);
         }
         else {
-            return newVar(varBind(body));
+            return copyExp(body);
         }
     }
-    else if(isCon(body)) {
-        return newCon(conTy(body), conVal(body));
-    }
-    else if(isOpn(body)) {
-        return newOpn(opnType(body));
+    else if(isCon(body) || isOpn(body)) {
+        return copyExp(body);
     }
     else {
         printf("Error - unrecognised expression type in replace()\n");
-        exit(EXIT_FAILURE);
+        assert(false);
         return NULL;
     }
 }

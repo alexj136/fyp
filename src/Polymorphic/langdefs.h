@@ -40,7 +40,7 @@ typedef union {
 typedef struct Exp Exp;
 struct Exp {
     ExpT type;
-    ExpV *val;
+    ExpV *value;
 };
 
 /*
@@ -163,6 +163,11 @@ bool expEqual(Exp *e1, Exp *e2);
  * Copy an expression, return a pointer to the newly allocated expression.
  */
 Exp *copyExp(Exp *exp);
+
+/*
+ * Print an expression to stdout, folled by a newline character.
+ */
+void printlnExp(Exp *exp);
 
 /*
  * Print an expression to stdout.
