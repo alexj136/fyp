@@ -333,6 +333,7 @@ data OpType
     | InjR      -- : Va, b. b -> { a | b }
     | RemL      -- : Va, b. { a | b } -> a
     | RemR      -- : Va, b. { a | b } -> b
+    | IsLeft    -- : Va, b. { a | b } -> Bool
 
     -- Product injection & removal
     | Tuple     -- Va, b. a -> b -> { a & b }
@@ -373,14 +374,14 @@ isUnary op = case op of
 
 instance Show OpType where
     show ot = case ot of
-        { Add   -> "+"    ; Sub  -> "-"    ; Mul  -> "*"    ; Div   -> "/"
-        ; Mod   -> "%"    ; Lss  -> "<"    ; LsE  -> "<="   ; Equ   -> "=="
-        ; NEq   -> "/="   ; Gtr  -> ">"    ; GtE  -> ">="   ; And   -> "and"
-        ; Or    -> "or"   ; Xor  -> "xor"  ; Not  -> "not"  ; IsZ   -> "iszero"
-        ; Empty -> "[]"   ; Cons -> ":"    ; Null -> "null" ; Head  -> "head"
-        ; Tail  -> "tail" ; Fix  -> "Y"    ; Cond -> "cond" ; InjL  -> "injl"
-        ; InjR  -> "injr" ; RemL -> "reml" ; RemR -> "remr" ; Tuple -> "tuple"
-        ; Fst   -> "fst"  ; Snd  -> "snd"  }
+        { Add   -> "+"     ; Sub  -> "-"    ; Mul  -> "*"    ; Div    -> "/"
+        ; Mod   -> "%"     ; Lss  -> "<"    ; LsE  -> "<="   ; Equ    -> "=="
+        ; NEq   -> "/="    ; Gtr  -> ">"    ; GtE  -> ">="   ; And    -> "and"
+        ; Or    -> "or"    ; Xor  -> "xor"  ; Not  -> "not"  ; IsZ    -> "iszero"
+        ; Empty -> "[]"    ; Cons -> ":"    ; Null -> "null" ; Head   -> "head"
+        ; Tail  -> "tail"  ; Fix  -> "Y"    ; Cond -> "cond" ; InjL   -> "injl"
+        ; InjR  -> "injr"  ; RemL -> "reml" ; RemR -> "remr" ; IsLeft -> "isleft"
+        ; Tuple -> "tuple" ; Fst   -> "fst" ; Snd  -> "snd"  }
 
 --------------------------------------------------------------------------------
 --                                   TYPES

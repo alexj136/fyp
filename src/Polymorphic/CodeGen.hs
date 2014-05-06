@@ -113,17 +113,17 @@ codeGenVal val = case val of
 
 codeGenOp :: OpType -> String
 codeGenOp ot = case ot of
-    { Add   -> "O_Add"   ; Sub   -> "O_Sub"   ; Mul  -> "O_Mul"
-    ; Div   -> "O_Div"   ; Mod   -> "O_Mod"   ; Lss  -> "O_Lss"
-    ; LsE   -> "O_LsE"   ; Equ   -> "O_Equ"   ; NEq  -> "O_NEq"
-    ; Gtr   -> "O_Gtr"   ; GtE   -> "O_GtE"   ; And  -> "O_And"
-    ; Or    -> "O_Or"    ; Xor   -> "O_Xor"   ; Not  -> "O_Not"
-    ; IsZ   -> "O_IsZ"   ; Empty -> "O_Empty" ; Cons -> "O_Cons"
-    ; Null  -> "O_Null"  ; Head  -> "O_Head"  ; Tail -> "O_Tail"
-    ; Fix   -> "O_Fix"   ; Cond  -> "O_Cond"  ; InjL -> "O_InjL"
-    ; InjR  -> "O_InjR"  ; RemL  -> "O_RemL"  ; RemR -> "O_RemR"
-    ; Tuple -> "O_Tuple" ; Fst   -> "O_Fst"   ; Snd  -> "O_Snd"
-    }
+    { Add    -> "O_Add"    ; Sub   -> "O_Sub"   ; Mul  -> "O_Mul"
+    ; Div    -> "O_Div"    ; Mod   -> "O_Mod"   ; Lss  -> "O_Lss"
+    ; LsE    -> "O_LsE"    ; Equ   -> "O_Equ"   ; NEq  -> "O_NEq"
+    ; Gtr    -> "O_Gtr"    ; GtE   -> "O_GtE"   ; And  -> "O_And"
+    ; Or     -> "O_Or"     ; Xor   -> "O_Xor"   ; Not  -> "O_Not"
+    ; IsZ    -> "O_IsZ"    ; Empty -> "O_Empty" ; Cons -> "O_Cons"
+    ; Null   -> "O_Null"   ; Head  -> "O_Head"  ; Tail -> "O_Tail"
+    ; Fix    -> "O_Fix"    ; Cond  -> "O_Cond"  ; InjL -> "O_InjL"
+    ; InjR   -> "O_InjR"   ; RemL  -> "O_RemL"  ; RemR -> "O_RemR"
+    ; IsLeft -> "O_IsLeft" ; Tuple -> "O_Tuple" ; Fst   -> "O_Fst"
+    ; Snd    -> "O_Snd"    }
 
 -- Generate the given number of tabs (using spaces, because hard tabs are
 -- evil). The String parameter is an accumulator, call with 'tabs "" myInt'

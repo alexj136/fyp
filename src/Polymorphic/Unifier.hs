@@ -302,16 +302,17 @@ typeOfOperation ot = case ot of
 
     Fix   -> TQuant 0 (TFunc (TFunc (TVar 0) (TVar 0)) (TVar 0))
 
-    InjL  -> TQuant 0 (TQuant 1 (TFunc (TVar 0) (TSum (TVar 0) (TVar 1))))
-    InjR  -> TQuant 0 (TQuant 1 (TFunc (TVar 1) (TSum (TVar 0) (TVar 1))))
-    RemL  -> TQuant 0 (TQuant 1 (TFunc (TSum (TVar 0) (TVar 1)) (TVar 0)))
-    RemR  -> TQuant 0 (TQuant 1 (TFunc (TSum (TVar 0) (TVar 1)) (TVar 1)))
+    InjL   -> TQuant 0 (TQuant 1 (TFunc (TVar 0) (TSum (TVar 0) (TVar 1))))
+    InjR   -> TQuant 0 (TQuant 1 (TFunc (TVar 1) (TSum (TVar 0) (TVar 1))))
+    RemL   -> TQuant 0 (TQuant 1 (TFunc (TSum (TVar 0) (TVar 1)) (TVar 0)))
+    RemR   -> TQuant 0 (TQuant 1 (TFunc (TSum (TVar 0) (TVar 1)) (TVar 1)))
+    IsLeft -> TQuant 0 (TQuant 1 (TFunc (TSum (TVar 0) (TVar 1)) TBool))
 
-    Tuple -> TQuant 0 (TQuant 1 (
+    Tuple  -> TQuant 0 (TQuant 1 (
                  TFunc (TVar 0) (TFunc (TVar 1) (TProd (TVar 0) (TVar 1)))
              ))
-    Fst   -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 0)))
-    Snd   -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 1)))
+    Fst    -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 0)))
+    Snd    -> TQuant 0 (TQuant 1 (TFunc (TProd (TVar 0) (TVar 1)) (TVar 1)))
 
 -- Remove type quantifiers from a type expression, replacing locally bound type
 -- variables with globally unique, usable ones. The Int paramerer is a lowest

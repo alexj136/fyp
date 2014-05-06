@@ -115,6 +115,7 @@ STR  ::= ".*"
 
     RemL    { TokenRemL   p    }
     RemR    { TokenRemR   p    }
+    IsLeft  { TokenIsLeft p    }
     Fst     { TokenFst    p    }
     Snd     { TokenSnd    p    }
     Head    { TokenHead   p    }
@@ -170,6 +171,7 @@ EXP : Let IdLC ARGS Equals EXP In EXP { App (AbsInf $2 $7) (toLambdas (FuncInf $
     | Not                             { Operation Not                             }
     | RemL                            { Operation RemL                            }
     | RemR                            { Operation RemR                            }
+    | IsLeft                          { Operation IsLeft                          }
     | Fst                             { Operation Fst                             }
     | Snd                             { Operation Snd                             }
     | Head                            { Operation Head                            }

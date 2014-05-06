@@ -84,6 +84,10 @@ reduce prog exp = let reduce' = reduce prog in case exp of
     App (Operation InjL) m -> App (Operation InjL) (reduce' m)
     App (Operation InjR) m -> App (Operation InjR) (reduce' m)
 
+    App (Operation IsLeft) (App (Operation InjL) _) -> Constant (BoolVal True )
+    App (Operation IsLeft) (App (Operation InjR) _) -> Constant (BoolVal False)
+    App (Operation IsLeft) m -> App (Operation IsLeft) (reduce' m)
+
     -- Product operations
     App (Operation Fst) (App (App (Operation Tuple) m) n) -> m
     App (Operation Snd) (App (App (Operation Tuple) m) n) -> n

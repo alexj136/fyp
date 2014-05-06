@@ -265,36 +265,37 @@ void printExp(Exp *exp) {
     }
     else if(isOpn(exp)) {
         switch(opnType(exp)) {
-            case O_Cond : printf("cond")  ; break;
-            case O_Add  : printf("+")     ; break;
-            case O_Sub  : printf("-")     ; break;
-            case O_Mul  : printf("*")     ; break;
-            case O_Div  : printf("/")     ; break;
-            case O_Mod  : printf("%%")    ; break;
-            case O_Lss  : printf("<")     ; break;
-            case O_LsE  : printf("<=")    ; break;
-            case O_NEq  : printf("/=")    ; break;
-            case O_Gtr  : printf(">")     ; break;
-            case O_GtE  : printf(">=")    ; break;
-            case O_Equ  : printf("==")    ; break;
-            case O_And  : printf("and")   ; break;
-            case O_Or   : printf("or")    ; break;
-            case O_Xor  : printf("xor")   ; break;
-            case O_Not  : printf("not")   ; break;
-            case O_IsZ  : printf("iszero"); break;
-            case O_Empty: printf("[]")    ; break;
-            case O_Cons : printf(":")     ; break;
-            case O_Null : printf("null")  ; break;
-            case O_Head : printf("head")  ; break;
-            case O_Tail : printf("tail")  ; break;
-            case O_Fix  : printf("fix")   ; break;
-            case O_InjL : printf("injl")  ; break;
-            case O_InjR : printf("injr")  ; break;
-            case O_RemL : printf("reml")  ; break;
-            case O_RemR : printf("remr")  ; break;
-            case O_Tuple: printf("tuple") ; break;
-            case O_Fst  : printf("fst")   ; break;
-            case O_Snd  : printf("snd")   ; break;
+            case O_Cond   : printf("cond")   ;  break;
+            case O_Add    : printf("+")      ;  break;
+            case O_Sub    : printf("-")      ;  break;
+            case O_Mul    : printf("*")      ;  break;
+            case O_Div    : printf("/")      ;  break;
+            case O_Mod    : printf("%%")     ;  break;
+            case O_Lss    : printf("<")      ;  break;
+            case O_LsE    : printf("<=")     ;  break;
+            case O_NEq    : printf("/=")     ;  break;
+            case O_Gtr    : printf(">")      ;  break;
+            case O_GtE    : printf(">=")     ;  break;
+            case O_Equ    : printf("==")     ;  break;
+            case O_And    : printf("and")    ;  break;
+            case O_Or     : printf("or")     ;  break;
+            case O_Xor    : printf("xor")    ;  break;
+            case O_Not    : printf("not")    ;  break;
+            case O_IsZ    : printf("iszero") ;  break;
+            case O_Empty  : printf("[]")     ;  break;
+            case O_Cons   : printf(":")      ;  break;
+            case O_Null   : printf("null")   ;  break;
+            case O_Head   : printf("head")   ;  break;
+            case O_Tail   : printf("tail")   ;  break;
+            case O_Fix    : printf("fix")    ;  break;
+            case O_InjL   : printf("injl")   ;  break;
+            case O_InjR   : printf("injr")   ;  break;
+            case O_RemL   : printf("reml")   ;  break;
+            case O_RemR   : printf("remr")   ;  break;
+            case O_IsLeft : printf("isleft") ;  break;
+            case O_Tuple  : printf("tuple")  ;  break;
+            case O_Fst    : printf("fst")    ;  break;
+            case O_Snd    : printf("snd")    ;  break;
         }
     }
     else {
@@ -586,6 +587,24 @@ Exp *reduceTemplate(Exp *exp) {
         Exp *arg = appArg(exp);
 
         return newApp(newOpn(opn), reduceTemplate(arg));
+    }
+    else if(isApp(exp)
+            && isOpn(appFun(exp))
+            && (opnType(appFun(exp)) == O_IsLeft)) {
+
+        Exp *arg = appArg(exp);
+
+        if(isApp(arg)
+                && isOpn(appFun(arg))
+                && ((opnType(appFun(arg)) == O_InjL)
+                || (opnType(appFun(arg)) == O_InjR))) {
+
+            OpTy injOpn = opnType(appFun(arg));
+            return newCon(C_Bool, injOpn == O_InjL);
+        }
+        else {
+            return newApp(newOpn(O_IsLeft), reduceTemplate(arg));
+        }
     }
     // End sum operations
     

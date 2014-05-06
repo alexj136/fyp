@@ -62,6 +62,8 @@ tokens :-
 
     "reml"                 { \p s -> TokenRemL   (pos p)                 }
     "remr"                 { \p s -> TokenRemR   (pos p)                 }
+    "isleft"               { \p s -> TokenIsLeft (pos p)                 }
+
     "fst"                  { \p s -> TokenFst    (pos p)                 }
     "snd"                  { \p s -> TokenSnd    (pos p)                 }
     "head"                 { \p s -> TokenHead   (pos p)                 }
@@ -138,6 +140,7 @@ data Token
     -- LIST/TUPLE/SUM TOKENS
     | TokenRemL   (Int, Int)    -- Sum remove-left
     | TokenRemR   (Int, Int)    -- Sum remove-right
+    | TokenIsLeft (Int, Int)    -- Sum contains left check
     | TokenFst    (Int, Int)    -- Product first
     | TokenSnd    (Int, Int)    -- Product second
     | TokenHead   (Int, Int)    -- List head function
@@ -209,6 +212,7 @@ getY t = case t of
 
     TokenRemL   (y, _)   -> y
     TokenRemR   (y, _)   -> y
+    TokenIsLeft (y, _)   -> y
     TokenFst    (y, _)   -> y
     TokenSnd    (y, _)   -> y
     TokenHead   (y, _)   -> y
@@ -274,6 +278,7 @@ getX t = case t of
 
     TokenRemL   (_, x)   -> x
     TokenRemR   (_, x)   -> x
+    TokenIsLeft (_, x)   -> x
     TokenFst    (_, x)   -> x
     TokenSnd    (_, x)   -> x
     TokenHead   (_, x)   -> x

@@ -113,6 +113,7 @@ typedef enum {
     O_InjR,
     O_RemL,
     O_RemR,
+    O_IsLeft,
 
     O_Tuple,                            // Product types
     O_Fst,
