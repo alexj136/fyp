@@ -28,7 +28,8 @@ main = do
 
     else if (head args) == "-c" || (head args) == "--compile" then do
         progStr <- readFile $ head (tail args)
-        let tokens       = scan progStr
+        prelude <- readFile "prelude"
+        let tokens       = scan progStr ++ scan prelude
             parseRes     = P.parse tokens
             progPTVars   = combineTyDecs parseRes
             (i, _, prog) = convertTVarsProg (0, M.empty, progPTVars)

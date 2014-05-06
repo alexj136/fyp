@@ -62,8 +62,8 @@ tokens :-
 
     "reml"                 { \p s -> TokenRemL   (pos p)                 }
     "remr"                 { \p s -> TokenRemR   (pos p)                 }
-    "snd"                  { \p s -> TokenFst    (pos p)                 }
-    "fst"                  { \p s -> TokenSnd    (pos p)                 }
+    "fst"                  { \p s -> TokenFst    (pos p)                 }
+    "snd"                  { \p s -> TokenSnd    (pos p)                 }
     "head"                 { \p s -> TokenHead   (pos p)                 }
     "tail"                 { \p s -> TokenTail   (pos p)                 }
     "null"                 { \p s -> TokenNull   (pos p)                 }

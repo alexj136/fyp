@@ -195,9 +195,7 @@ int conVal(Exp *exp);
 OpTy opnType(Exp *exp);
 
 /*
- * Reduce the template referenced by the given pointer. If it was found to have
- * normal form i.e. no reduction could be made, sets the dereferenced value at
- * normalForm to false.
+ * Perform at least one reduction step on the given template.
  */
 Exp *reduceTemplate(Exp *exp);
 

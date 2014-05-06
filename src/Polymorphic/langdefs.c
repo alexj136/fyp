@@ -244,7 +244,7 @@ void printExp(Exp *exp) {
         printf(")");
     }
     else if(isVar(exp)) {
-        if(varBind(exp) > 0) {
+        if(varBind(exp) >= 0) {
             printf("V%d", varBind(exp));
         }
         else {
@@ -343,9 +343,7 @@ OpTy opnType(Exp *exp) {
 }
 
 /*
- * Reduce the indirectly referenced template. If any reduction was made, set the
- * value at the given boolean pointer to be false, indicating that the template
- * is not in normal form.
+ * Perform at least one reduction step on the given template.
  */
 Exp *reduceTemplate(Exp *exp) {
 
@@ -396,12 +394,23 @@ Exp *reduceTemplate(Exp *exp) {
             return newCon(C_Bool, same);
         }
         else if(isApp(arg1) || isAbs(arg1) || isVar(arg1) || isOpn(arg1)) {
-            return newApp(newApp(newOpn(opn), reduceTemplate(arg1)), arg2);
+            return newApp(
+                    newApp(
+                        newOpn(opn),
+                        reduceTemplate(arg1)),
+                    copyExp(arg2));
         }
         else if(isApp(arg2) || isAbs(arg2) || isVar(arg2) || isOpn(arg2)) {
-            return newApp(newApp(newOpn(opn), arg1), reduceTemplate(arg2));
+            return newApp(
+                    newApp(
+                        newOpn(opn),
+                        copyExp(arg1)),
+                    reduceTemplate(arg2));
         }
         else {
+            assert(isCon(arg1));
+            assert(isCon(arg2));
+
             if(opn == O_Add) {
                 return newCon(C_Int, conVal(arg1) + conVal(arg2));
             }
@@ -640,10 +649,10 @@ Exp *reduceTemplate(Exp *exp) {
 
         Exp *var = appFun(exp);
         Exp *arg = appArg(exp);
+        int bind = varBind(var);
 
-        if(hasFunc(varBind(var))) {
-
-            return newApp(instantiate(varBind(var)), copyExp(arg));
+        if(hasFunc(bind)) {
+            return newApp(instantiate(bind), copyExp(arg));
         }
         else {
             return newApp(copyExp(var), reduceTemplate(arg));
