@@ -84,7 +84,7 @@ Just-in-time (JIT) compilation is similar to interpretation in that there is no 
 \paragraph{Hybrid Systems \\}
 There are many hybrid systems in existence that combine interpretation, code generation and JIT systems into a programming language implementation. One such example is the Java programming language, which generates intermediate code at compile-time, and at runtime, the intermediate code is executed by a \emph{tracing} JIT system, where code is initially interpreted, and when a part of the program is determined to be 'hot code' - code that is executed frequently - it is translated to machine code and directly executed. There are a vast array of different hybrid systems in existence, and many possible combinations that have not been attempted. The goal is usually to maximise performance.
 
-\subsection{Functional \& Imperative}
+\subsection{Functional and Imperative}
 The $\lambda$ calculus ('$\lambda$' pronounced as 'lambda') is a mathematical calculus that is used to represent computations, and is Turing-complete. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages.
 \\
 \indent The $\lambda$ calculus employs a single rule in order to achieve computation, whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
@@ -124,7 +124,7 @@ Informally, we can describe the closure properties: if $M$ reduces to $N$, then 
 As stated, the aim of this project is to implement a functional programming language, based on the $\lambda$ calculus. The main features I will implement are:
 \begin{itemize}
     \item \textbf{Rich Syntax} - An expressive syntax that allows the user to write terse programs, with useful features such as lists, tuples, string literals etcetera.
-    \item \textbf{Strong Typing \& Type Checking} - A strong typing system with type checking to guarantee that all valid programs exhibit no runtime type errors.
+    \item \textbf{Strong Typing and Type Checking} - A strong typing system with type checking to guarantee that all valid programs exhibit no runtime type errors.
     \item \textbf{Type Inference} - A system for inferring the types of variables without the programmer writing them down.
     \item \textbf{Polymorphic Types} - A typing system that includes polymorphic types, allowing the programmer to write highly generic, reusable code.
     \item \textbf{Interpreter} - An interpreted implementation of the language, to run on any system for which their exists a Haskell implementation.
@@ -177,8 +177,8 @@ Below are the target completion dates for the subtasks of the project:
 \begin{tabular}{l l}
     \indent \textbf{Task}              & \textbf{Target Completion Date} \\
     \indent Interpreter                & $14^{th}$ November 2013         \\
-    \indent Type-Checker \& Inferencer & $14^{th}$ December 2013         \\
-    \indent Lexer \& Parser            & $21^{st}$ January  2014         \\
+    \indent Type-Checker and Inferencer & $14^{th}$ December 2013         \\
+    \indent Lexer and Parser            & $21^{st}$ January  2014         \\
     \indent Compiler                   & $14^{th}$ March    2014         \\
     \indent Draft report               & $17^{th}$ April    2014         \\
     \indent User Documentation         & $30^{th}$ April    2014         \\
@@ -293,8 +293,11 @@ The CodeGen module generates C code for a given program. The implementation stra
     \item Lexing, parsing and type checking is done at compile-time and does not need to be done at runtime. The interpreted implementation must perform these steps each time a program is run.
     \item Compiling to C makes the language highly cross-platform, since there exists a C compiler for virtually every CPU architecture in existence. The only caveat here is that the compilation step must be done on a machine for which there exists an implementation Haskell.
     \item C is known for its speed. The GCC compiler performs many effective optimisations. As a result, evaluating templates in C is faster that interpreting ASTs in Haskell.
+    \item Variable names are represented as integers instead of strings. Therefore determining if an abstraction binds a particular variable can be done with a simple integer comparison, which is a single machine instruction, rather than checking to see that each character in the strings match.
+    \item The De Bruijn representation of lambda terms is used. In this representation, variables do not store a name, but a number, which is the number of abstractions between the variable itself and the abstraction that binds it. Abstractions themselves need not carry the names of variables in this case. The advantage of this is that the name clash problem does not exist, which removes the overhead associated with checking for and handling name clashes.
 \end{itemize}
-Template instantiation was chosen as the implementation due to time constraints. Implementing template instantiation is simpler than conventional compilation via closure conversion - closure conversion is...
+The traditional method of functional language compilation is closure conversion. In this scheme, local variable definitions are translated into global ones, and lambda expressions are represented as closures. Closures are data structures that contain (via pointers) some code that executes the body of the lambda expression, and a means of accessing variables bound elsewhere. There are many advantages to this implementation strategy, the main one being speed. Programs compiled in this manner can rely much more heavily on machine instructions operating on registers, which are very fast. Schemes that rely on expression reduction, including template instantiation, rely more on machine instructions that use indirect addressing, which are typically much slower.
+\\\indent Template instantiation was chosen as the implementation strategy due to the time constraints on the project. Implementing template instantiation is simpler than implementing closure conversion and was therefore was a more realistic target with the time available.
 \subsubsection{Test Modules}
 
 \subsection{Testing}
@@ -425,8 +428,8 @@ The language has several abstract data types, which can be used in a number of w
 \section{Appendix}
 \subsection{References}
 \begin{itemize}
-    \item Types \& Programming Languages - Benjamin C. Pierce
-    \item Functional Programming - Anthony J. Field \& Peter G. Harrison
+    \item Types and Programming Languages - Benjamin C. Pierce
+    \item Functional Programming - Anthony J. Field and Peter G. Harrison
     \item A Tutorial Introduction to the Lambda Calculus - Ra\'{u}l Rojas \\
         http://www.inf.fu-berlin.de/lehre/WS03/alpi/lambda.pdf
 \end{itemize}
