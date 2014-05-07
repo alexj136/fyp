@@ -21,14 +21,14 @@ def pow x y =
     (powAcc 1 x y)
 
 type len = [a] -> Int
-def len lst =
+def len =
     let lenAcc acc lst =
         if null lst then
             acc
         else
             (lenAcc (acc + 1) (tail lst))
     in
-    (lenAcc 0 lst)
+    (lenAcc 0)
 
 type parseInt = String -> Int
 def parseInt str =
@@ -39,3 +39,23 @@ def parseInt str =
             (pInt (tot + ((charToInt (head s)) * (pow 10 pw))) (pw - 1) (tail s))
     in
     (pInt 0 ((len str) - 1) str)
+
+type reverse = [a] -> [a]
+def reverse =
+    let revAcc acc lst =
+        if null lst then
+            acc
+        else
+            (revAcc ((head lst) : acc) (tail lst))
+    in
+    (revAcc [])
+
+type concat = [a] -> [a] -> [a]
+def concat l1 =
+    let backConcat l1 l2 =
+        if null l1 then
+            l2
+        else
+            (backConcat (tail l1) ((head l1) : l2))
+    in
+    (backConcat (reverse l1))
