@@ -1,6 +1,7 @@
 module Unifier where
 
 import Syntax
+import Interpreter (replace, preventClashes)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
@@ -237,6 +238,17 @@ contextProg i (Prog pgMap)
 -- subsequent calls can avoid using the same names (names are integers)
 getConstraints :: Int -> Context -> Term -> (ConstraintSet, Type, Int)
 getConstraints i ctx exp = case exp of
+
+    -- Let-in expressions: here we perform a single step of evaluation before we
+    -- generate constraints, such that we are able to have let-polymorphism,
+    -- where we can use a function on arguments with different types, without
+    -- making the program untypable.
+    App (Abs    v _ m) n -> getConstraints i ctx (App (AbsInf v m) n)
+    App (AbsInf v   m) n -> (S.union constrApp constrN, tApp, i'')
+      where
+        (constrN  , tN  , i' ) = getConstraints i ctx n
+        (constrApp, tApp, i'') =
+            getConstraints i' ctx (replace v (preventClashes m n) n)
 
     -- Explicitly declared abstractions
     Abs v t m -> (constrM, TFunc t tM, i')

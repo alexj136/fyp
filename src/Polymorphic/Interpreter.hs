@@ -2,7 +2,6 @@ module Interpreter where
 
 import qualified Data.Set as Set
 import Syntax
-import Unifier
 
 -- REPLACEMENT ALGORITHM
 -- Create a list of unbound names in the argument expression
