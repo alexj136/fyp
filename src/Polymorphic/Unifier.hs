@@ -250,11 +250,19 @@ getConstraints i ctx exp = case exp of
         (constrApp, tApp, i'') =
             getConstraints i' ctx (replace v (preventClashes m n) n)
 
-    -- Explicitly declared abstractions
+    -- Explicitly declared abstractions are ignored with let-polymorphism. We
+    -- must choose a new type variable for each application of our function in
+    -- order for it to be typable. The original typing rule for explicitly
+    -- declared abstractions is show as a comment below. We could use this rule
+    -- if we did not want let-polymorphism.
+    Abs v t m -> getConstraints i ctx (AbsInf v m)
+
+    {- ORIGINAL RULE FOR EXPLICITLY TYPED ABSTRACTIONS
     Abs v t m -> (constrM, TFunc t tM, i')
       where
         (constrM, tM, i') = getConstraints i ctx' m
         ctx' = addToContext v t ctx
+    -}
 
     -- Undeclared abstractions - inferred via introduction of a type variable
     AbsInf v m -> (constrM, TFunc (TVar i') tM, i' + 1)
