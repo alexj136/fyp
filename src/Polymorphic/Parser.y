@@ -195,22 +195,22 @@ LISTREST : Comma EXP LISTREST { App (App (Operation Cons) $2) $3 }
          | ClosSq             { Operation Empty                  }
 
 INFIXBINOP :: { Term }
-INFIXBINOP : Add { Operation Add }
-           | Sub { Operation Sub }
-           | Mul { Operation Mul }
-           | Div { Operation Div }
-           | Mod { Operation Mod }
+INFIXBINOP : Add  { Operation Add  }
+           | Sub  { Operation Sub  }
+           | Mul  { Operation Mul  }
+           | Div  { Operation Div  }
+           | Mod  { Operation Mod  }
 
-           | And { Operation And }
-           | Or  { Operation Or  }
-           | Xor { Operation Xor }
+           | And  { Operation And  }
+           | Or   { Operation Or   }
+           | Xor  { Operation Xor  }
 
-           | Less { Operation Lss }
-           | LsEq { Operation LsE }
-           | EqEq { Operation Equ }
-           | NoEq { Operation NEq }
-           | Grtr { Operation Gtr }
-           | GtEq { Operation GtE }
+           | Less { Operation Lss  }
+           | LsEq { Operation LsE  }
+           | EqEq { Operation Equ  }
+           | NoEq { Operation NEq  }
+           | Grtr { Operation Gtr  }
+           | GtEq { Operation GtE  }
 
            | Cons { Operation Cons }
 

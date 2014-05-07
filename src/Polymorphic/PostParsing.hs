@@ -67,7 +67,7 @@ convertTVarsProg (i, m, Prog pgMap) = (i', m', Prog pgMap')
             in
                 (i'', m'', M.union (M.singleton (getName f') f') fs')
 
--- Convert all ParserTVars in a function into integer TVars. The intege
+-- Convert all ParserTVars in a function into integer TVars. The integer
 -- parameter is the next type variable name to use, and the map stores the
 -- existing equivalences between string type variables and integer type
 -- variables.
