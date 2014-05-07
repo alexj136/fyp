@@ -136,6 +136,11 @@ struct Opn {
 void *ckMalloc(int size);
 
 /*
+ * Convert the command-line arguments into usable expressions.
+ */
+Exp *parseArgs(int argc, char *argv[]);
+
+/*
  * Functions to allocate & deallocate new expressions on the heap.
  */
 Exp *newApp(Exp *fun, Exp *arg);

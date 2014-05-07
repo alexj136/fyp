@@ -287,6 +287,14 @@ The PostParsing module has two responsibilities:
 \indent The language allows the user to supply type variable names as strings, for readability purposes. However these can be slow and messy to handle during type checking, so the strings are converted to integers, which are faster to handle.
 
 \subsubsection{CodeGen}
+The CodeGen module generates C code for a given program. The implementation strategy for the generated source code is a simple template instantiator machine. Using this strategy, each function in the source code is compiled into a C function that builds a \emph{template} (essentially just an AST) on the heap. The generated file is then compiled and linked with a C source file (\texttt{langdefs.c}) and a header file (\texttt{langdefs.h}) to produce a binary file. The file \texttt{langdefs.c} contains functions that the generated code uses to compute the result of the program by evaluating the template representation of the main function.
+\\\indent This implementation of the languages provides many advantages over the interpreted implementation. These include:
+\begin{itemize}
+    \item Lexing, parsing and type checking is done at compile-time and does not need to be done at runtime. The interpreted implementation must perform these steps each time a program is run.
+    \item Compiling to C makes the language highly cross-platform, since there exists a C compiler for virtually every CPU architecture in existence. The only caveat here is that the compilation step must be done on a machine for which there exists an implementation Haskell.
+    \item C is known for its speed. The GCC compiler performs many effective optimisations. As a result, evaluating templates in C is faster that interpreting ASTs in Haskell.
+\end{itemize}
+Template instantiation was chosen as the implementation due to time constraints. Implementing template instantiation is simpler than conventional compilation via closure conversion - closure conversion is...
 \subsubsection{Test Modules}
 
 \subsection{Testing}

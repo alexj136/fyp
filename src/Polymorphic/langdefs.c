@@ -14,6 +14,40 @@ void *ckMalloc(int size) {
 }
 
 /*
+ * Helper functions for parseArgs().
+ */
+static Exp *parseStr(char *cPtr) {
+    if(*cPtr == '\0') {
+        return newOpn(O_Empty);
+    }
+    else {
+        return newApp(newApp(newOpn(O_Cons),
+                    newCon(C_Char, *cPtr)), parseStr(cPtr + 1));
+    }
+}
+static Exp *parseStrs(int left, char *sPtr[]) {
+    if(left == 0) {
+        return newOpn(O_Empty);
+    }
+    else {
+        return newApp(newApp(newOpn(O_Cons),
+                    parseStr(*sPtr)), parseStrs(left - 1, sPtr + 1));
+    }
+}
+
+/*
+ * Convert the command-line arguments into usable expressions.
+ */
+Exp *parseArgs(int argc, char *argv[]) {
+    if(argc < 2) {
+        return newOpn(O_Empty);
+    }
+    else {
+        return parseStrs(argc - 1, &argv[1]);
+    }
+}
+
+/*
  * Create new expression nodes of each type.
  */
 Exp *newApp(Exp *fun, Exp *arg) {

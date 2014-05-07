@@ -7,22 +7,36 @@ import Data.List (intersperse)
 import qualified Data.Map as M
 
 -- Assign to each function an integer, which is negative, to be used in variable
--- nodes. These numbers are negative because ordinary variables use
--- positive De Bruijn indices.
-genIndexes :: Int -> M.Map Name Func -> M.Map Name Int
-genIndexes i m
-    | M.null m  = M.empty
-    | otherwise = let ((n, _), rest) = M.deleteFindMin m in
-        M.union (M.singleton n i) (genIndexes (i + 1) rest)
+-- nodes. These numbers are negated when included in generated code because
+-- ordinary variables use positive De Bruijn indices.
+genIndexes :: Int -> [Func] -> M.Map Name Int
+genIndexes i []     = M.empty
+genIndexes i (f:fs) = M.insert (getName f) i (genIndexes (i + 1) fs)
 
 codeGenProg :: Prog -> String
 codeGenProg (Prog pgMap) = concat $ intersperse "\n" $
     [ "#include <stdio.h>"
     , "#include <stdlib.h>"
+    , "#include <string.h>"
     , "#include \"langdefs.h\""
+    , ""
+    , "Exp *args = NULL;"
+    , ""
+    , "Exp *instantiate_args() {"
+    , "    if(args) {"
+    , "        return copyExp(args);"
+    , "    }"
+    , "    else {"
+    , "        printf(\"ERROR: command-line arguments not initialised\\n\");"
+    , "        exit(EXIT_FAILURE);"
+    , "    }"
+    , "}"
     ] ++ codeGenFuncs funcIndex funcList ++
     [ ""
     , "Exp *instantiate(int funcNo) {"
+    , "    if(funcNo == -1) {"
+    , "        return instantiate_args();"
+    , "    }"
     ] ++ codeGenIndexFunc funcIndex funcList ++
     [ "    else {"
     , "        printf(\"ERROR: instantiate(): function \'%d\' not found\\n\","
@@ -32,11 +46,13 @@ codeGenProg (Prog pgMap) = concat $ intersperse "\n" $
     , "}"
     , ""
     , "bool hasFunc(int funcNo) {"
+    , "    if(funcNo == -1) return true;"
     ] ++ codeGenHasFunc funcIndex funcList ++
     [ "    return false;"
     , "}"
     , ""
-    , "int main() {"
+    , "int main(int argc, char *argv[]) {"
+    , "    args = parseArgs(argc, argv);"
     , "    Exp *template = instantiate_" ++ show (funcIndex M.! "main") ++ "();"
     , "    Exp *normTemplate = reduceTemplateNorm(template);"
     , "    printlnExp(normTemplate);"
@@ -47,7 +63,7 @@ codeGenProg (Prog pgMap) = concat $ intersperse "\n" $
     ]
   where
     funcList  = map snd $ M.toList pgMap
-    funcIndex = genIndexes 1 pgMap
+    funcIndex = M.insert "args" 1 (genIndexes 2 funcList)
 
 codeGenHasFunc :: M.Map String Int -> [Func] -> [String]
 codeGenHasFunc funcIndex fs = map (codeGenHasThisFunc funcIndex) fs

@@ -32,15 +32,20 @@ main = do
         let tokens       = scan progStr ++ scan prelude
             parseRes     = P.parse tokens
             progPTVars   = combineTyDecs parseRes
+            declaresArgs = hasFunc progPTVars "args"
             (i, _, prog) = convertTVarsProg (0, M.empty, progPTVars)
-            unifyRes     = inferFull (snd (contextProg i prog)) (allToLambdas prog)
+            progCtx      = (snd (contextProg i prog))
+            initialCtx   = M.insert "args" (TList (TList TChar)) progCtx
+            unifyRes     = inferFull initialCtx (allToLambdas prog)
             hasMain      = hasFunc prog "main"
             outputCode   = codeGenProg prog
             in
-            if unifyRes == Nothing then
-                putStrLn "Type check failure"
+            if declaresArgs then
+                putStrLn "Program may not declare function \'args\'."
+            else if unifyRes == Nothing then
+                putStrLn "Type check failure."
             else if not hasMain then
-                putStrLn "No main function found"
+                putStrLn "No main function found."
             else
                 writeFile "compiled.c" outputCode >>= \_ ->
                 system ("gcc -Wall -g langdefs.c compiled.c -o "
