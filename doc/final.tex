@@ -118,7 +118,7 @@ Informally, we can describe the closure properties: if $M$ reduces to $N$, then 
 \indent As stated previously, functional programming languages are derived from the lambda calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into lambda expressions that can be described by the given context-free grammar.
 
 \subsection{Evaluation Strategies}
-An important topic in the lambda calculus is that of \textbf{evaluation strategy}. Since a lambda term may have many possible $\beta$-equivalent terms reachable in a single $\beta$-reduction, implementations must have rules, or strategies, to determine the order in which these reductions will be made. The most notable schemes are call-by-value and call-by-name.
+An important topic in the lambda calculus and functional programming is that of \textbf{evaluation strategy}. Since a lambda term may have many possible $\beta$-equivalent terms reachable in a single $\beta$-reduction, implementations must have rules, or strategies, to determine the order in which these reductions will be made. The most notable schemes are call-by-value and call-by-name.
 
 \subsubsection{Call-By-Value}
 \subsubsection{Call-By-Name}
@@ -131,8 +131,13 @@ By showing the reduction of this term, we can see that it has no normal form:
 There are some terms, however, that have a normal form, but some reduction sequences of that term are non-terminating - consider the term:
 \[ (\lambda x.\lambda y.y)((\lambda x.xx)(\lambda x.xx)) \]
 Under a call-by-value strategy, we begin by reducing the right-hand term, which we have already seen is not normalising, and as a result, we do not find the normal form. If we use call-by-name, however, we first substitute the argument on the right-hand side into the function on the left-hand side:
-\[ (\lambda x.\lambda y.y)((\lambda x.xx)(\lambda x.xx)) \rightarrow (\lambda y.y)[x \mapsto (\lambda x.xx)(\lambda x.xx)] \rightarrow \lambda y.y \]
-Here we are left with a normal form. It is the case that for any term with a normal form, a call-by-name strategy is guaranteed to find that normal form, whereas with a call-by-value strategy, this is not guaranteed (as we have seen).
+\[ (\lambda x.\lambda y.y)((\lambda x.xx)(\lambda x.xx)) \hspace{4mm} \rightarrow \hspace{4mm} (\lambda y.y)[x \mapsto (\lambda x.xx)(\lambda x.xx)] \hspace{4mm} \rightarrow \hspace{4mm} \lambda y.y \]
+Here we are left with a normal form. It is the case that for any term with a normal form, a call-by-name strategy is guaranteed to find that normal form, whereas with a call-by-value strategy, this is not guaranteed (as we have seen). For this reason, call-by-name evaluation may be a desirable evaluation strategy for a functional programming language.
+\\\indent A downside to using call-by-name as the evaluation strategy for a functional programming language is that it can cause duplication of work. Consider the term:
+\[ (\lambda x.x \hspace{1mm} x \hspace{1mm} x)M \]
+where $M$ is some large term that requires many reduction steps to reach its normal form. Using call-by-value evaluation, we only have to evaluate this term once, the result of which is substituted into the function on the left. Using call-by-name evaluation, we substitute this term into the function three times, and triple the number of reduction steps required to reduce the entire term.
+\subsubsection{Call-By-Need}
+Call-by-need evaluation (sometimes called \emph{lazy} evaluation) is a variation on call-by-name. The semantics of call-by-need are difficult to formalise, but informally, arguments are evaluated after substitution, but where a term would be duplicated, it is \emph{shared}. In practice, this usually means that multiple pointers are kept to it, one for each occurrence. This strategy has the advantage of call-by-name that the normal form is guaranteed to be found if it exists, and the advantage of call-by-value that we need evaluate arguments only once. For this reason, call-by-need evaluation is used in modern functional programming languages such as Haskell.
 
 \pagebreak
 \section{Methodology}
