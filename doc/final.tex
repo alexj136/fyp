@@ -297,12 +297,27 @@ The CodeGen module generates C code for a given program. The implementation stra
     \item The De Bruijn representation of lambda terms is used. In this representation, variables do not store a name, but a number, which is the number of abstractions between the variable itself and the abstraction that binds it. Abstractions themselves need not carry the names of variables in this case. The advantage of this is that the name clash problem does not exist, which removes the overhead associated with checking for and handling name clashes.
 \end{itemize}
 The traditional method of functional language compilation is closure conversion. In this scheme, local variable definitions are translated into global ones, and lambda expressions are represented as closures. Closures are data structures that contain (via pointers) some code that executes the body of the lambda expression, and a means of accessing variables bound elsewhere. There are many advantages to this implementation strategy, the main one being speed. Programs compiled in this manner can rely much more heavily on machine instructions operating on registers, which are very fast. Schemes that rely on expression reduction, including template instantiation, rely more on machine instructions that use indirect addressing, which are typically much slower.
-\\\indent Template instantiation was chosen as the implementation strategy due to the time constraints on the project. Implementing template instantiation is simpler than implementing closure conversion and was therefore was a more realistic target with the time available.
+\\\indent Template instantiation was chosen as the implementation strategy due to the time constraints on the project. Implementing template instantiation is simpler than implementing closure conversion and was therefore was a more realistic target with the time available. One benefit of this choice, however, is that call-by-name evaluation is much easier to implement with template instantiation than with closure conversion - It would not have been possible to implement call-by-name evaluation using closure conversion without a significant amount of extra available time, whereas choosing template instantiation has allowed for the compiled implementation to use call-by-name evaluation, enabling the use of infinite data structures.
+\\\indent The initial goal was to implement a template instantiator machine that would evaluate templates \textbf{in-place}, i.e. perform reduction to a template that is in memory. This proved difficult to implement, and due to time constraints, a simpler approach had to be adopted. The simpler approach operates by computing the reduced value of the template in memory, instantiating a new template in memory that is beta-equivalent in one or more reduction steps, to the original template. The original template is then freed from memory and reduction proceeds on the newly created template. This strategy has a higher overhead than in-place reduction, since an entire template must be created and freed in memory with each reduction step, but relies less on low-level memory access and was therefore easier to implement to a working standard.
 \subsubsection{Test Modules}
+Unit test modules are named according to the module which they test. For example, the tests of the Unifier module are contained in the TestUnifier module. The Syntax, Unifier and Interpreter modules have reasonable test coverage, whereas there is are no tests for the CodeGen module, again due to time constraints.
 
-\subsection{Testing}
 \subsection{Source Repository}
-% PureCalculus, TypedCalculus & Polymorphic
+The structure of source repository, \texttt{fyp} (an initialism for \textbf{f}inal \textbf{y}ear \textbf{p}roject), is explained below:
+\\\\
+\begin{tabular}{ p{37mm} p{2mm} p{70mm} }
+    \texttt{fyp/}                  & - & This is the root directory of the repository. It contains the file \texttt{readme}, which contains a line of text identifying the repository, and two directories, \texttt{src} and \texttt{doc}. \\
+                                   &   & \\
+    \texttt{fyp/doc}               & - & This directory contains latex and graphviz source files that were used to produce the interim and final reports for this project. There is also a makefile, which when run, produces image files for the final report document, using the \textbf{dot} graph generation tool, and a PDF file using \textbf{pdflatex}. \\
+                                   &   & \\
+    \texttt{fyp/src}               & - & Blah\\
+                                   &   & \\
+    \texttt{fyp/src/PureCalculus}  & - & Blah\\
+                                   &   & \\
+    \texttt{fyp/src/TypedCalculus} & - & Blah\\
+                                   &   & \\
+    \texttt{fyp/src/Polymorphic}   & - & Blah\\
+\end{tabular}
 
 \pagebreak
 \section{Language Specification}
