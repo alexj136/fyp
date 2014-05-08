@@ -23,7 +23,7 @@ Supervisor: Dr. Martin Berger}
 
 Conventional programming languages are designed to solve problems by decomposing them into a list of instructions, which are executed by a computer in a specified sequence. They are said to be \emph{imperative}. This imperative principle of sequential execution is ultimately derived from the nature of computer architecture, which is imperative in nature. Such languages have become increasingly sophisticated over many years, abstracting the computer's hardware, so that programmers need not concern themselves with understanding the intricate details of the computer, which are often irrelevant to the problem they are solving. Imperative languages do not, however, abstract sequential execution (by definition).
 \\
-\indent In contrast, Functional programming languages differ in that they are derived from the $\lambda$ calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
+\indent In contrast, Functional programming languages differ in that they are derived from the lambda calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
 
 \pagebreak
 \section{Background}
@@ -85,9 +85,9 @@ Just-in-time (JIT) compilation is similar to interpretation in that there is no 
 There are many hybrid systems in existence that combine interpretation, code generation and JIT systems into a programming language implementation. One such example is the Java programming language, which generates intermediate code at compile-time, and at runtime, the intermediate code is executed by a \emph{tracing} JIT system, where code is initially interpreted, and when a part of the program is determined to be 'hot code' - code that is executed frequently - it is translated to machine code and directly executed. There are a vast array of different hybrid systems in existence, and many possible combinations that have not been attempted. The goal is usually to maximise performance.
 
 \subsection{Functional and Imperative}
-The $\lambda$ calculus ('$\lambda$' pronounced as 'lambda') is a mathematical calculus that is used to represent computations, and is Turing-complete. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages.
+The lambda calculus (often written '$\lambda$-calculus') is a mathematical calculus that is used to represent computations, and is Turing-complete. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages.
 \\
-\indent The $\lambda$ calculus employs a single rule in order to achieve computation, whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
+\indent The lambda calculus employs a single rule in order to achieve computation, whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
 \\\\
 \indent \texttt{int square ( int x ) \{ return x * x ; \}}
 \\\\
@@ -95,33 +95,50 @@ We might invoke this function using:
 \\\\
 \indent \texttt{square ( 10 ) ;}
 \\\\
-In the $\lambda$ calculus, we would say that the function \texttt{square} is applied to the argument, \texttt{10}. When a function such as this is applied to an argument in the $\lambda$ calculus, we think of the parameter \texttt{x} taken by \texttt{square} as being \emph{syntactically replaced} in the body of \texttt{square}, by the expression that is supplied as an argument. In this example, such a syntactic replacement would yield
+In the lambda calculus, we would say that the function \texttt{square} is applied to the argument, \texttt{10}. When a function such as this is applied to an argument in the lambda calculus, we think of the parameter \texttt{x} taken by \texttt{square} as being \emph{syntactically replaced} in the body of \texttt{square}, by the expression that is supplied as an argument. In this example, such a syntactic replacement would yield
 \\\\
 \indent \texttt{10 * 10}
 \\\\
-in the body of \texttt{square}. Such a syntactic replacement can be thought of as the mode of computation for the $\lambda$ calculus. That is, the $\lambda$ calculus achieves computation via this syntactic replacement.
+in the body of \texttt{square}. Such a syntactic replacement can be thought of as the mode of computation for the lambda calculus. That is, the lambda calculus achieves computation via this syntactic replacement.
 \\
-\indent Now let us consider the \texttt{square} function in $\lambda$ notation. We have:
+\indent Now let us consider the \texttt{square} function in lambda notation. We have:
 \[ \lambda x.x * x \]
-Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the $\lambda$ calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example. Here, the '$\lambda$' symbol indicates that the expression that follows is a function, and that the '$x$' that follows indicates that $x$ is a parameter to the function. The $\lambda x$ is said to \emph{bind} the variable $x$. The '$.$' is there to delimit this binding of $x$ from the function body, which is the '$x * x$' part. We can apply (invoke) this function to the argument \texttt{10} as we did with the imperative example. In the $\lambda$ calculus, we write:
+Immediately we see that the function name, \texttt{square}, is no longer present. This is because functions in the lambda calculus do not have names. This means that in order to use the function, we must write it down in its entirety, rather than refer to it by name like we did in the earlier example. Here, the '$\lambda$' symbol indicates that the expression that follows is a function, and that the '$x$' that follows indicates that $x$ is a parameter to the function. The $\lambda x$ is said to \emph{bind} the variable $x$. The '$.$' is there to delimit this binding of $x$ from the function body, which is the '$x * x$' part. We can apply (invoke) this function to the argument \texttt{10} as we did with the imperative example. In the lambda calculus, we write:
 \[ (\lambda x.x * x)(10) \]
 Here, the $10$ parameterises $x$. When we evaluate the expression, we are left with the body of the function, where every occurrence of $x$ is replaced with $10$:
 \[ 10 * 10 \]
-This syntactic replacement, also called $\beta$-reduction ($\beta$ pronounced as 'beta'), is the sole method of computation in the $\lambda$ calculus. The formal syntax of the $\lambda$ calculus is given by the context-free grammar:
+This syntactic replacement, also called $\beta$-reduction ($\beta$ pronounced as 'beta'), is the sole method of computation in the lambda calculus. The formal syntax of the lambda calculus is given by the context-free grammar:
 \[ M \:\; ::= \;\; x \;\; | \;\; \lambda x.M \;\; | \;\;  MN \]
-where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions. Closure properties for the $\lambda$ calculus are formalised as:
+where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions. Closure properties for the lambda calculus are formalised as:
 \[ M \rightarrow N \Rightarrow LM \rightarrow LN. \]
 \[ M \rightarrow N \Rightarrow ML \rightarrow NL. \]
 \[ M \rightarrow N \Rightarrow \lambda x.M \rightarrow \lambda x.N \]
 Informally, we can describe the closure properties: if $M$ reduces to $N$, then $LM$ and $ML$ reduce to $LN$ and $NL$ respectively, where L is an arbitrary expression. $\beta$-reduction is formalised as:
 \[ (\lambda x.M)N \rightarrow_\beta M[N/x] \]
-\indent As stated previously, functional programming languages are derived from the $\lambda$ calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into $\lambda$ expressions that can be described by the given context-free grammar.
+\indent As stated previously, functional programming languages are derived from the lambda calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into lambda expressions that can be described by the given context-free grammar.
+
+\subsection{Evaluation Strategies}
+An important topic in the lambda calculus is that of \textbf{evaluation strategy}. Since a lambda term may have many possible $\beta$-equivalent terms reachable in a single $\beta$-reduction, implementations must have rules, or strategies, to determine the order in which these reductions will be made. The most notable schemes are call-by-value and call-by-name.
+
+\subsubsection{Call-By-Value}
+\subsubsection{Call-By-Name}
+\subsubsection{Confluence and Normalisation}
+The lambda calculus has the property of \textbf{confluence} (Church; Rosser, 1936: \emph{"Some properties of conversion"}). Informally, this means that if any term has a normal form, then it has only one normal form. Formally, we can say that if some term $M$ can be reduced to a term $M_a$ in any number of $\beta$-reductions (if $M \rightarrow^{*}_{\beta} M_a$), and can also be reduced to a term $M_b$ in any number of $\beta$-reductions (if $M \rightarrow^{*}_{\beta} M_b$) under another evaluation strategy, then there exists some term $M_c$ such that $M_a$ and $M_b$ can both be reduced to $M_c$ in any number of $\beta$-reductions ($M_a \rightarrow^{*}_{\beta} M_c$ and $M_b \rightarrow^{*}_{\beta} M_c$).
+\\\indent The lambda calculus is also has the property of \textbf{weak normalisation}. This means that some, but not all terms have a normal form. (This is as opposed to strong normalisation, where every term has a normal form - the simply typed lambda calculus is strongly normalising, but the pure lambda calculus discussed here is only weakly normalising.) Shown below is an example of a term with no normal form.
+\[ (\lambda x.xx)(\lambda x.xx) \]
+By showing the reduction of this term, we can see that it has no normal form:
+\[ (\lambda x.xx)(\lambda x.xx) \hspace{4mm} \rightarrow \hspace{4mm} xx[x \mapsto (\lambda x.xx)] \hspace{4mm} \rightarrow \hspace{4mm} (\lambda x.xx)(\lambda x.xx) \]
+There are some terms, however, that have a normal form, but some reduction sequences of that term are non-terminating - consider the term:
+\[ (\lambda x.\lambda y.y)((\lambda x.xx)(\lambda x.xx)) \]
+Under a call-by-value strategy, we begin by reducing the right-hand term, which we have already seen is not normalising, and as a result, we do not find the normal form. If we use call-by-name, however, we first substitute the argument on the right-hand side into the function on the left-hand side:
+\[ (\lambda x.\lambda y.y)((\lambda x.xx)(\lambda x.xx)) \rightarrow (\lambda y.y)[x \mapsto (\lambda x.xx)(\lambda x.xx)] \rightarrow \lambda y.y \]
+Here we are left with a normal form. It is the case that for any term with a normal form, a call-by-name strategy is guaranteed to find that normal form, whereas with a call-by-value strategy, this is not guaranteed (as we have seen).
 
 \pagebreak
 \section{Methodology}
 
 \subsection{Project Aims} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
-As stated, the aim of this project is to implement a functional programming language, based on the $\lambda$ calculus. The main features I will implement are:
+As stated, the aim of this project is to implement a functional programming language, based on the lambda calculus. The main features I will implement are:
 \begin{itemize}
     \item \textbf{Rich Syntax} - An expressive syntax that allows the user to write terse programs, with useful features such as lists, tuples, string literals etcetera.
     \item \textbf{Strong Typing and Type Checking} - A strong typing system with type checking to guarantee that all valid programs exhibit no runtime type errors.
@@ -210,7 +227,7 @@ This is used to represent types of functions and terms. Values of this type may 
 This is used to represent functions that are built into the language, and is essentially just an extension of the Term datatype.
 \\\\ A more detailed description of these datatypes is given by the context-free grammar for the language, which can be found in the Language Specification section of this document.
 \subsubsection{Interpreter}
-The Interpreter module contains functions required for interpreting programs, the most notable of which is \texttt{reduce}, which reduces Terms to their normal form. \texttt{reduce} has the type signature: \texttt{Prog -> Term -> Term}. It takes two arguments, the first of which is of type Prog, which provides a 'context' for Term reduction, that is, the function definitions to which the second parameter, the Term to reduce, may refer. The result is the normal form of the given Term. This function implements the reduction rules for the $lambda$ calculus, with additional reduction rules for the additional features of the language. The other functions present in the Interpreter module are used to handle the \emph{name clash} problem, described below.
+The Interpreter module contains functions required for interpreting programs, the most notable of which is \texttt{reduce}, which reduces Terms to their normal form. \texttt{reduce} has the type signature: \texttt{Prog -> Term -> Term}. It takes two arguments, the first of which is of type Prog, which provides a 'context' for Term reduction, that is, the function definitions to which the second parameter, the Term to reduce, may refer. The result is the normal form of the given Term. This function implements the reduction rules for the lambda calculus with additional reduction rules for the additional features of the language. The other functions present in the Interpreter module are used to handle the \emph{name clash} problem, described below.
 \\\indent The main difficulty in implementing the interpreter for the language has been the problem of name clashes. When function application is evaluated, one expression (the \emph{argument expression}) is substituted into another (the \emph{body expression}). If the argument expression contains free variables, the names of which are bound in the body expression, those free variables become erroneously captured by the bindings present in the body expression.
 \\\indent To handle this problem, $\alpha$ conversion is used. $\alpha$ conversion is the transformation from one expression to another, that is $\alpha$ equivalent (equivalent modulo the choice of variable names) to the original expression. Before substitution, the free variables of the argument expression are computed. If any of those variables are bound in the body expression, those bindings and corresponding variables are renamed to names not present in the argument expression - that is, the body expression is $\alpha$ converted, such that it binds no variables that are free in the argument expression. The argument expression can then be safely substituted into the body expression.
 \subsubsection{Unifier}
@@ -310,13 +327,13 @@ The structure of source repository, \texttt{fyp} (an initialism for \textbf{f}in
                                    &   & \\
     \texttt{fyp/doc}               & - & This directory contains latex and graphviz source files that were used to produce the interim and final reports for this project. There is also a makefile, which when run, produces image files for the final report document, using the \textbf{dot} graph generation tool, and a PDF file using \textbf{pdflatex}. \\
                                    &   & \\
-    \texttt{fyp/src}               & - & Blah\\
+    \texttt{fyp/src}               & - & This directory contains three directories, each of which contains a stand-alone implementation of a language.\\
                                    &   & \\
-    \texttt{fyp/src/PureCalculus}  & - & Blah\\
+    \texttt{fyp/src/PureCalculus}  & - & This directory contains an implementation of the 'pure' lambda calculus, that is, a calculus containing only lambda abstractions, function application, and variables. It has no front-end and must be interacted with using the Haskell REPL. \\
                                    &   & \\
-    \texttt{fyp/src/TypedCalculus} & - & Blah\\
+    \texttt{fyp/src/TypedCalculus} & - & This directory contains an implementation of the simply typed lambda calculus. This implementation contains, in addition to the features of the pure implementation, integer and boolean constants and arithmetic operations, and the available types are integer, boolean and function types. This implementation uses a simple type checking algorithm (Pierce, 2002:115). Again it has no front-end and must be interacted with using the Haskell REPL. \\\\
                                    &   & \\
-    \texttt{fyp/src/Polymorphic}   & - & Blah\\
+    \texttt{fyp/src/Polymorphic}   & - & This directory contains the full language implementation described in this report, and includes the modules described in the previous section. \\
 \end{tabular}
 
 \pagebreak
