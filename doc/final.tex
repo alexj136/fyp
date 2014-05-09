@@ -302,10 +302,7 @@ This is a simple case, however the unification algorithm (given below) will find
     \end{IF}
 \end{algorithm}
 
-\noindent\textbf{REVISE}\\
-One difficulty in implementing thi\\
-To avoid this, we first reduce the application of the function one step, which removes the constraint that our function has the type ..., whilst still ensuring that it is used only in type-safe ways. However this causes the problem that functions that are never used may contain type errors, because we never check them.
-\\\textbf{END-REVISE}\\
+A problem with this system of constraint generation and unification is that if we have a polymorphic function, such as \texttt{length : $\forall$a.[a] -> Int}, which computes the length of a list, and we apply \texttt{length} to a list of integers, we will then have the constraint that the argument type of \texttt{length} is a list of integers, rather than some arbitrary type. This means that if we were to use the length function elsewhere in the program, on, for example, a list of booleans, we would also have the constraint that the argument type of \texttt{length} is a list of booleans. These two constraints are clearly unsatisfiable and make the whole program untypable. To solve this problem, we need to change the way we generate constraints. When we find a function application, we first reduce the application of the function one step, which removes the constraint that our function's argument type is the type of the argument to which it is being applied in this specific instance. We still, however, ensure that the function is used only in type-safe ways. Use of this strategy gives us a type of polymorphism known as \textbf{Let-Polymorphism} (Pierce, 2002:331).
 
 \subsubsection{Lexer}
 The Lexer module implements lexical analysis on source code. This module is generated using a lexical specification and \textbf{Alex}, a lexical analyser generator for Haskell. The lexical specification contains a list of regular expressions to match against source code, each of which has a corresponding token that should be returned when the source code matches that regular expression. The output is a list of tokens, each of which is labelled with its coordinates in the source file, so that when lexical and syntactic errors occur, the location in the source file where the error occurs can be indicated to the user.
@@ -436,7 +433,7 @@ The context-free grammar (in BNF) for the language is given below:
 The language has 3 familiar basic data types, which are integers, characters and booleans. In the syntax of the language, these types are denoted as \texttt{Int}, \texttt{Char} and \texttt{Bool} respectively.
 \subsection{Functions for Basic Data Types}
 The language has a familiar set of built-in functions over the basic data types, which are: \\
-\centerline{\begin{tabular}{ | l | l | l | l | l | }
+\centerline{\begin{tabular}{ | p{13mm} | l | l | l | p{25mm} | }
     \hline
     Function Syntax & Description                       & Type                                  & Example usage             & Evaluated result of example   \\
     \hline
@@ -459,7 +456,45 @@ The language has a familiar set of built-in functions over the basic data types,
 \end{tabular}}
 
 \subsection{Abstract Data Types}
-The language has several abstract data types, which can be used in a number of ways. The most familiar of these is the list type. These are denoted ``\texttt{[a]}'' where \texttt{a} is some other type. Every element in a list must have the same type as the other elements in that list. The language provides several functions for use with lists, which are \texttt{head}, which takes a list and returns the first element of that list, \texttt{tail}, which takes a list, and returns a list that is the same as the given list but without the 'head' element. Applying \texttt{head} or \texttt{tail} to an empty list is an exceptional condition, and execution is terminated if such an application is evaluated. The \texttt{null} function takes a list and returns \texttt{true} if that list is empty, \texttt{false} otherwise.
+\subsubsection{Lists}
+The language has several abstract data types, which can be used in a number of ways. The most familiar of these is the list type. These are denoted ``\texttt{[a]}'' where \texttt{a} is some other type. Every element in a list must have the same type as the other elements in that list. The language provides several functions for use with lists, which are \texttt{head}, which takes a list and returns the first element of that list, \texttt{tail}, which takes a list, and returns a list that is the same as the given list but without the 'head' element. Applying \texttt{head} or \texttt{tail} to an empty list is an exceptional condition, and execution is terminated if such an application is evaluated. The \texttt{null} function takes a list and returns \texttt{true} if that list is empty, \texttt{false} otherwise. The language contains a small set of predefined functions that can be made use of, including a \texttt{length} function that computes the length of a list. The definition of \texttt{length} is shown below, which demonstrates the use of the list functions.
+\\\\
+\indent\textbf{Definition of the }\texttt{length}\textbf{ function}
+\begin{verbatim}
+    type length = [a] -> Int
+    def length =
+        let lenAcc acc lst =
+            if null lst then
+                acc
+            else
+                (lenAcc (acc + 1) (tail lst))
+        in
+        (lenAcc 0)
+\end{verbatim}
+
+\subsubsection{Sum Types}
+Sum types, also known as union types, are included in the language. They are a data structure that contain a single value that may be one of two types. These are useful in computations that may fail, an example of which is division, which will fail if the denominator is zero. Shown below is an example of a division function that accommodates this possibility using sum types.
+\\\\
+\indent\textbf{Safe division function}
+\begin{verbatim}
+    # Returns { _ , false } if denominator is zero,
+    # or { result , _ } otherwise.
+    type safeDiv = Int -> Int -> { Int | Bool }
+    def safeDiv a b =
+        if iszero b then
+            { _ , false }
+        else
+            { a / b , _ }
+\end{verbatim}
+There are 3 helper functions for use with sum types, which are \texttt{remr}, \texttt{reml} and \texttt{isleft}. \texttt{remr} retrieves the right-hand value from a sum expression. This function causes an error if there is no right-hand value (i.e. if there is a left-hand value). \texttt{reml} retrieves the left-hand value from a sum expression. This function causes an error if there is no left-hand value (i.e. if there is a right-hand value). To prevent errors with these two functions, the expression on which they are to be called should first be checked with the \texttt{isleft} function, which returns \texttt{true} if a left-hand value is present, and \texttt{false} if the right-hand value is present. The example below demonstrates the use of the \texttt{reml}, \texttt{remr} and \texttt{isleft} functions with the \texttt{safeDiv} function shown above.
+\\\\
+\indent\textbf{... function}
+\begin{verbatim}
+    type
+    def
+\end{verbatim}
+\subsubsection{Product Types}
+Product types, also known as tuples, are data structures used to store multiple values of differing types. In this language, product types are binary, but binary product types can be used to encode product types of an arbitrary number of members.
 \subsection{Summary of Functions for Abstract Data Types}
 \subsection{Function Definitions}
 \subsection{Type Declarations}
@@ -473,8 +508,8 @@ The language has several abstract data types, which can be used in a number of w
 \pagebreak
 \section{Evaluation}
 % Comments on performance and robustness of each feature e.g. interpreter, type inference, etc.
-% What has not yet been done & why not
 % What I would do with more time
+\subsection{Possible Extensions}
 
 \pagebreak
 \section{Appendix}
