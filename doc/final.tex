@@ -121,7 +121,19 @@ Informally, we can describe the closure properties: if $M$ reduces to $N$, then 
 An important topic in the lambda calculus and functional programming is that of \textbf{evaluation strategy}. Since a lambda term may have many possible $\beta$-equivalent terms reachable in a single $\beta$-reduction, implementations must have rules, or strategies, to determine the order in which these reductions will be made. The most notable schemes are call-by-value and call-by-name.
 
 \subsubsection{Call-By-Value}
+With a call-by-value evaluation strategy, we evaluate arguments to functions before we substitute them into function bodies. Generally speaking, we always take the innermost, rightmost possible reduction. Formally, we have the following reduction rules (small-step semantics):
+\begin{align*}
+            eval_{CBV} ( (\lambda x.M) (N O) ) &= (\lambda x.M) (eval_{CBV} (N O) ) \\
+    eval_{CBV} ( (\lambda x.M) (\lambda y.N) ) &= M[x \mapsto \lambda y.N]          \\
+              eval_{CBV} ( (\lambda x.M) y )   &= M[x \mapsto y]
+\end{align*}
 \subsubsection{Call-By-Name}
+With a call-by-name evaluation strategy, we substitute arguments into functions before we evaluate the arguments. Generally speaking, we always take the outermost, rightmost possible reduction. Formally, we have the following reduction rules (small-step semantics):
+\begin{align*}
+            eval_{CBN} ( (\lambda x.M) (N O) ) &= M[x \mapsto (N O)]       \\
+    eval_{CBN} ( (\lambda x.M) (\lambda y.N) ) &= M[x \mapsto \lambda y.N] \\
+              eval_{CBN} ( (\lambda x.M) y )   &= M[x \mapsto y]
+\end{align*}
 \subsubsection{Confluence and Normalisation}
 The lambda calculus has the property of \textbf{confluence} (Church; Rosser, 1936: \emph{"Some properties of conversion"}). Informally, this means that if any term has a normal form, then it has only one normal form. Formally, we can say that if some term $M$ can be reduced to a term $M_a$ in any number of $\beta$-reductions (if $M \rightarrow^{*}_{\beta} M_a$), and can also be reduced to a term $M_b$ in any number of $\beta$-reductions (if $M \rightarrow^{*}_{\beta} M_b$) under another evaluation strategy, then there exists some term $M_c$ such that $M_a$ and $M_b$ can both be reduced to $M_c$ in any number of $\beta$-reductions ($M_a \rightarrow^{*}_{\beta} M_c$ and $M_b \rightarrow^{*}_{\beta} M_c$).
 \\\indent The lambda calculus is also has the property of \textbf{weak normalisation}. This means that some, but not all terms have a normal form. (This is as opposed to strong normalisation, where every term has a normal form - the simply typed lambda calculus is strongly normalising, but the pure lambda calculus discussed here is only weakly normalising.) Shown below is an example of a term with no normal form.
@@ -143,7 +155,7 @@ Call-by-need evaluation (sometimes called \emph{lazy} evaluation) is a variation
 \section{Methodology}
 
 \subsection{Project Aims} % Interpreter, Compiler, & if time permits, a JIT Compiler (Mention JRA project)
-As stated, the aim of this project is to implement a functional programming language, based on the lambda calculus. The main features I will implement are:
+As stated, the aim of this project is to implement a functional programming language, based on the lambda calculus. The main feature goals are:
 \begin{itemize}
     \item \textbf{Rich Syntax} - An expressive syntax that allows the user to write terse programs, with useful features such as lists, tuples, string literals etcetera.
     \item \textbf{Strong Typing and Type Checking} - A strong typing system with type checking to guarantee that all valid programs exhibit no runtime type errors.
@@ -153,7 +165,7 @@ As stated, the aim of this project is to implement a functional programming lang
     \item \textbf{Compiler} - A compiled implementation of the language, targeting GNU/Linux operating systems that run on the x86 CPU architecture.
     \item \textbf{User Documentation} - Detailed, well-written user documentation
 \end{itemize}
-Should time permit, I would also like to implement the following additional features:
+The following will also be implemented should time permit it:
 \begin{itemize}
     \item \textbf{Algebraic Data Types} - Abstract, high-level data types that allow the programmer to encode their problem space in a data structure that is easy to manipulate programmatically.
     \item \textbf{Pattern Matching} - A feature that allows functions to be implemented in different ways for differently structured inputs.
@@ -169,21 +181,19 @@ The British Computer Society (BCS) defines a code of conduct for IT professional
 
 \subsection{Toolchain}
 \subsubsection{Arch GNU/Linux}
-Arch GNU/Linux is an appropriate development platform that I will be using for this project. It has a wide range of development tools that I will require, such as GNU make, a tool for build and test automation, and Vim, a text editor, easily and freely available via a package manager.
+Arch GNU/Linux is an appropriate development platform that will be used for this project. It has a wide range of development tools that will be required, such as GNU make, a tool for build and test automation, and Vim, a text editor, easily and freely available via a package manager.
 
 \subsubsection{Haskell}
-Haskell is an expressive, functional, high level programming language that is ideally suited to programming language implementation. It also has an associated package manager, Cabal, which makes the installation of libraries that I will require for the project very quick and simple.
+Haskell is an expressive, functional, high level programming language that is ideally suited to programming language implementation. It also has an associated package manager, Cabal, which makes the installation of libraries that will be required for the project very quick and simple.
 
 \subsubsection{Lexer and Parser Generators}
-To simplify lexical and syntactic analysis, I will be using lexer and parser generators. This will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical and syntactical specifications for the lexer and parser generators. \textbf{Alex} is a lexer generator for Haskell that I will be using, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
+To simplify lexical and syntactic analysis, lexer and parser generators will be used. These will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical and syntactical specifications for the lexer and parser generators. \textbf{Alex} is a lexer generator for Haskell that will be used, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
 
 \subsubsection{Version Control}
-Version control is a vital part of any software project, and this one is no exception. Easier recovery from implementation mistakes, backup and change tracking are just a few of the many benefits that version control provides to a software project. The Mercurial version control system will be used for this project. A local copy of the project will be ketp, along with a master repository that will be hosted on bitbucket, to prevent loss and allow work to be carried out on multiple machines with little effort. \\
+Version control is a vital part of any software project, and this one is no exception. Easier recovery from implementation mistakes, backup and change tracking are just a few of the many benefits that version control provides to a software project. The Mercurial version control system will be used for this project. A local copy of the project will be kept, along with a master repository that will be hosted on bitbucket, to prevent loss and allow work to be carried out on multiple machines with little effort. \\
 
 \subsubsection{Testing}
-Testing is a critical part of any software project. It enables confident refactoring, since any changes to code that prohibit the software system from functioning correctly, are immediately identified. Randomised testing is also very powerful, and helps to discover bugs and 'corner cases' that would otherwise be incredibly difficult to find.
-\\
-\indent I will be using the HUnit library to unit-test my code, and also the QuickCheck library for randomised testing. Both are freely available as part of the Cabal system.
+Testing is a critical part of any software project. It enables confident refactoring, since any changes to code that prohibit the software system from functioning correctly, are immediately identified. Randomised testing is also very powerful, and helps to discover bugs and 'corner cases' that would otherwise be incredibly difficult to find. The HUnit library will be used for unit-testing in this project.
 
 \pagebreak
 \section{Project Plan}
@@ -197,14 +207,14 @@ The graph below specifies the interdependencies of the subtasks of the project:
 Below are the target completion dates for the subtasks of the project:
 \\\\
 \begin{tabular}{l l}
-    \indent \textbf{Task}              & \textbf{Target Completion Date} \\
-    \indent Interpreter                & $14^{th}$ November 2013         \\
+    \indent \textbf{Task}               & \textbf{Target Completion Date} \\
+    \indent Interpreter                 & $14^{th}$ November 2013         \\
     \indent Type-Checker and Inferencer & $14^{th}$ December 2013         \\
     \indent Lexer and Parser            & $21^{st}$ January  2014         \\
-    \indent Compiler                   & $14^{th}$ March    2014         \\
-    \indent Draft report               & $17^{th}$ April    2014         \\
-    \indent User Documentation         & $30^{th}$ April    2014         \\
-    \indent Final report               & $12^{th}$ May      2014         \\
+    \indent Compiler                    & $14^{th}$ March    2014         \\
+    \indent Draft report                & $17^{th}$ April    2014         \\
+    \indent User Documentation          & $30^{th}$ April    2014         \\
+    \indent Final report                & $12^{th}$ May      2014         \\
 \end{tabular}
 \\\\
 Should I complete tasks early, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
@@ -263,7 +273,7 @@ to which we can straightforwardly find the solution:
 \\\\
 \indent \texttt{T\_f = Int -> Bool}
 \\\\
-This is a simple case, however the unification algorithm (given below) will find a solution to an arbitrarily large set of constraints, with arbitrary types in the grammar of types for the language. Where no solution exists, the algorithm will terminate and indicate this, which tells us that the corresponding program is ill-typed.
+This is a simple case, however the unification algorithm (given below) will find a solution to an arbitrarily large set of constraints, with arbitrary types in the grammar of types for the language. Where no solution exists, the algorithm will terminate and indicate this, which tells us that the corresponding program is ill-typed. If a solution exists, the algorithm returns a function that can be used to rewrite type variables in the program as the concrete types that they equate to. This function can be thought of as the solution to the constraint set.
 \pagebreak
 \begin{algorithm}{Unify}{C}
     \begin{IF}{C = \emptyset}
@@ -291,6 +301,11 @@ This is a simple case, however the unification algorithm (given below) will find
         \end{SWITCH}
     \end{IF}
 \end{algorithm}
+
+\noindent\textbf{REVISE}\\
+One difficulty in implementing thi\\
+To avoid this, we first reduce the application of the function one step, which removes the constraint that our function has the type ..., whilst still ensuring that it is used only in type-safe ways. However this causes the problem that functions that are never used may contain type errors, because we never check them.
+\\\textbf{END-REVISE}\\
 
 \subsubsection{Lexer}
 The Lexer module implements lexical analysis on source code. This module is generated using a lexical specification and \textbf{Alex}, a lexical analyser generator for Haskell. The lexical specification contains a list of regular expressions to match against source code, each of which has a corresponding token that should be returned when the source code matches that regular expression. The output is a list of tokens, each of which is labelled with its coordinates in the source file, so that when lexical and syntactic errors occur, the location in the source file where the error occurs can be indicated to the user.

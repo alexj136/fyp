@@ -1,3 +1,4 @@
+.PHONY: wc
 wc: final.pdf
 	@echo "Word count:"
 	@pdftotext final.pdf

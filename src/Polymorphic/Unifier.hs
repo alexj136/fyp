@@ -10,9 +10,7 @@ import qualified Data.Set as S
 -- without type variables. The ConstraintSet parameter is the set of initial
 -- constraints i.e. the user's type aliases
 infer :: Term -> Maybe Type
-infer exp = case (inferFull M.empty exp) of
-    Just (ty, _) -> Just ty
-    Nothing      -> Nothing
+infer exp = fmap fst (inferFull M.empty exp)
 
 -- Infer the type of a term, with type aliases. Both the term & aliases should
 -- not contain ParserTVars. Return the constraint set with the inferred type.
