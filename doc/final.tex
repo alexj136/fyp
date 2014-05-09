@@ -486,15 +486,19 @@ Sum types, also known as union types, are included in the language. They are a d
         else
             { a / b , _ }
 \end{verbatim}
-There are 3 helper functions for use with sum types, which are \texttt{remr}, \texttt{reml} and \texttt{isleft}. \texttt{remr} retrieves the right-hand value from a sum expression. This function causes an error if there is no right-hand value (i.e. if there is a left-hand value). \texttt{reml} retrieves the left-hand value from a sum expression. This function causes an error if there is no left-hand value (i.e. if there is a right-hand value). To prevent errors with these two functions, the expression on which they are to be called should first be checked with the \texttt{isleft} function, which returns \texttt{true} if a left-hand value is present, and \texttt{false} if the right-hand value is present. The example below demonstrates the use of the \texttt{reml}, \texttt{remr} and \texttt{isleft} functions with the \texttt{safeDiv} function shown above.
-\\\\
-\indent\textbf{... function}
+There are two constructors for values in the sum type, which are left-injection, and right-injection. The syntax for left-injection is \texttt{\{ E , \_ \}}, and the syntax for right-injection is \texttt{\{ \_ , E \}}, where \texttt{E} is an expression.
+\\\indent There are three destructors for values in the sum type, which are \texttt{remr}, \texttt{reml} and \texttt{isleft}. \texttt{remr} retrieves the right-hand value from a sum expression. This function causes an error if there is no right-hand value (i.e. if there is a left-hand value). \texttt{reml} retrieves the left-hand value from a sum expression. This function causes an error if there is no left-hand value (i.e. if there is a right-hand value). To prevent errors with these two functions, the expression on which they are to be called should first be checked with the \texttt{isleft} function, which returns \texttt{true} if a left-hand value is present, and \texttt{false} if the right-hand value is present. The example below demonstrates the use of the \texttt{reml}, \texttt{remr} and \texttt{isleft} functions with the \texttt{safeDiv} function shown above.
 \begin{verbatim}
-    type
-    def
+    type doSomeCalculation = Int -> Int -> Int -> { Int | Bool }
+    def doSomeCalculation a b c =
+        if isleft (safeDiv a b) then
+            { (reml (safeDiv a b)) + c , _ }
+        else
+            { _ , false }
 \end{verbatim}
 \subsubsection{Product Types}
 Product types, also known as tuples, are data structures used to store multiple values of differing types. In this language, product types are binary, but binary product types can be used to encode product types of an arbitrary number of members.
+\\\indent There is a single constructor for values in the product type, which takes two values and returns those values in a tuple. The syntax for this is \texttt{\{ E , F \}}, where E and F are expressions. There are two destructors for values in the product type, which are \texttt{fst} and \texttt{snd}, which retrieve the first and second values in a tuple, respectively.
 \subsection{Summary of Functions for Abstract Data Types}
 \subsection{Function Definitions}
 \subsection{Type Declarations}
