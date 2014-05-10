@@ -533,9 +533,34 @@ The table below provides a summary of the functions over abstract data types:
     \hline
 \end{tabular}}
 \subsection{Function Definitions}
-\subsection{Type Declarations}
+Global function definitions are made using the \texttt{def} keyword, followed by the name of the function and the name of each argument, and an '\texttt{=}' sign, after which the function body is included. They are mutually recursive, and globally visible, except within abstractions that bind the same name as global functions.
+\subsection{Type Inference and Type Declarations}
 \subsection{Prelude Functions}
-\subsection{Type Inference}
+The language has a small prelude of predefined functions. These are:
+\begin{itemize}
+    \item \texttt{pow} - raise the first argument to the power of the second. Evaluates to \texttt{0} if the second argument is negative.
+    \item \texttt{length} - Compute the length of a list.
+    \item \texttt{parseInt} - Parse an integer from a string. Non-digit characters are treated the same as the '\texttt{0}' character, so, for example, \texttt{parseInt "123a"} will evaluate to \texttt{1230}.
+    \item \texttt{reverse} - Reverse a list such that the last element becomes the first, the penultimate element becomes the second, etcetera.
+    \item \texttt{concat} - Concatenate two lists.
+    \item \texttt{map} - Apply the given function to each element in a list.
+    \item \texttt{zip} - 'Zip up' two lists in to a list of tuples. If one list is longer than the other, trailing elements are dropped.
+\end{itemize}
+The prelude functions are summarised in the table below:
+\\\\
+\centerline{\begin{tabular}{ | p{17mm} | p{25mm} | l | l | p{25mm} | }
+    \hline
+    Function Syntax     & Description                       & Type                                              & Example usage                                 & Evaluated result of example   \\
+    \hline
+    \texttt{pow}        & Exponentiation                    & \texttt{Int -> Int -> Int}                        & \texttt{pow 2 8}                              & \texttt{256}                  \\
+    \texttt{length}     & Length of a list                  & \texttt{$\forall$a. [a] -> Int}                   & \texttt{length ["a", "b", "c"]}               & \texttt{3}                    \\
+    \texttt{parseInt}   & Parse an integer from a string    & \texttt{String -> Int}                            & \texttt{parseInt "1234"}                      & \texttt{1234}                 \\
+    \texttt{reverse}    & Reverse a list                    & \texttt{$\forall$a. [a] -> [a]}                   & \texttt{reverse [1, 3, 4]}                    & \texttt{[4, 3, 1]}            \\
+    \texttt{concat}     & Concatenate two lists             & \texttt{$\forall$a. [a] -> [a] -> [a]}            & \texttt{concat [1, 3] [2, 3]}                 & \texttt{[1, 3, 2, 3]}         \\
+    \texttt{map}        & Map a function over a list        & \texttt{$\forall$a, b. (a -> b) -> [a] -> [b]}    & \texttt{map ($\lambda$x.pow x 2) [1, 2, 3]}   & \texttt{[1, 4, 9]}            \\
+    \texttt{zip}        & Zip two lists into a list of tuples & \texttt{$\forall$a, b. [a] -> [b] -> \{ a \& b \}} & \texttt{zip [1, 2] ["a", "b"]}              & \texttt{[\{ 1 , "a" \}, \{ 2 , "b" \}]}            \\
+    \hline
+\end{tabular}}
 \subsection{Polymorphic Types}
 \subsection{Interpreted Implementation}
 \subsection{Compiled Implementation}
@@ -543,6 +568,8 @@ The table below provides a summary of the functions over abstract data types:
 
 \pagebreak
 \section{Evaluation}
+\subsection{Performance}
+The produced system is robust, and contains no known bugs. The interpreted implementation runs slowly, particularly when run inside the Haskell interpreter, Performance is better when the interpreter is compiled with GHC. It would not, however, be suitable for high performance, numerical or scientific calculations. The compiled implementation provides a significant increase in speed over the interpreted implementation, although again would not be suitable for high performance, numerical or scientific calculations.
 % Comments on performance and robustness of each feature e.g. interpreter, type inference, etc.
 % What I would do with more time
 \subsection{Possible Extensions}
@@ -557,5 +584,4 @@ The table below provides a summary of the functions over abstract data types:
         http://www.inf.fu-berlin.de/lehre/WS03/alpi/lambda.pdf
 \end{itemize}
 
-\subsection{Project Proposal}
 \end{document}
