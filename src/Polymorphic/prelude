@@ -59,3 +59,17 @@ def concat l1 =
             (backConcat (tail l1) ((head l1) : l2))
     in
     (backConcat (reverse l1))
+
+type map = (a -> b) -> [a] -> [b]
+def map f lst =
+    if null lst then
+        []
+    else
+        ((f (head lst)) : (map f (tail lst)))
+
+type zip = [a] -> [b] -> [{ a & b }]
+def zip as bs =
+    if (null as) or (null bs) then
+        []
+    else
+        ({ head as , head bs } : (zip (tail as) (tail bs)))

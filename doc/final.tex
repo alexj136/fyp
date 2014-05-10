@@ -437,7 +437,7 @@ The language has a familiar set of built-in functions over the basic data types,
     \hline
     Function Syntax & Description                       & Type                                  & Example usage             & Evaluated result of example   \\
     \hline
-    \texttt{==}     & Equality                          & \texttt{$\forall$a.a -> a -> Bool}    & \texttt{3 == 4}           & \texttt{false}                \\
+    \texttt{==}     & Equality                          & \texttt{$\forall$a. a -> a -> Bool}   & \texttt{3 == 4}           & \texttt{false}                \\
     \texttt{>}      & Greater than                      & \texttt{Int -> Int -> Bool}           & \texttt{3 > 4}            & \texttt{false}                \\
     \texttt{>=}     & Greater than or equal             & \texttt{Int -> Int -> Bool}           & \texttt{3 >= 4}           & \texttt{false}                \\
     \texttt{<}      & Less than                         & \texttt{Int -> Int -> Bool}           & \texttt{3 < 4}            & \texttt{true}                 \\
@@ -498,8 +498,40 @@ There are two constructors for values in the sum type, which are left-injection,
 \end{verbatim}
 \subsubsection{Product Types}
 Product types, also known as tuples, are data structures used to store multiple values of differing types. In this language, product types are binary, but binary product types can be used to encode product types of an arbitrary number of members.
-\\\indent There is a single constructor for values in the product type, which takes two values and returns those values in a tuple. The syntax for this is \texttt{\{ E , F \}}, where E and F are expressions. There are two destructors for values in the product type, which are \texttt{fst} and \texttt{snd}, which retrieve the first and second values in a tuple, respectively.
+\\\indent There is a single constructor for values in the product type, which takes two values and returns those values in a tuple. The syntax for this is \texttt{\{ E , F \}}, where E and F are expressions. There are two destructors for values in the product type, which are \texttt{fst} and \texttt{snd}, which retrieve the first and second values in a tuple, respectively. The example below demonstrates the use of the product type constructor and the \texttt{fst} and \texttt{snd} functions:
+\begin{verbatim}
+    type oneAndTrue = { Int & Bool }
+    def oneAndTrue = { 1 , true }
+
+    type one = Int
+    def one = fst oneAndTrue # Evaluates to 1
+
+    type tru = Bool
+    def tru = snd oneAndTrue # Evaluates to true
+\end{verbatim}
 \subsection{Summary of Functions for Abstract Data Types}
+The table below provides a summary of the functions over abstract data types:
+\\\\
+\centerline{\begin{tabular}{ | p{17mm} | l | l | l | p{25mm} | }
+    \hline
+    Function Syntax         & Description                       & Type                                              & Example usage                     & Evaluated result of example   \\
+    \hline
+    \texttt{:}              & List constructor                  & \texttt{$\forall$a. a -> [a] -> [a]}              & \texttt{1:[2, 3]}                 & \texttt{[1, 2, 3]}            \\
+    \texttt{[E]}            & Alternative list constructor      & \texttt{$\forall$a. a -> [a]}                     & \texttt{[2]}                      & \texttt{[2]}                  \\
+    \texttt{[]}             & Empty list constructor            & \texttt{$\forall$a. [a]}                          & \texttt{[]}                       & \texttt{[]}                   \\
+    \texttt{head}           & Head of a list                    & \texttt{$\forall$a. [a] -> a}                     & \texttt{head [2, 3]}              & \texttt{2}                    \\
+    \texttt{tail}           & Tail of a list                    & \texttt{$\forall$a. [a] -> [a]}                   & \texttt{tail [1, 2, 3]}           & \texttt{[2, 3]}               \\
+    \texttt{null}           & Is-empty function                 & \texttt{$\forall$a. [a] -> Bool}                  & \texttt{null []}                  & \texttt{true}                 \\
+    \texttt{\{ E , \_ \}}   & Left-injection sum constructor    & \texttt{$\forall$a, b. a -> \{ a | b \}}          & \texttt{\{ "Q" , \_ \}}           & \texttt{\{ "Q" , \_ \}}       \\
+    \texttt{\{ \_ , E \}}   & Right-injection sum constructor   & \texttt{$\forall$a, b. b -> \{ a | b \}}          & \texttt{\{ \_ , 3 \}}             & \texttt{\{ \_ , 3 \}}         \\
+    \texttt{reml}           & Remove-left sum destructor        & \texttt{$\forall$a, b. \{ a | b \} -> a}          & \texttt{reml \{ 3 , \_ \}}        & \texttt{3}                    \\
+    \texttt{remr}           & Remove-right sum destructor       & \texttt{$\forall$a, b. \{ a | b \} -> b}          & \texttt{remr \{ \_ , 3 \}}        & \texttt{3}                    \\
+    \texttt{isleft}         & Is-left sum function              & \texttt{$\forall$a, b. \{ a | b \} -> Bool}       & \texttt{isleft \{ \_ , "\$" \}}   & \texttt{false}                \\
+    \texttt{\{ E , F \}}    & Tuple constructor                 & \texttt{$\forall$a, b. a -> b -> \{ a \& b \}}    & \texttt{\{ 2 , true \}}           & \texttt{\{ 2 , true \}}       \\
+    \texttt{fst}            & First tuple destructor            & \texttt{$\forall$a, b. \{ a \& b \} -> a}         & \texttt{fst \{ 2 , true \}}       & \texttt{2}                    \\
+    \texttt{snd}            & Second tuple destructor           & \texttt{$\forall$a, b. \{ a \& b \} -> b}         & \texttt{snd \{ 2 , true \}}       & \texttt{true}                 \\
+    \hline
+\end{tabular}}
 \subsection{Function Definitions}
 \subsection{Type Declarations}
 \subsection{Prelude Functions}
