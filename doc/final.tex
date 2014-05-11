@@ -11,13 +11,42 @@
 
 \DeclareGraphicsExtensions{.png}
 
-\title{\textbf{Final Report}: An Interpreter and Compiler for a Functional Programming Language}
-\author{Alexander Jeffery\\
-Candidate Number: 18512\\
-Supervisor: Dr. Martin Berger}
-
 \begin{document}
-\maketitle
+
+\begin{titlepage}
+    \center
+    \textsc{\LARGE University of Sussex} \\
+    \vspace{16mm}
+    \textsc{\Large Department of Informatics} \\
+    \vspace{4mm}
+    \textsc{\large Computer Science BSc - Final Year Project} \\
+    \vspace{8mm}
+    \rule{\linewidth}{0.5mm}\\
+    \vspace{2mm}
+    {\huge \bfseries An Interpreter and Compiler for a Functional Programming Language}
+    \rule{\linewidth}{0.5mm}
+    \begin{minipage}{0.4\textwidth}
+        \vspace{10mm}
+        \begin{flushleft}
+            \emph{Author:} \\
+            Alexander \textsc{Jeffery} \\
+            Candidate No: \textsc{18512}
+        \end{flushleft}
+    \end{minipage}
+    \begin{minipage}{0.4\textwidth}
+        \vspace{10mm}
+        \begin{flushright}
+            \emph{Supervisor:} \\
+            Dr Martin F. \textsc{Berger}
+        \end{flushright}
+    \end{minipage} \\
+    \vspace{10mm}
+    {\large \today}
+    \vfill
+\end{titlepage}
+
+\tableofcontents
+\pagebreak
 
 \section{Introduction}
 
@@ -432,7 +461,8 @@ The context-free grammar (in BNF) for the language is given below:
 \subsection{Basic Data Types}
 The language has 3 familiar basic data types, which are integers, characters and booleans. In the syntax of the language, these types are denoted as \texttt{Int}, \texttt{Char} and \texttt{Bool} respectively.
 \subsection{Functions for Basic Data Types}
-The language has a familiar set of built-in functions over the basic data types, which are: \\
+The language has a familiar set of built-in functions over the basic data types, which are:
+\\\\
 \centerline{\begin{tabular}{ | p{13mm} | l | l | l | p{25mm} | }
     \hline
     Function Syntax & Description                       & Type                                  & Example usage             & Evaluated result of example   \\
@@ -533,8 +563,9 @@ The table below provides a summary of the functions over abstract data types:
     \hline
 \end{tabular}}
 \subsection{Function Definitions}
-Global function definitions are made using the \texttt{def} keyword, followed by the name of the function and the name of each argument, and an '\texttt{=}' sign, after which the function body is included. They are mutually recursive, and globally visible, except within abstractions that bind the same name as global functions.
+Global function definitions are made using the \texttt{def} keyword, followed by the name of the function and the name of each argument, and an '\texttt{=}' sign, after which the function body is included. They are mutually recursive, and globally visible, except within abstractions that bind the same name as global functions. Several examples are provided above.
 \subsection{Type Inference and Type Declarations}
+The language has type inference, and will type-check programs without being provided with any type declarations. Type declarations can be included for top-level function declarations. These will cause the type-check to fail if they differ from the inferred type of the function.
 \subsection{Prelude Functions}
 The language has a small prelude of predefined functions. These are:
 \begin{itemize}
@@ -562,17 +593,38 @@ The prelude functions are summarised in the table below:
     \hline
 \end{tabular}}
 \subsection{Polymorphic Types}
-\subsection{Interpreted Implementation}
-\subsection{Compiled Implementation}
-\subsection{Interface}
+\subsection{Command-Line Arguments}
+Command line arguments to programs are represented in the language as a predefined function called \texttt{args}, with type \texttt{[String]}. For this reason, top-level functions may not have the name \texttt{args}. The example below is a complete program that parses an integer from the command line, and returns that integer, plus ten:
+\begin{verbatim}
+    type main = Int
+    def main = 10 + (parseInt (head args))
+\end{verbatim}
+\subsection{Installation and Interface}
+A Haskell implementation, such as GHC, must be installed in order to use the language. The following instructions will assume that GHC is the Haskell implementation being used. A C compiler such as GCC must also be installed in order to use the compiled implementation. To use the compiler and interpreter, navigate to the \texttt{src/Polymorphic} directory of the repository. The system can be compiled by running the command:
+\\\\
+\indent \texttt{ghc --make Main.hs -o Main}
+\\\\
+Alternatively, if make is installed, just run the command:
+\\\\
+\indent \texttt{make}
+\\\\
+The interpreter can then be invoked by running:
+\\\\
+\indent \texttt{./Main --interpret path/to/sourcefile}
+\\\\
+Arguments to the program can be included after the filename. The \texttt{--interpret} flag can be replaced with the \texttt{-i} flag. The program will then be evaluated, and the result of that evaluation will be printed to the command-line.
 
 \pagebreak
 \section{Evaluation}
 \subsection{Performance}
-The produced system is robust, and contains no known bugs. The interpreted implementation runs slowly, particularly when run inside the Haskell interpreter, Performance is better when the interpreter is compiled with GHC. It would not, however, be suitable for high performance, numerical or scientific calculations. The compiled implementation provides a significant increase in speed over the interpreted implementation, although again would not be suitable for high performance, numerical or scientific calculations.
+The produced system is robust, and contains no known bugs. The interpreted implementation runs slowly, particularly when run inside the Haskell interpreter. Performance is better when the interpreter is compiled with GHC. It would not, however, be suitable for high performance, numerical or scientific calculations. The compiled implementation provides a significant increase in speed over the interpreted implementation, although again would not be suitable for high performance, numerical or scientific calculations.
+\subsection{Shortcomings}
+The project did not meet the expected goal of a fully compiled implementation, due to time constraints. The template instantiator...
+
 % Comments on performance and robustness of each feature e.g. interpreter, type inference, etc.
 % What I would do with more time
 \subsection{Possible Extensions}
+\subsubsection{Closure Conversion}
 
 \pagebreak
 \section{Appendix}
