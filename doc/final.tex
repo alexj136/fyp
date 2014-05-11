@@ -45,11 +45,11 @@
     \vfill
 \end{titlepage}
 
-\paragraph{Summary \\}
+\section*{Summary}
 Programming languages are divided into two main groups: imperative and functional. Imperative languages are derived from computer architecture, whereas functional languages are derived from the lambda calculus.
 \\\indent The lambda calculus is a mathematical calculus used to represent computation, via the process of syntactic substitution. It serves as a theoretical foundation for functional programming languages.
 \\\indent The aim of this project was to implement a functional programming language, using the lambda calculus as a theoretical foundation. It was implemented using the Haskell programming language, which itself is functional.
-\\\indent The main features of the implemented language is an interpreter, compiler, type inference, polymorphism, lists, function literals, and list, sum and product types.
+\\\indent The main features implemented are an interpreter and a compiler, for a language with type inference, polymorphism, lists, function literals, and list, sum and product types.
 \\\indent The interpreter and compiler were implemented successfully, however the compiled implementation uses a somewhat naive implementation strategy.
 \pagebreak
 
@@ -69,7 +69,7 @@ This report will explain in detail how computation is achieved in a functional p
 \section{Background}
 
 \subsection{Programming Language Implementation}
-Even those unfamiliar with computers may have heard it said that 'computers only understand binary'. In a very specific sense, this is true - CPUs take their instructions in binary form, as voltages on a wire. Therefore we must be able to \emph{express} our computer programs in binary form (such a form is typically referred to as \emph{machine code}). This does not mean, however, that we must write our computer programs in machine code - modern computer programs are created with programming languages, which describe programs in a more abstract way. Typically, \emph{source code} is written in a particular programming language, and is then translated into an executable form via a process known as \emph{compilation}. A compiler is a computer program that takes source code as its input, and (typically) outputs an executable machine code file. Not all programming languages are implemented via compilation, however. Some programming languages are implemented via \emph{interpretation}, and some languages use a hybrid system of compilation and interpretation, usually to improve performance. The implementation of a typical programming language can be decomposed into several phases: 
+Even those unfamiliar with computers may have heard it said that 'computers only understand binary'. In a very specific sense, this is true - CPUs take their instructions in binary form, as voltages on a wire. Therefore we must be able to \emph{express} our computer programs in binary form (such a form is typically referred to as \emph{machine code}). This does not mean, however, that we must write our computer programs in machine code - modern computer programs are created with programming languages, which describe programs in a more abstract way. Typically, \emph{source code} is written in a particular programming language, and is then translated into an executable form via a process known as \emph{compilation}. A compiler is a computer program that takes source code as its input, and outputs an executable machine code file. Not all programming languages are implemented via compilation, however. Some programming languages are implemented via \emph{interpretation}, and some languages use a hybrid system of compilation and interpretation, usually to improve performance. The implementation of a typical programming language can be decomposed into several phases: 
 \begin{enumerate}
     \item Lexical Analysis
     \item Syntax Analysis
@@ -108,27 +108,27 @@ Syntax analysis is concerned with deriving structure from from a sequence of tok
 Semantic Analysis is concerned with ensuring that the semantics of AST, which is output by the parser, are correct. This typically includes \emph{type checking}, which ensures that the programmer made no \emph{type errors} in their program, for example, adding a variable consisting of a number, to a variable consisting of a string of characters. Semantic analysis may also include type \emph{inference}, depending on the programming language. This involves not only type checking, but determining what types variables have without the programmer having to write them down. Semantic analysis will also typically check for errors such as the use of an undefined variable, or the use of a variable prior to its definition.
 
 \subsubsection{Optimisation}
-Optimisation is concerned with improving performance of the program. At this point the program has been lexically, syntactically and semantically analysed, we have assurance that the program is well-formed, so the focus is no longer on determining the validity of the program, but rather on its performance. Optimisation takes on many different forms, at many different domains. A typical optimisation might be to generate some \emph{intermediate code} that represents the program at a level that is \emph{closer to the machine}, that looks much more like actual machine code. This intermediate code is then optimised using techniques such as register allocation optimisation, AST transformation and algebraic simplification. Such techniques are beyond the scope of this project, however. The optimised intermediate code can then be transformed into machine code.
-\indent The optimisation phase is often skipped with interpreted programming languages, since the focus of interpreted languages tend not to be on performance - often the focus is on portability or some other aspect related to the convenience of the programmer or user.
+Optimisation is concerned with improving performance of the program. At this point the program has been lexically, syntactically and semantically analysed, we have assurance that the program is well-formed, so the focus is no longer on determining the validity of the program, but rather on its performance. Optimisation takes on many different forms, at many different domains. A typical optimisation might be to generate some \emph{intermediate code} that represents the program at a level that is \emph{closer to the machine}, that looks much more like actual machine code. This intermediate code is then optimised using techniques such as register allocation optimisation, AST transformation and algebraic simplification. Such techniques are beyond the scope of this project, however. The optimised intermediate code can then be translated into machine code.
+\\\indent The optimisation phase is often skipped with interpreted programming languages, since the focus of interpreted languages tend not to be on performance - often the focus is on portability or some other aspect related to the convenience of the programmer or user.
 
 \subsubsection{Execution Systems}
 \paragraph{Interpretation \\}
-Interpretation is an execution system that performs \emph{immediate evaluation} of ASTs. Instead of generating machine code to be run at a later time, the program is immediately executed, having just been lexically, syntactically and semantically analysed.
+Interpretation is an execution system that performs \emph{immediate evaluation} of ASTs. Instead of generating machine code to be run at a later time, the program is immediately executed, having just been lexically, syntactically and semantically analysed. An interpreter is a meta-program (a program that operates on other programs) that takes a program as input, and returns the output of that program as its output.
 
-\paragraph{Code Generation \\}
-Code generation involves outputting machine code while traversing the AST. The generated machine code is then saved as a file, which can be directly executed by the computer at a later time. Thus, we have a distinction between \emph{compile-time} and \emph{runtime}, that does not exist with interpretation.
+\paragraph{Compilation \\}
+Compilation involves outputting machine code while traversing the AST. The generated machine code is then saved as a file, which can be directly executed by the computer at a later time. Thus, we have a distinction between \emph{compile-time} and \emph{runtime}, that does not exist with interpretation. A compiler as a meta-program that takes a program as its input, and returns a semantically equivalent program, in a different programming language, as its output.
 
 \paragraph{Just-In-Time Systems \\}
 Just-in-time (JIT) compilation is similar to interpretation in that there is no compile-time/runtime distinction. However, machine code \emph{is} generated with JIT, but instead of it being written to a file, it is mapped directly into the computer's memory for immediate execution. A JIT system will have a program managing the generation and execution of machine code, so that it is as efficient as possible - for example, if some piece of source code is never executed, it would be wasteful to generate machine code for it. For this reason, source code (or an AST, depending on the strategy used by the JIT system) is only translated into machine code at the last possible moment prior to execution (hence the term just-in-time). JIT systems are effective because much more information about the execution of the program is known at runtime as opposed to compile-time, meaning that JIT-compiled code can be optimised to a much greater degree than code compiled ahead of time.
 
 \paragraph{Hybrid Systems \\}
-There are many hybrid systems in existence that combine interpretation, code generation and JIT systems into a programming language implementation. One such example is the Java programming language, which generates intermediate code at compile-time, and at runtime, the intermediate code is executed by a \emph{tracing} JIT system, where code is initially interpreted, and when a part of the program is determined to be 'hot code' - code that is executed frequently - it is translated to machine code and directly executed. There are a vast array of different hybrid systems in existence, and many possible combinations that have not been attempted. The goal is usually to maximise performance.
+There are many hybrid systems in existence that combine interpretation, code generation and JIT systems into a programming language implementation. One such example is the Java programming language, which generates intermediate code at compile-time, and at runtime, the intermediate code is executed by a \emph{tracing} JIT system, where code is initially interpreted, and when a part of the program is determined to be 'hot code' - code that is executed frequently - it is translated to machine code and directly executed. The machine code that is run is then analysed and optimised further.
+\\\indent There are a vast array of different hybrid systems in existence, and many possible combinations that have not been attempted. The goal is usually to maximise performance.
 
 \subsection{Functional and Imperative}
-The lambda calculus (often written '$\lambda$-calculus') is a mathematical calculus that is used to represent computations, and is Turing-complete, meaning that it can represent anything that can possibly be computed. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages. Since the lambda calculus is Turing-complete, it can even be used to \emph{simulate} an imperative programming language.
-\\\indent The first functional language, LISP, first appeared in 1958, and has been a strong influence in modern functional languages, such as Haskell, ML and Clojure. Dialects of LISP, such as Common Lisp and Scheme are still in use today.
-\\
-\indent The lambda calculus employs a single rule in order to achieve computation, whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
+The first functional language, LISP, first appeared in 1958, and has been a strong influence in modern functional languages, such as Haskell, ML and Clojure. Dialects of LISP, such as Common Lisp and Scheme are still in use today.
+\\\indent The lambda calculus (often written '$\lambda$-calculus') is a mathematical calculus that is used to represent computations, and is Turing-complete, meaning that it can represent anything that can possibly be computed. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages. Since the lambda calculus is Turing-complete, it can even be used to \emph{simulate} an imperative programming language.
+\\\indent The lambda calculus employs a single rule in order to achieve computation, known as $\beta$-reduction ('$\beta$' pronounced as 'beta'), whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
 \\\\
 \indent \texttt{int square ( int x ) \{ return x * x ; \}}
 \\\\
@@ -148,18 +148,18 @@ Immediately we see that the function name, \texttt{square}, is no longer present
 \[ (\lambda x.x * x)(10) \]
 Here, the $10$ parameterises $x$. When we evaluate the expression, we are left with the body of the function, where every occurrence of $x$ is replaced with $10$:
 \[ 10 * 10 \]
-This syntactic replacement, also called $\beta$-reduction ($\beta$ pronounced as 'beta'), is the sole method of computation in the lambda calculus. The formal syntax of the lambda calculus is given by the context-free grammar:
+This syntactic replacement ($\beta$-reduction), is the sole method of computation in the lambda calculus. The formal syntax of the lambda calculus is given by the context-free grammar:
 \[ M \:\; ::= \;\; x \;\; | \;\; \lambda x.M \;\; | \;\;  MN \]
 where $x$ is an arbitrary variable name and $M$ and $N$ are arbitrary expressions. Closure properties for the lambda calculus are formalised as:
 \[ M \rightarrow N \Rightarrow LM \rightarrow LN. \]
 \[ M \rightarrow N \Rightarrow ML \rightarrow NL. \]
 \[ M \rightarrow N \Rightarrow \lambda x.M \rightarrow \lambda x.N \]
 Informally, we can describe the closure properties: if $M$ reduces to $N$, then $LM$ and $ML$ reduce to $LN$ and $NL$ respectively, where L is an arbitrary expression. $\beta$-reduction is formalised as:
-\[ (\lambda x.M)N \rightarrow_\beta M[N/x] \]
+\[ (\lambda x.M)N \rightarrow_\beta M[N \mapsto x] \]
 \indent As stated previously, functional programming languages are derived from the lambda calculus, and so their method of computation is this $\beta$-reduction, rather than sequential execution. While they introduce extra syntax for convenience, all functional programs can be converted into lambda expressions that can be described by the given context-free grammar.
 
 \subsection{Evaluation Strategies}
-An important topic in the lambda calculus and functional programming is that of \textbf{evaluation strategy}. Since a lambda term may have many possible $\beta$-equivalent terms reachable in a single $\beta$-reduction, implementations must have rules, or strategies, to determine the order in which these reductions will be made. The most notable schemes are call-by-value and call-by-name.
+An important topic in the lambda calculus and functional programming is that of \textbf{evaluation strategy}. Since a lambda term may have many possible $\beta$-equivalent terms reachable in a single $\beta$-reduction, implementations must have rules, or strategies, to determine the order in which these reductions will be made. The most notable schemes are call-by-value, call-by-name and call-by-need.
 
 \subsubsection{Call-By-Value}
 With a call-by-value evaluation strategy, we evaluate arguments to functions before we substitute them into function bodies. Generally speaking, we always take the innermost, rightmost possible reduction. Formally, we have the following reduction rules (small-step semantics):
@@ -185,7 +185,7 @@ There are some terms, however, that have a normal form, but some reduction seque
 \[ (\lambda x.\lambda y.y)((\lambda x.xx)(\lambda x.xx)) \]
 Under a call-by-value strategy, we begin by reducing the right-hand term, which we have already seen is not normalising, and as a result, we do not find the normal form. If we use call-by-name, however, we first substitute the argument on the right-hand side into the function on the left-hand side:
 \[ (\lambda x.\lambda y.y)((\lambda x.xx)(\lambda x.xx)) \hspace{4mm} \rightarrow \hspace{4mm} (\lambda y.y)[x \mapsto (\lambda x.xx)(\lambda x.xx)] \hspace{4mm} \rightarrow \hspace{4mm} \lambda y.y \]
-Here we are left with a normal form. It is the case that for any term with a normal form, a call-by-name strategy is guaranteed to find that normal form, whereas with a call-by-value strategy, this is not guaranteed (as we have seen). For this reason, call-by-name evaluation may be a desirable evaluation strategy for a functional programming language.
+Here we are left with a normal form. It is the case that for any term with a normal form, a call-by-name strategy is guaranteed to find that normal form, whereas with a call-by-value strategy, this is not guaranteed (as we have seen). For this reason, call-by-name evaluation may be a more desirable evaluation strategy than call-by-value, for a functional programming language.
 \\\indent A downside to using call-by-name as the evaluation strategy for a functional programming language is that it can cause duplication of work. Consider the term:
 \[ (\lambda x.x \hspace{1mm} x \hspace{1mm} x)M \]
 where $M$ is some large term that requires many reduction steps to reach its normal form. Using call-by-value evaluation, we only have to evaluate this term once, the result of which is substituted into the function on the left. Using call-by-name evaluation, we substitute this term into the function three times, and triple the number of reduction steps required to reduce the entire term.
@@ -218,7 +218,7 @@ The following will also be implemented should time permit it:
 Since this project is in a highly abstract, scientific topic, rather than being a traditional software engineering project, a typical requirements analysis is inappropriate. Due to the well established structure of compilers, typical design documentation is also not entirely appropriate - the produced software system will be modularised according to the phases of a compiler that have been explained in the background section of this document.
 
 \subsection{Ethical Issues} % BCS Code of conduct
-The British Computer Society (BCS) defines a code of conduct for IT professionals. However, due to the abstract nature of this project, the risk of breaching any of the guidelines in the BCS code of conduct is negligible. Therefore no measures need be taken to ensure that the completion of the project falls within those guidelines.
+The British Computer Society (BCS) defines a code of conduct for IT professionals. However, due to the abstract nature of this project, the risk of breaching any of the guidelines in the BCS code of conduct is negligible. Therefore no special measures need be taken to ensure that the project is conducted within those guidelines.
 
 \subsection{Toolchain}
 \subsubsection{Arch GNU/Linux}
@@ -231,7 +231,7 @@ Haskell is an expressive, functional, high level programming language that is id
 To simplify lexical and syntactic analysis, lexer and parser generators will be used. These will give the project greater flexibility by allowing the syntax of the language to change without having to do major rewrites to the code, but simply make changes to lexical and syntactical specifications for the lexer and parser generators. \textbf{Alex} is a lexer generator for Haskell that will be used, and \textbf{Happy} is the parser generator. They are both freely available as part of the Cabal system.
 
 \subsubsection{Version Control}
-Version control is a vital part of any software project, and this one is no exception. Easier recovery from implementation mistakes, backup and change tracking are just a few of the many benefits that version control provides to a software project. The Mercurial version control system will be used for this project. A local copy of the project will be kept, along with a master repository that will be hosted on bitbucket, to prevent loss and allow work to be carried out on multiple machines with little effort. \\
+Version control is a vital part of any software project, and this one is no exception. Easier recovery from implementation mistakes, backup and change tracking are just a few of the many benefits that version control provides to a software project. The Mercurial version control system will be used for this project. A local copy of the project will be kept, along with a master repository that will be hosted on bitbucket, to prevent loss and allow work to be carried out on multiple machines with little additional effort. \\
 
 \subsubsection{Testing}
 Testing is a critical part of any software project. It enables confident refactoring, since any changes to code that prohibit the software system from functioning correctly, are immediately identified. Randomised testing is also very powerful, and helps to discover bugs and 'corner cases' that would otherwise be incredibly difficult to find. The HUnit library will be used for unit-testing in this project.
@@ -258,7 +258,7 @@ Below are the target completion dates for the subtasks of the project:
     \indent Final report                & $12^{th}$ May      2014         \\
 \end{tabular}
 \\\\
-Should I complete tasks early, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
+Should any tasks be completed before their deadline, the extra time will be used to implement features specified as additional features, in section 3.1 of this document.
 
 \pagebreak
 \section{Design and Implementation}
@@ -278,7 +278,7 @@ This is used to represent functions, and consists of four members - a name (a st
 \paragraph{The \texttt{Term} Datatype \\}
 This is a recursive datatype that defines the bodies of functions. Values of this type may be simple constants, such as integers, characters or booleans, they may be variables, operators such as '+' and '-', lambda expressions, function calls, list literals, sum type literals or product type literals.
 \paragraph{The \texttt{Type} Datatype \\}
-This is used to represent types of functions and terms. Values of this type may be simple types such as Int (integer), Char (character) or Bool (boolean). They may also be function types, sum types, product types, list types or type variables.
+This is used to represent types of functions and terms. Values of this type may be simple types such as \texttt{Int} (integer), \texttt{Char} (character) or \texttt{Bool} (boolean). They may also be function types, sum types, product types, list types or type variables.
 \paragraph{The \texttt{OpType} Datatype \\}
 This is used to represent functions that are built into the language, and is essentially just an extension of the Term datatype.
 \\\\ A more detailed description of these datatypes is given by the context-free grammar for the language, which can be found in the Language Specification section of this document.
@@ -355,7 +355,7 @@ The PostParsing module has two responsibilities:
 \begin{enumerate}
     \item[1.] Incorporating the type declarations in the ParseResult into the functions within the map in the ParseResult.
 \end{enumerate}
-\indent The parser does not enforce a relationship between the location of a function in a file and the location of the corresponding type definition. Therefore it is not possible to return just a map of function names to function values where the functions already have type labels. This is why a ParseResult is returned by the parser, as opposed to a Prog object (which contains only a map from function names to function values).
+\indent The parser does not enforce a relationship between the location of a function in a file and the location of the corresponding type definition. Therefore it is not possible to return just a map of function names to function values where the functions already have type labels. This is why a ParseResult is returned by the parser, as opposed to an instance of the \texttt{Prog} datatype (which contains only a map from function names to function values).
 \begin{enumerate}
     \item[2.] Convert the user's type variable names into integer type variable names.
 \end{enumerate}
@@ -363,17 +363,17 @@ The PostParsing module has two responsibilities:
 
 \subsubsection{CodeGen}
 The CodeGen module generates C code for a given program. The implementation strategy for the generated source code is a simple template instantiator machine. Using this strategy, each function in the source code is compiled into a C function that builds a \emph{template} (essentially just an AST) on the heap. The generated file is then compiled and linked with a C source file (\texttt{langdefs.c}) and a header file (\texttt{langdefs.h}) to produce a binary file. The file \texttt{langdefs.c} contains functions that the generated code uses to compute the result of the program by evaluating the template representation of the main function.
-\\\indent This implementation of the languages provides many advantages over the interpreted implementation. These include:
+\\\indent This implementation of the language provides many advantages over the interpreted implementation. These include:
 \begin{itemize}
     \item Lexing, parsing and type checking is done at compile-time and does not need to be done at runtime. The interpreted implementation must perform these steps each time a program is run.
-    \item Compiling to C makes the language highly cross-platform, since there exists a C compiler for virtually every CPU architecture in existence. The only caveat here is that the compilation step must be done on a machine for which there exists an implementation Haskell.
+    \item Compiling to C makes the language highly cross-platform, since there exists a C compiler for virtually every CPU architecture in existence. The only caveat here is that the compilation step must be done on a machine for which there exists an implementation of the Haskell language.
     \item C is known for its speed. The GCC compiler performs many effective optimisations. As a result, evaluating templates in C is faster that interpreting ASTs in Haskell.
     \item Variable names are represented as integers instead of strings. Therefore determining if an abstraction binds a particular variable can be done with a simple integer comparison, which is a single machine instruction, rather than checking to see that each character in the strings match.
     \item The De Bruijn representation of lambda terms is used. In this representation, variables do not store a name, but a number, which is the number of abstractions between the variable itself and the abstraction that binds it. Abstractions themselves need not carry the names of variables in this case. The advantage of this is that the name clash problem does not exist, which removes the overhead associated with checking for and handling name clashes.
 \end{itemize}
 The traditional method of functional language compilation is closure conversion. In this scheme, local variable definitions are translated into global ones, and lambda expressions are represented as closures. Closures are data structures that contain (via pointers) some code that executes the body of the lambda expression, and a means of accessing variables bound elsewhere. There are many advantages to this implementation strategy, the main one being speed. Programs compiled in this manner can rely much more heavily on machine instructions operating on registers, which are very fast. Schemes that rely on expression reduction, including template instantiation, rely more on machine instructions that use indirect addressing, which are typically much slower.
 \\\indent Template instantiation was chosen as the implementation strategy due to the time constraints on the project. Implementing template instantiation is simpler than implementing closure conversion and was therefore was a more realistic target with the time available. One benefit of this choice, however, is that call-by-name evaluation is much easier to implement with template instantiation than with closure conversion - It would not have been possible to implement call-by-name evaluation using closure conversion without a significant amount of extra available time, whereas choosing template instantiation has allowed for the compiled implementation to use call-by-name evaluation, enabling the use of infinite data structures.
-\\\indent The initial goal was to implement a template instantiator machine that would evaluate templates \textbf{in-place}, i.e. perform reduction to a template that is in memory. This proved difficult to implement, and due to time constraints, a simpler approach had to be adopted. The simpler approach operates by computing the reduced value of the template in memory, instantiating a new template in memory that is beta-equivalent in one or more reduction steps, to the original template. The original template is then freed from memory and reduction proceeds on the newly created template. This strategy has a higher overhead than in-place reduction, since an entire template must be created and freed in memory with each reduction step, but relies less on low-level memory access and was therefore easier to implement to a working standard.
+\\\indent The initial goal was to implement a template instantiator machine that would evaluate templates \textbf{in-place}, i.e. perform reduction to a template that is in memory. This proved difficult to implement, and due to time constraints, a simpler approach had to be adopted. The simpler approach operates by computing the reduced value of the template in memory, instantiating a new template in memory that is $\beta$-equivalent in one or more reduction steps, to the original template. The original template is then freed from memory and reduction proceeds on the newly created template. This strategy has a higher overhead than in-place reduction, since an entire template must be created and freed in memory with each reduction step, but relies less on low-level memory access and was therefore easier to implement to a working standard.
 \subsubsection{Test Modules}
 Unit test modules are named according to the module which they test. For example, the tests of the Unifier module are contained in the TestUnifier module. The Syntax, Unifier and Interpreter modules have reasonable test coverage, whereas there is are no tests for the CodeGen module, again due to time constraints.
 
@@ -676,7 +676,8 @@ An interactive REPL (Read-Evaluate-Print Loop) would be a useful extension to th
 \subsubsection{Pattern Matching}
 Another useful extension would be to implement pattern matching. At present, to determine the structure of a variable, the user must write conditional expressions to achieve this. Pattern matching syntax, such as Haskell's \texttt{case} expressions, are an elegant solution to this problem.
 
-\section{Conclusion}
+\subsection{Concluding Remarks}
+The project undertaken was certainly an ambitious one. The concepts involved are not straightforward to understand. A large amount of background reading and study was required to complete it, particularly to implement the type system of the language. All the goals for the project have been achieved, although a more sophisticated compiled implementation is somewhat unsophisticated, but otherwise functional.
 
 \pagebreak
 \section{Appendix}
