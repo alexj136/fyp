@@ -45,20 +45,31 @@
     \vfill
 \end{titlepage}
 
+\paragraph{Summary \\}
+Programming languages are divided into two main groups: imperative and functional. Imperative languages are derived from computer architecture, whereas functional languages are derived from the lambda calculus.
+\\\indent The lambda calculus is a mathematical calculus used to represent computation, via the process of syntactic substitution. It serves as a theoretical foundation for functional programming languages.
+\\\indent The aim of this project was to implement a functional programming language, using the lambda calculus as a theoretical foundation. It was implemented using the Haskell programming language, which itself is functional.
+\\\indent The main features of the implemented language is an interpreter, compiler, type inference, polymorphism, lists, function literals, and list, sum and product types.
+\\\indent The interpreter and compiler were implemented successfully, however the compiled implementation uses a somewhat naive implementation strategy.
+\pagebreak
+
 \tableofcontents
 \pagebreak
 
 \section{Introduction}
 
-Conventional programming languages are designed to solve problems by decomposing them into a list of instructions, which are executed by a computer in a specified sequence. They are said to be \emph{imperative}. This imperative principle of sequential execution is ultimately derived from the nature of computer architecture, which is imperative in nature. Such languages have become increasingly sophisticated over many years, abstracting the computer's hardware, so that programmers need not concern themselves with understanding the intricate details of the computer, which are often irrelevant to the problem they are solving. Imperative languages do not, however, abstract sequential execution (by definition).
+Imperative programming languages are those in which programs consist of a sequence of steps that modify a state, i.e. values stored in computer memory. The sequence of steps taken may depend on this state. The imperative principle of sequential execution and state change is ultimately derived from the nature of computer architecture, which is imperative in nature. Such languages have become increasingly sophisticated over many years, abstracting the computer's hardware, so that programmers need not concern themselves with understanding the intricate details of the computer, which are often irrelevant to the problem they are solving. Imperative languages do not abstract sequential execution (by definition).
 \\
-\indent In contrast, Functional programming languages differ in that they are derived from the lambda calculus, rather than computer architecture, and \emph{do} abstract the imperative nature of computer architecture. This report will explain in detail how computation is achieved in a functional programming language, and give details of the implementation of the functional programming language that is the focus of this project.
+\indent In contrast, Functional programming languages are those in which programs consist of a set of mathematical equations, the evaluation of which constitutes computation. They are derived from the lambda calculus, rather than computer architecture, and are indeed an abstraction of the imperative nature of computer architecture.
+
+\subsection{Purpose of this Report}
+This report will explain in detail how computation is achieved in a functional programming language. It will give details of the implementation of a functional programming language, in the form of an interpreter and a compiler. The report will discuss development methodology and give a summary of the source code. It will provide an overview of the produced language, and conclude with a critical evaluation.
 
 \pagebreak
 \section{Background}
 
 \subsection{Programming Language Implementation}
-Even those unfamiliar with computers may have heard it said that 'computers only understand binary'. In a very specific sense, this is true - CPUs take their instructions in binary form, as voltages on a wire. Therefore we must be able to \emph{express} our computer programs in binary form (such a form is typically referred to as \emph{machine code}). This does not mean, however, that we must write our computer programs in machine code - modern computer programs are created with programming languages, which describe programs in a more abstract way. Typically, \emph{source code} is written in a particular programming language, and is then translated into an executable form via a process known as \emph{compilation}. A compiler is a computer program that takes source code as its input, and (typically) outputs an executable machine code file. Not all programming languages are compiled, however. Some programming languages are \emph{interpreted}, and some languages use a hybrid system of compilation and interpretation, usually to improve performance. The implementation of a typical programming language can be decomposed into several phases: 
+Even those unfamiliar with computers may have heard it said that 'computers only understand binary'. In a very specific sense, this is true - CPUs take their instructions in binary form, as voltages on a wire. Therefore we must be able to \emph{express} our computer programs in binary form (such a form is typically referred to as \emph{machine code}). This does not mean, however, that we must write our computer programs in machine code - modern computer programs are created with programming languages, which describe programs in a more abstract way. Typically, \emph{source code} is written in a particular programming language, and is then translated into an executable form via a process known as \emph{compilation}. A compiler is a computer program that takes source code as its input, and (typically) outputs an executable machine code file. Not all programming languages are implemented via compilation, however. Some programming languages are implemented via \emph{interpretation}, and some languages use a hybrid system of compilation and interpretation, usually to improve performance. The implementation of a typical programming language can be decomposed into several phases: 
 \begin{enumerate}
     \item Lexical Analysis
     \item Syntax Analysis
@@ -114,7 +125,8 @@ Just-in-time (JIT) compilation is similar to interpretation in that there is no 
 There are many hybrid systems in existence that combine interpretation, code generation and JIT systems into a programming language implementation. One such example is the Java programming language, which generates intermediate code at compile-time, and at runtime, the intermediate code is executed by a \emph{tracing} JIT system, where code is initially interpreted, and when a part of the program is determined to be 'hot code' - code that is executed frequently - it is translated to machine code and directly executed. There are a vast array of different hybrid systems in existence, and many possible combinations that have not been attempted. The goal is usually to maximise performance.
 
 \subsection{Functional and Imperative}
-The lambda calculus (often written '$\lambda$-calculus') is a mathematical calculus that is used to represent computations, and is Turing-complete. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages.
+The lambda calculus (often written '$\lambda$-calculus') is a mathematical calculus that is used to represent computations, and is Turing-complete, meaning that it can represent anything that can possibly be computed. It was developed by the mathematician Alonzo Church in 1936 as a proposed solution to the foundational crisis of mathematics. While it was not successful as a foundation for mathematics, it has proved effective as a foundation for functional programming languages. Since the lambda calculus is Turing-complete, it can even be used to \emph{simulate} an imperative programming language.
+\\\indent The first functional language, LISP, first appeared in 1958, and has been a strong influence in modern functional languages, such as Haskell, ML and Clojure. Dialects of LISP, such as Common Lisp and Scheme are still in use today.
 \\
 \indent The lambda calculus employs a single rule in order to achieve computation, whereby \emph{variables} are replaced with \emph{expressions} that are supplied as \emph{arguments} to \emph{functions}. More precisely, we say that a function is \emph{applied} to its arguments, whereby all occurrences of the parameterised variable in the function body are replaced with the argument expression. For example, consider a function, in a conventional programming language, that takes a single integer argument, and calculates the square of that argument, returning the result. In a C-like language, we might have:
 \\\\
@@ -564,8 +576,22 @@ The table below provides a summary of the functions over abstract data types:
 \end{tabular}}
 \subsection{Function Definitions}
 Global function definitions are made using the \texttt{def} keyword, followed by the name of the function and the name of each argument, and an '\texttt{=}' sign, after which the function body is included. They are mutually recursive, and globally visible, except within abstractions that bind the same name as global functions. Several examples are provided above.
+\\\indent The language also allows local function definitions, visible only from the function in which they are defined. They can be defined either using \texttt{let} notation, or using lambda notation. Below is an example of a local function definition using \texttt{let} notation:
+\begin{verbatim}
+    def doSomeCalculation a b c d =
+        let sumThree a b c = a + b + c in
+            ((sumThree b c d) * a)
+\end{verbatim}
+Lambda notation can also be used to define the same function. In fact, the \texttt{let} notation is just syntactic sugar for the lambda notation:
+\begin{verbatim}
+    def doSomeCalculation a b c d =
+            (\sumThree.((sumThree b c d) * a))(\a.\b.\c. a + b + c)
+\end{verbatim}
+
 \subsection{Type Inference and Type Declarations}
-The language has type inference, and will type-check programs without being provided with any type declarations. Type declarations can be included for top-level function declarations. These will cause the type-check to fail if they differ from the inferred type of the function.
+The language has type inference, and will type-check programs without being provided with any type declarations. Type declarations can be included for top-level function declarations. These will be checked against the inferred type for the function, and the type check will fail should they differ.
+\\\indent While the type declarations are not required by the language, they are useful in several ways. They prevent the programmer from making errors, helping them to understand their code. They serve as a form of documentation. They can also be used to restrict the type of a function that would be inferred as a more general polymorphic type.
+\\\indent The context-free grammar at the start of this chapter shows the structure of type declarations. Function types are denoted with an infix arrow: '\texttt{->}', with the argument type on the left and the return type on the right. List types are denoted with square brackets, for example, \texttt{[Int]} represents a list of integers. Sum types are denoted with braces, containing two types separated by a vertical bar: \texttt{\{ Int | Bool \}} represents a type that is the sum of the integer and boolean types. Product types are dentoted similarly to sum types - the vertical bar is exchanged for the ampersand symbol: \texttt{\{ Int \& Bool \}} represents a type that is the product of the integer and boolean types. The choice of syntax for sum and product type declarations was made because it in some sense illustrates the meaning of the construct - the vertical bar is often used to represent the logical 'or' function, and this may help illustrate to programmers that a value in a sum type is a value of either type \texttt{a} \textbf{or} type \texttt{b}. Conversely, the ampersand symbol is often used to represent the logical 'and' function, and again may help communicate to the programmer that a value in a product type contains values of type \texttt{a} \textbf{and} type \texttt{b}.
 \subsection{Prelude Functions}
 The language has a small prelude of predefined functions. These are:
 \begin{itemize}
@@ -593,6 +619,11 @@ The prelude functions are summarised in the table below:
     \hline
 \end{tabular}}
 \subsection{Polymorphic Types}
+The language has a form of polymorphism known as let-polymorphism (Pierce, 2002:331), implemented using the Hindley-Milner type inference algorithm. Let-polymorphism allows for the definition of functions that can take arguments of different types. This differs from ad-hoc poly morphism (often called overloading) in that the same code is run on arguments of different types, rather than simply allowing functions with the same name but are differentiated by the types of arguments that they take. Type declarations for polymorphic functions may use type variables, for example, the type of the \texttt{map} function is:
+\\\\
+\indent \texttt{type map = (a -> b) -> [a] -> [b]}
+\\\\
+This contains two different type variables, \texttt{a} and \texttt{b}, which communicates that the function operates on values of two types which may be distinct.
 \subsection{Command-Line Arguments}
 Command line arguments to programs are represented in the language as a predefined function called \texttt{args}, with type \texttt{[String]}. For this reason, top-level functions may not have the name \texttt{args}. The example below is a complete program that parses an integer from the command line, and returns that integer, plus ten:
 \begin{verbatim}
@@ -612,8 +643,11 @@ The interpreter can then be invoked by running:
 \\\\
 \indent \texttt{./Main --interpret path/to/sourcefile}
 \\\\
-Arguments to the program can be included after the filename. The \texttt{--interpret} flag can be replaced with the \texttt{-i} flag. The program will then be evaluated, and the result of that evaluation will be printed to the command-line.
-
+Arguments to the program can be included after the filename. The \texttt{--interpret} flag can be replaced with the \texttt{-i} flag. The program will then be evaluated, and the result of that evaluation will be printed to the command-line. Programs can be compiled by running:
+\\\\
+\indent \texttt{./Main --compile path/to/sourcefile}
+\\\\
+which will produce a binary file with the same name as the given input file, appended with the text \texttt{"\_binary"}. Again, the \texttt{--compile} flag can be abbreviated to \texttt{-c}. The produced binary can the be run as desired, and any arguments can be supplied to it from the command line at that time.
 \pagebreak
 \section{Evaluation}
 \subsection{Performance}
@@ -634,6 +668,8 @@ The project did not meet the expected goal of a fully compiled implementation, d
     \item Functional Programming - Anthony J. Field and Peter G. Harrison
     \item A Tutorial Introduction to the Lambda Calculus - Ra\'{u}l Rojas \\
         http://www.inf.fu-berlin.de/lehre/WS03/alpi/lambda.pdf
+    \item Modern Compiler Implementation in ML - Andrew W. Appel
+    \item Implementing Functional Languages: A Tutorial - Simon Peyton-Jones and David Lester
 \end{itemize}
 
 \end{document}
