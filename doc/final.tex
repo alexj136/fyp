@@ -496,6 +496,12 @@ The language has a familiar set of built-in functions over the basic data types,
     \texttt{\%}     & Remainder from integer division   & \texttt{Int -> Int -> Int}            & \texttt{18 \% 4}          & \texttt{2}                    \\
     \hline
 \end{tabular}}
+\\\\
+Not included in this table is the conditional function, which takes the form:
+\\\\
+\indent \texttt{if G then E else F}
+\\\\
+This function has the type \texttt{$\forall$a. Bool -> a -> a -> a}, and if the expression \texttt{G} evaluates to true, the whole expression evaluates to \texttt{E}, else the whole expression evaluates to \texttt{F}.
 
 \subsection{Abstract Data Types}
 \subsubsection{Lists}
@@ -643,22 +649,34 @@ The interpreter can then be invoked by running:
 \\\\
 \indent \texttt{./Main --interpret path/to/sourcefile}
 \\\\
-Arguments to the program can be included after the filename. The \texttt{--interpret} flag can be replaced with the \texttt{-i} flag. The program will then be evaluated, and the result of that evaluation will be printed to the command-line. Programs can be compiled by running:
+Arguments to the program can be included after the filename. The \texttt{--interpret} flag can be replaced with the \texttt{-i} flag. The program will then be evaluated, and the result of that evaluation will be printed to the standard output. Programs can be compiled by running:
 \\\\
 \indent \texttt{./Main --compile path/to/sourcefile}
 \\\\
-which will produce a binary file with the same name as the given input file, appended with the text \texttt{"\_binary"}. Again, the \texttt{--compile} flag can be abbreviated to \texttt{-c}. The produced binary can the be run as desired, and any arguments can be supplied to it from the command line at that time.
+which will produce a binary file with the same name as the given input file, appended with the text \texttt{"\_binary"}. For example, if the supplied source file had the name \texttt{"hello.prog"}, the output binary file would have the name \texttt{"hello.prog\_binary"}. Again, the \texttt{--compile} flag can be abbreviated to \texttt{-c}. The produced binary can the be run as desired, and any arguments can be supplied to it from the command line at that time. The program will be run and the result will be printed to the standard output.
 \pagebreak
 \section{Evaluation}
 \subsection{Performance}
-The produced system is robust, and contains no known bugs. The interpreted implementation runs slowly, particularly when run inside the Haskell interpreter. Performance is better when the interpreter is compiled with GHC. It would not, however, be suitable for high performance, numerical or scientific calculations. The compiled implementation provides a significant increase in speed over the interpreted implementation, although again would not be suitable for high performance, numerical or scientific calculations.
+The produced system is robust, and contains no known bugs. The interpreted implementation runs slowly, particularly when run inside the Haskell interpreter. Performance is better when the interpreter is compiled with GHC. The interpreter is fine for simple programs, however would not be suitable for large programs or programs that require high performance. The compiled implementation provides a significant increase in speed over the interpreted implementation. It is not so fast as to be a viable replacement for a commercial language, however, but such a target was not specified for this project.
 \subsection{Shortcomings}
-The project did not meet the expected goal of a fully compiled implementation, due to time constraints. The template instantiator...
+\subsubsection{Compilation to C}
+One of the initial goals for the project was to implement compilation of the language. The term 'compiler' usually refers to the translation of high-level language code into low-level language code. The target language for the compiler implemented in this project is C, which is usually not considered to be a low-level language (although it is low-level in comparison to a language like Haskell or the language implemented in this project).
+\subsubsection{Template Instantiation}
+A template instantiator machine is not in the strictest sense a low-level implementation. The nature of template instantiation is such that the abstraction of the program as an expression to be evaluated, still exists. For the implementation to be considered low-level, the implementation strategy would have to be one that maps more closely to the nature of the hardware on which the language runs, which would ideally constitute the lack of an abstraction such as the aforementioned expression-to-evaluate abstraction, and be imperative in nature.
 
 % Comments on performance and robustness of each feature e.g. interpreter, type inference, etc.
 % What I would do with more time
 \subsection{Possible Extensions}
 \subsubsection{Closure Conversion}
+Had time permitted it, compilation via closure conversion would have been the next undertaking for the project. Such a compiler, to a language such as C or x86 assembly would certainly be a valuable addition to the project, and would produce faster code.
+\subsubsection{Type Aliases}
+Another possible extension would be to implement type aliases. Without type aliases, when type declarations are included, they have to be written 'in full' - if the user works with a data structure composed of list, sum and product types, they have to write down the entire expression describing that type in every place it is used, assuming they include type declarations in their program. This can be tedious, and a mechanism to avoid this repetition would be desirable. Such a mechanism would allow the user to declare a single word name for a type expression, such that the name could be included in place of the expression wherever it would otherwise have to be written in full.
+\subsubsection{Interactive REPL}
+An interactive REPL (Read-Evaluate-Print Loop) would be a useful extension to the project. This would allow the user to enter an interactive environment, where they could type expressions in the language and see the result of evaluating those expressions immediately. It might also allow them to make function declarations, to which subsequent expressions could refer.
+\subsubsection{Pattern Matching}
+Another useful extension would be to implement pattern matching. At present, to determine the structure of a variable, the user must write conditional expressions to achieve this. Pattern matching syntax, such as Haskell's \texttt{case} expressions, are an elegant solution to this problem.
+
+\section{Conclusion}
 
 \pagebreak
 \section{Appendix}
