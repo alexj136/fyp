@@ -535,7 +535,7 @@ Sum types, also known as union types, are included in the language. They are a d
             { a / b , _ }
 \end{verbatim}
 There are two constructors for values in the sum type, which are left-injection, and right-injection. The syntax for left-injection is \texttt{\{ E , \_ \}}, and the syntax for right-injection is \texttt{\{ \_ , E \}}, where \texttt{E} is an expression.
-\\\indent There are three destructors for values in the sum type, which are \texttt{remr}, \texttt{reml} and \texttt{isleft}. \texttt{remr} retrieves the right-hand value from a sum expression. This function causes an error if there is no right-hand value (i.e. if there is a left-hand value). \texttt{reml} retrieves the left-hand value from a sum expression. This function causes an error if there is no left-hand value (i.e. if there is a right-hand value). To prevent errors with these two functions, the expression on which they are to be called should first be checked with the \texttt{isleft} function, which returns \texttt{true} if a left-hand value is present, and \texttt{false} if the right-hand value is present. The example below demonstrates the use of the \texttt{reml}, \texttt{remr} and \texttt{isleft} functions with the \texttt{safeDiv} function shown above.
+\\\indent There are three destructors for values in the sum type, which are \texttt{remr}, \texttt{reml} and \texttt{isleft}. \texttt{remr} retrieves the right-hand value from a sum expression. This function causes an error if there is no right-hand value (i.e. if there is a left-hand value). \texttt{reml} retrieves the left-hand value from a sum expression. This function causes an error if there is no left-hand value (i.e. if there is a right-hand value). To prevent errors with these two functions, the expression to which they are applied should first be checked with the \texttt{isleft} function, which returns \texttt{true} if a left-hand value is present, and \texttt{false} if the right-hand value is present. The example below demonstrates the use of the \texttt{reml}, \texttt{remr} and \texttt{isleft} functions with the \texttt{safeDiv} function shown above.
 \begin{verbatim}
     type doSomeCalculation = Int -> Int -> Int -> { Int | Bool }
     def doSomeCalculation a b c =
@@ -625,7 +625,7 @@ The prelude functions are summarised in the table below:
     \hline
 \end{tabular}}
 \subsection{Polymorphic Types}
-The language has a form of polymorphism known as let-polymorphism (Pierce, 2002:331), implemented using the Hindley-Milner type inference algorithm. Let-polymorphism allows for the definition of functions that can take arguments of different types. This differs from ad-hoc poly morphism (often called overloading) in that the same code is run on arguments of different types, rather than simply allowing functions with the same name but are differentiated by the types of arguments that they take. Type declarations for polymorphic functions may use type variables, for example, the type of the \texttt{map} function is:
+The language has a form of polymorphism known as let-polymorphism (Pierce, 2002:331), implemented using the Hindley-Milner type inference algorithm. Let-polymorphism allows for the definition of functions that can take arguments of different types. This differs from ad-hoc polymorphism (often called overloading) in that the same code is run on arguments of different types, rather than simply allowing functions with the same name but that are differentiated by the types of arguments that they take. Type declarations for polymorphic functions may use type variables, for example, the type of the \texttt{map} function is:
 \\\\
 \indent \texttt{type map = (a -> b) -> [a] -> [b]}
 \\\\
@@ -677,7 +677,7 @@ An interactive REPL (Read-Evaluate-Print Loop) would be a useful extension to th
 Another useful extension would be to implement pattern matching. At present, to determine the structure of a variable, the user must write conditional expressions to achieve this. Pattern matching syntax, such as Haskell's \texttt{case} expressions, are an elegant solution to this problem.
 
 \subsection{Concluding Remarks}
-The project undertaken was certainly an ambitious one. The concepts involved are not straightforward to understand. A large amount of background reading and study was required to complete it, particularly to implement the type system of the language. All the goals for the project have been achieved, although a more sophisticated compiled implementation is somewhat unsophisticated, but otherwise functional.
+The project undertaken was certainly an ambitious one. The concepts involved are not straightforward to understand. A large amount of background reading and study was required to complete it, particularly to implement the type system of the language. All the goals for the project have been achieved, and although the compiled implementation is somewhat unsophisticated, it is functional.
 
 \pagebreak
 \section{Appendix}
