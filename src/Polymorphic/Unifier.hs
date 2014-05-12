@@ -241,7 +241,10 @@ getConstraints i ctx exp = case exp of
     -- generate constraints, such that we are able to have let-polymorphism,
     -- where we can use a function on arguments with different types, without
     -- making the program untypable.
-    App (Abs    v _ m) n -> getConstraints i ctx (App (AbsInf v m) n)
+    --App (Abs    v _ m) n -> getConstraints i ctx (App (AbsInf v m) n)
+    App (Abs    v t m) n
+        | not (containsParserTVar t) ->
+            getConstraints i ctx (App (AbsInf v m) n)
     App (AbsInf v   m) n -> (S.union constrApp constrN, tApp, i'')
       where
         (constrN  , tN  , i' ) = getConstraints i ctx n
@@ -253,7 +256,14 @@ getConstraints i ctx exp = case exp of
     -- order for it to be typable. The original typing rule for explicitly
     -- declared abstractions is show as a comment below. We could use this rule
     -- if we did not want let-polymorphism.
-    Abs v t m -> getConstraints i ctx (AbsInf v m)
+    --Abs v t m -> getConstraints i ctx (AbsInf v m)
+    Abs v t m
+        | not (containsParserTVar t) -> getConstraints i ctx (AbsInf v m)
+        | otherwise                  -> (constrM, TFunc convTy tM, i'')
+            where
+                (constrM, tM, i'') = getConstraints i' ctx' m
+                ctx' = addToContext v t ctx
+                (i', _, convTy) = convertTVarsType (i, M.empty, t)
 
     {- ORIGINAL RULE FOR EXPLICITLY TYPED ABSTRACTIONS
     Abs v t m -> (constrM, TFunc t tM, i')
@@ -269,7 +279,13 @@ getConstraints i ctx exp = case exp of
         ctx' = addToContext v (TVar i') ctx
 
     -- Variables
-    Var v -> (S.empty, typeFromContext ctx v, i)
+    Var v | not (containsParserTVar (typeFromContext ctx v)) ->
+        (S.empty, typeFromContext ctx v, i)
+          | otherwise ->
+        (S.empty, convTy, i')
+          where
+            (i', _, convTy) =
+                convertTVarsType (i, M.empty, (typeFromContext ctx v))
 
     -- Function application
     App m n -> (constr', tX, i'' + 1)
@@ -360,3 +376,44 @@ deQuantify i m t = case t of
         where ( a' , i'  , m'  ) = deQuantify i  m  a
               ( b' , i'' , m'' ) = deQuantify i' m' b
     ParserTVar _ -> error "deQuantify: ParserTVar found"
+
+-- Determine if a type contains a ParserTVar or not
+containsParserTVar :: Type -> Bool
+containsParserTVar ty = case ty of
+    ParserTVar _ -> True
+    TFunc  a b   -> (containsParserTVar a) || (containsParserTVar b)
+    TQuant _ a   -> containsParserTVar a
+    TList  a     -> containsParserTVar a
+    TSum   a b   -> (containsParserTVar a) || (containsParserTVar b)
+    TProd  a b   -> (containsParserTVar a) || (containsParserTVar b)
+    _            -> False
+
+-- Convert all ParserTVars into proper integer TVars. Returns a map from the
+-- integer type variables to the user's string type variables that can be used
+-- to print better error messages.
+convertTVarsType ::
+    (Int, M.Map String Int, Type) -> (Int, M.Map String Int, Type)
+convertTVarsType (i, m, t) = case t of
+
+    ParserTVar s -> case M.lookup s m of
+                        Nothing -> (i + 1, M.insert s i m, TVar i)
+                        Just j  -> (i    , m             , TVar j)
+
+    TFunc t1 t2  -> (i''  , m'', TFunc t1' t2')
+        where (i' , m' , t1') = convertTVarsType (i , m , t1)
+              (i'', m'', t2') = convertTVarsType (i', m', t2)
+
+    TProd t1 t2  -> (i''  , m'', TProd t1' t2')
+        where (i' , m' , t1') = convertTVarsType (i , m , t1)
+              (i'', m'', t2') = convertTVarsType (i', m', t2)
+
+    TSum  t1 t2  -> (i''  , m'', TSum  t1' t2')
+        where (i' , m' , t1') = convertTVarsType (i , m , t1)
+              (i'', m'', t2') = convertTVarsType (i', m', t2)
+
+    TList t      -> (i'   , m' , TList t'     )
+        where (i' , m' , t' ) = convertTVarsType (i , m , t )
+
+    TQuant _ _   -> error "convertTVars: TQuant found in parsed type"
+    TVar   _     -> error "convertTVars: Integer TVar found in parsed type"
+    other        -> (i, m, other)

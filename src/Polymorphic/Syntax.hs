@@ -491,7 +491,7 @@ tVarNames (TFunc t1 t2)  = tVarNames t1 ++ tVarNames t2
 tVarNames (TProd t1 t2)  = tVarNames t1 ++ tVarNames t2
 tVarNames (TSum  t1 t2)  = tVarNames t1 ++ tVarNames t2
 tVarNames (TList t)      = tVarNames t
-tVarNames (ParserTVar _) = error ("tVarNames: ParserTVar found")
+tVarNames (ParserTVar _) = [] -- ParserTVar names treated like a quantified type
 tVarNames _              = []
 
 -- Converts all occurrences of a particular TVar name to a different name within

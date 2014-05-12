@@ -31,21 +31,20 @@ main = do
         prelude <- readFile "prelude"
         let tokens       = scan progStr ++ scan prelude
             parseRes     = P.parse tokens
-            progPTVars   = combineTyDecs parseRes
-            declaresArgs = hasFunc progPTVars "args"
-            (i, _, prog) = convertTVarsProg (0, M.empty, progPTVars)
-            progCtx      = (snd (contextProg i prog))
+            prog         = combineTyDecs parseRes
+            declaresArgs = hasFunc prog "args"
+            progCtx      = (snd (contextProg 0 prog))
             initialCtx   = M.insert "args" (TList (TList TChar)) progCtx
             unifyRes     = inferFull initialCtx (allToLambdas prog)
             hasMain      = hasFunc prog "main"
             outputCode   = codeGenProg prog
             in
             if declaresArgs then
-                putStrLn "Program may not declare function \'args\'."
+                putStrLn "Program may not declare function \'args\'"
             else if unifyRes == Nothing then
-                putStrLn "Type check failure."
+                putStrLn "Type check failure"
             else if not hasMain then
-                putStrLn "No main function found."
+                putStrLn "No main function found"
             else
                 writeFile "compiled.c" outputCode >>= \_ ->
                 system ("gcc -Wall -g langdefs.c compiled.c -o "
@@ -68,11 +67,7 @@ main = do
             parseRes = P.parse tokens
 
             -- Obtain a Prog containing ParserTVars
-            progPTVars = combineTyDecs parseRes
-
-            -- Convert ParserTVars into integer TVars and add the command-line
-            -- arguments to to the program
-            (i, _, prog) = convertTVarsProg (0, M.empty, progPTVars)
+            prog = combineTyDecs parseRes
 
             -- Add the command line arguments
             progWithArgs = addFunc argsToProg prog
@@ -80,7 +75,7 @@ main = do
             -- Type check the program
             unifyRes =
                 inferFull
-                    (snd (contextProg i progWithArgs))
+                    (snd (contextProg 0 progWithArgs))
                     (allToLambdas progWithArgs)
 
             -- Verify that the program has a main function
